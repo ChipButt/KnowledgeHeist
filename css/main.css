@@ -204,20 +204,71 @@ body {
 }
 
 #startHeistBtn {
-  left: 27.73%;
-  top: 70.15%;
-  width: 7.81%;
-  height: 4.45%;
-  font-size: clamp(7.8px, 0.75vw, 11px);
+  left: 27.44%;
+  top: 69.23%;
+  width: 8.11%;
+  height: 12.34%;
+  transform: none;
+  border: 2px solid rgba(0, 0, 0, 0.65);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #e3bf6d 0%, #c69432 100%);
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 900;
+  font-size: clamp(11px, 1.15vw, 18px);
+  line-height: 1.05;
+  letter-spacing: 0.35px;
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 6px 16px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  white-space: normal;
+  overflow: hidden;
 }
 
 #instructionsBtn {
-  left: 27.44%;
-  top: 75.55%;
-  width: 8.11%;
-  height: 4.65%;
-  font-size: clamp(8.8px, 0.86vw, 11.8px);
-  letter-spacing: -0.1px;
+  left: 59.18%;
+  top: 44.36%;
+  width: 7.03%;
+  height: 9.84%;
+  transform: none;
+  border: 1px solid rgba(0, 0, 0, 0.55);
+  border-radius: 10px;
+  background: rgba(22, 22, 22, 0.82);
+  color: #f3d98f;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 800;
+  font-size: clamp(9px, 0.9vw, 14px);
+  line-height: 1.05;
+  letter-spacing: 0.2px;
+  text-shadow: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 4px 10px rgba(0, 0, 0, 0.28);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 4px;
+  white-space: normal;
+  overflow: hidden;
+}
+
+#startHeistBtn:hover,
+#instructionsBtn:hover {
+  filter: brightness(1.05);
+}
+
+#startHeistBtn:focus-visible,
+#instructionsBtn:focus-visible {
+  outline: 2px solid #fff6b3;
+  outline-offset: 2px;
 }
 
 /* Leaderboard */
@@ -634,15 +685,11 @@ body {
   }
 
   #startHeistBtn {
-    width: 8.9%;
-    height: 4.05%;
-    font-size: clamp(7px, 0.82vw, 10px);
+    font-size: clamp(9px, 1.3vw, 14px);
   }
 
   #instructionsBtn {
-    width: 9.35%;
-    height: 4.05%;
-    font-size: clamp(6.8px, 0.78vw, 9.6px);
+    font-size: clamp(7px, 1vw, 11px);
   }
 
   #leaderboardBtn {
@@ -694,19 +741,11 @@ body {
   }
 
   #startHeistBtn {
-    left: 27.6%;
-    top: 70.1%;
-    width: 8.6%;
-    height: 3.8%;
-    font-size: clamp(5.2px, 0.62vw, 7.2px);
+    font-size: clamp(7px, 1vw, 11px);
   }
 
   #instructionsBtn {
-    left: 27.35%;
-    top: 75.45%;
-    width: 9.15%;
-    height: 3.8%;
-    font-size: clamp(4.9px, 0.58vw, 6.8px);
+    font-size: clamp(5.5px, 0.8vw, 8.5px);
   }
 
   #leaderboardBtn {
