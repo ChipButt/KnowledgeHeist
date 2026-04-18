@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>Knowledge Heist</title>
+  <link rel="stylesheet" href="./css/main.css" />
+</head>
+<body>
+  <div id="gameBanner"></div>
+
+  <!-- HUB -->
+  <section id="hubScreen" class="screen active">
+    <div class="hub-wrap">
+      <div class="hub-value hub-money" id="totalBanked">£0.00</div>
+      <div class="hub-value hub-money" id="bestHeist">£0.00</div>
+
+      <div class="hub-label" id="heistsPlayedLabel">Heists Played</div>
+      <div class="hub-value hub-number" id="heistsPlayed">0</div>
+
+      <div class="hub-label" id="paintingsStolenLabel">Paintings Stolen</div>
+      <div class="hub-value hub-number" id="paintingsStolen">0</div>
+
+      <button class="hub-ui-button tv-btn" id="startHeistBtn" type="button">
+        Start Heist
+      </button>
+      <button class="hub-ui-button tv-btn" id="instructionsBtn" type="button">
+        How to Play
+      </button>
+
+      <button class="hub-ui-button" id="leaderboardBtn" type="button">
+        Leaderboard
+      </button>
+
+      <button
+        class="hub-hotspot"
+        id="resetProgressBtn"
+        type="button"
+        aria-label="Reset progress"
+        title="Reset progress"
+      ></button>
+
+      <div class="hub-log-cell" id="date1"></div>
+      <div class="hub-log-cell" id="date2"></div>
+      <div class="hub-log-cell" id="date3"></div>
+      <div class="hub-log-cell" id="date4"></div>
+      <div class="hub-log-cell" id="date5"></div>
+
+      <div class="hub-log-cell" id="heist1"></div>
+      <div class="hub-log-cell" id="heist2"></div>
+      <div class="hub-log-cell" id="heist3"></div>
+      <div class="hub-log-cell" id="heist4"></div>
+      <div class="hub-log-cell" id="heist5"></div>
+
+      <div class="hub-log-cell result" id="result1"></div>
+      <div class="hub-log-cell result" id="result2"></div>
+      <div class="hub-log-cell result" id="result3"></div>
+      <div class="hub-log-cell result" id="result4"></div>
+      <div class="hub-log-cell result" id="result5"></div>
+    </div>
+  </section>
+
+  <!-- GAME -->
+  <section id="gameScreen" class="screen">
+    <div class="game-topbar">
+      <div class="game-chip">Current haul: <span id="haulValue">£0.00</span></div>
+      <div class="game-chip">Strikes: <span id="strikesValue">0 / 3</span></div>
+      <div class="game-chip">Paintings left: <span id="paintingsLeftValue">0</span></div>
+      <button id="backToHubBtn" type="button">Back to hub</button>
+    </div>
+
+    <div class="game-shell">
+      <div class="canvas-wrap">
+        <canvas id="gameCanvas" width="1024" height="670"></canvas>
+      </div>
+
+      <div class="game-controls">
+        <div id="joystick">
+          <button class="joy-btn" data-dir="up" type="button">▲</button>
+          <button class="joy-btn" data-dir="left" type="button">◀</button>
+          <button class="joy-btn" data-dir="down" type="button">▼</button>
+          <button class="joy-btn" data-dir="right" type="button">▶</button>
+        </div>
+
+        <button id="interactBtn" type="button">INTERACT</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUESTION MODAL -->
+  <div id="questionModal" class="hidden">
+    <div class="modal-card">
+      <h2>Security Check</h2>
+      <div id="questionText"></div>
+      <input id="answerInput" type="text" inputmode="text" />
+      <div class="modal-actions">
+        <button id="submitAnswerBtn" type="button">Submit</button>
+        <button id="cancelAnswerBtn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY OVERLAY -->
+  <div id="summaryOverlay" class="hidden">
+    <div class="modal-card">
+      <h2 id="summaryTitle">Heist Complete</h2>
+      <div id="summarySubtitle"></div>
+      <div class="modal-actions">
+        <button id="summaryContinueBtn" type="button">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- INSTRUCTIONS OVERLAY -->
+  <div id="instructionsOverlay" class="overlay">
+    <div class="popup-panel instructions-panel">
+      <h2>How to Play</h2>
+      <div class="instructions-copy">
+On a computer:
+Use the arrow keys to move.
+Press Space to interact.
+
+On a mobile:
+Use the on-screen joystick to move.
+Use the interact button to attempt to grab items.
+
+Walk Nana around the museum.
+Move up to an artwork or floor item and attempt to grab it.
+Each item triggers a question.
+Get it right and you steal it.
+Get it wrong and it greys out and you get a strike.
+Three strikes brings in the guard.
+If you make it to the exit, you escape with your haul.
+Questions only get used once until you reset your progress.
+      </div>
+      <div class="popup-actions">
+        <button id="closeInstructionsBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESET CONFIRM -->
+  <div id="resetConfirmOverlay" class="overlay">
+    <div class="popup-panel confirm-panel">
+      <h2>Reset Progress?</h2>
+      <p>You are about to reset your data. Are you sure?</p>
+      <div class="popup-actions">
+        <button id="confirmResetBtn" class="danger" type="button">Yes, Reset</button>
+        <button id="cancelResetBtn" type="button">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD OVERLAY -->
+  <div id="leaderboardOverlay" class="overlay">
+    <div class="popup-panel confirm-panel">
+      <h2>Leaderboard</h2>
+      <p>Leaderboard coming soon.</p>
+      <div class="popup-actions">
+        <button id="closeLeaderboardBtn" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
