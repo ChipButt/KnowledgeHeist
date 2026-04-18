@@ -205,7 +205,24 @@ export function initGame() {
   }
 
   function shuffle(arr) {
-    return [...arr].sort(() => Math.random() - 0.5);
+    const copy = [...arr];
+
+    for (let i = copy.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+
+    return copy;
+  }
+
+  function normalizeVector(dx, dy, speed) {
+    const len = Math.hypot(dx, dy);
+    if (!len) return { dx: 0, dy: 0 };
+
+    return {
+      dx: (dx / len) * speed,
+      dy: (dy / len) * speed
+    };
   }
 
   function showBanner(text) {
@@ -256,185 +273,187 @@ export function initGame() {
     );
   }
 
- const backgroundMusicTracks = [
-  'Minuet Antique.mp3',
-  'track2.mp3',
-  'track3.mp3',
-  'track4.mp3',
-  'track5.mp3',
-  'track6.mp3',
-  'track7.mp3',
-  'track8.mp3',
-  'track9.mp3',
-  'track10.mp3'
-];
+  const backgroundMusicTracks = [
+    'Minuet Antique.mp3',
+    'track2.mp3',
+    'track3.mp3',
+    'track4.mp3',
+    'track5.mp3',
+    'track6.mp3',
+    'track7.mp3',
+    'track8.mp3',
+    'track9.mp3',
+    'track10.mp3'
+  ];
 
-let lastBackgroundMusicTrack = '';
+  let lastBackgroundMusicTrack = '';
 
-function getNextBackgroundMusicTrack() {
-  const availableTracks = backgroundMusicTracks.filter(
-    (track) => track !== lastBackgroundMusicTrack
-  );
+  function getNextBackgroundMusicTrack() {
+    const availableTracks = backgroundMusicTracks.filter(
+      (track) => track !== lastBackgroundMusicTrack
+    );
 
-  const nextTrack =
-    availableTracks[Math.floor(Math.random() * availableTracks.length)];
+    const nextTrack =
+      availableTracks[Math.floor(Math.random() * availableTracks.length)];
 
-  lastBackgroundMusicTrack = nextTrack;
-  return nextTrack;
-}
-
-function createBackgroundMusic() {
-  const audio = createAudio(getNextBackgroundMusicTrack(), 0.1, false);
-
-  audio.addEventListener('ended', () => {
-    assets.backgroundMusic = createBackgroundMusic();
-    assets.backgroundMusic.play()
-    safeRestartAudio(assets.backgroundMusic, 0.1);
-  });
-
-  return audio;
-}
-
-const assets = {
-  roomBackground: loadImage('museum-room.png'),
-
-  chaChingSound: createAudio('ChaChing.mp3', 0.9, false),
-  sirenSound: createAudio('Siren.mp3', 0.55, true),
-  withMeSound: createAudio('WithMe.mp3', 0.95, false),
-  heyStopSound: createAudio('Hey!Stop.mp3', 0.95, false),
-
-  failVoiceFiles: [
-    'Didntwantthat.mp3',
-    'GottaGetThemRight.mp3',
-    'IllGetTheNext.mp3',
-    'NextTime.mp3'
-  ],
-
-  walkAnimations: {
-    south: [
-      loadImage('Nana South Walking_0_delay-0.2s.png'),
-      loadImage('Nana South Walking_1_delay-0.2s.png'),
-      loadImage('Nana South Walking_2_delay-0.2s.png'),
-      loadImage('Nana South Walking_3_delay-0.2s.png'),
-      loadImage('Nana South Walking_4_delay-0.2s.png'),
-      loadImage('Nana South Walking_5_delay-0.2s.png')
-    ],
-    'south-east': [
-      loadImage('Nana South-East Walking_0_delay-0.2s.png'),
-      loadImage('Nana South-East Walking_1_delay-0.2s.png'),
-      loadImage('Nana South-East Walking_2_delay-0.2s.png'),
-      loadImage('Nana South-East Walking_3_delay-0.2s.png'),
-      loadImage('Nana South-East Walking_4_delay-0.2s.png'),
-      loadImage('Nana South-East Walking_5_delay-0.2s.png')
-    ],
-    east: [
-      loadImage('Nana East Walking_0_delay-0.2s.png'),
-      loadImage('Nana East Walking_1_delay-0.2s.png'),
-      loadImage('Nana East Walking_2_delay-0.2s.png'),
-      loadImage('Nana East Walking_3_delay-0.2s.png'),
-      loadImage('Nana East Walking_4_delay-0.2s.png'),
-      loadImage('Nana East Walking_5_delay-0.2s.png')
-    ],
-    'north-east': [
-      loadImage('Nana North-East Walking_0_delay-0.2s.png'),
-      loadImage('Nana North-East Walking_1_delay-0.2s.png'),
-      loadImage('Nana North-East Walking_2_delay-0.2s.png'),
-      loadImage('Nana North-East Walking_3_delay-0.2s.png'),
-      loadImage('Nana North-East Walking_4_delay-0.2s.png'),
-      loadImage('Nana North-East Walking_5_delay-0.2s.png')
-    ],
-    north: [
-      loadImage('Nana North Walking_0_delay-0.2s.png'),
-      loadImage('Nana North Walking_1_delay-0.2s.png'),
-      loadImage('Nana North Walking_2_delay-0.2s.png'),
-      loadImage('Nana North Walking_3_delay-0.2s.png'),
-      loadImage('Nana North Walking_4_delay-0.2s.png'),
-      loadImage('Nana North Walking_5_delay-0.2s.png')
-    ],
-    'north-west': [
-      loadImage('Nana North-West Walking_0_delay-0.2s.png'),
-      loadImage('Nana North-West Walking_1_delay-0.2s.png'),
-      loadImage('Nana North-West Walking_2_delay-0.2s.png'),
-      loadImage('Nana North-West Walking_3_delay-0.2s.png'),
-      loadImage('Nana North-West Walking_4_delay-0.2s.png'),
-      loadImage('Nana North-West Walking_5_delay-0.2s.png')
-    ],
-    west: [
-      loadImage('Nana West Walking_0_delay-0.2s.png'),
-      loadImage('Nana West Walking_1_delay-0.2s.png'),
-      loadImage('Nana West Walking_2_delay-0.2s.png'),
-      loadImage('Nana West Walking_3_delay-0.2s.png'),
-      loadImage('Nana West Walking_4_delay-0.2s.png'),
-      loadImage('Nana West Walking_5_delay-0.2s.png')
-    ],
-    'south-west': [
-      loadImage('Nana South-West Walking_0_delay-0.2s.png'),
-      loadImage('Nana South-West Walking_1_delay-0.2s.png'),
-      loadImage('Nana South-West Walking_2_delay-0.2s.png'),
-      loadImage('Nana South-West Walking_3_delay-0.2s.png'),
-      loadImage('Nana South-West Walking_4_delay-0.2s.png'),
-      loadImage('Nana South-West Walking_5_delay-0.2s.png')
-    ]
-  },
-
-  pullAnimations: {
-    east: [
-      loadImage('Nana East Pull_0_delay-0.2s.png'),
-      loadImage('Nana East Pull_1_delay-0.2s.png'),
-      loadImage('Nana East Pull_2_delay-0.2s.png'),
-      loadImage('Nana East Pull_3_delay-0.2s.png'),
-      loadImage('Nana East Pull_4_delay-0.2s.png'),
-      loadImage('Nana East Pull_5_delay-0.2s.png')
-    ],
-    north: [
-      loadImage('Nana North Pull_0_delay-0.2s.png'),
-      loadImage('Nana North Pull_1_delay-0.2s.png'),
-      loadImage('Nana North Pull_2_delay-0.2s.png'),
-      loadImage('Nana North Pull_3_delay-0.2s.png'),
-      loadImage('Nana North Pull_4_delay-0.2s.png'),
-      loadImage('Nana North Pull_5_delay-0.2s.png')
-    ],
-    west: [
-      loadImage('Nana West Pull_0_delay-0.2s.png'),
-      loadImage('Nana West Pull_1_delay-0.2s.png'),
-      loadImage('Nana West Pull_2_delay-0.2s.png'),
-      loadImage('Nana West Pull_3_delay-0.2s.png'),
-      loadImage('Nana West Pull_4_delay-0.2s.png'),
-      loadImage('Nana West Pull_5_delay-0.2s.png')
-    ]
-  },
-
-  guardRunAnimations: {
-    east: loadSeq('Security Guard East Running_', 6),
-    west: loadSeq('Security Guard West Running_', 6),
-    north: loadSeq('Security Guard North Running_', 6),
-    south: loadSeq('Security Guard South Running_', 6),
-    'north-east': loadSeq('Security Guard North-East Running_', 6),
-    'north-west': loadSeq('Security Guard North-West Running_', 6),
-    'south-east': loadSeq('Security Guard South-East Running_', 6),
-    'south-west': loadSeq('Security Guard South-West Running_', 6)
-  },
-
-  guardWalkAnimations: {
-    south: loadSeq('Security Guard South Walking_', 6),
-    'south-east': loadSeq('Security Guard South-East Walking_', 6),
-    'south-west': loadSeq('Security Guard South-West Walking_', 6)
-  },
-
-  artImages: {
-    northA: loadImage('painting_abstract_small.png'),
-    northB: loadImage('painting_mona_lisa_large.png'),
-    northC: loadImage('painting_starry_night.png'),
-    westA: loadImage('painting_landscape_left_angle.png'),
-    westB: loadImage('painting_portrait_left_lower_angle.png'),
-    westC: loadImage('painting_portrait_left_lower_angle_2.png'),
-    westD: loadImage('painting_portrait_left_lower_angle_3.png'),
-    eastA: loadImage('painting_portrait_right_angle.png'),
-    eastB: loadImage('painting_mona_lisa_right_lower_angle.png'),
-    aboard: loadImage('A-Board_Art_Piece.png'),
-    pedestal: loadImage('statue_on_pedestal.png')
+    lastBackgroundMusicTrack = nextTrack;
+    return nextTrack;
   }
-};
+
+  function createBackgroundMusic() {
+    const audio = createAudio(getNextBackgroundMusicTrack(), 0.1, false);
+
+    audio.addEventListener('ended', () => {
+      assets.backgroundMusic = createBackgroundMusic();
+      safeRestartAudio(assets.backgroundMusic, 0.22);
+    });
+
+    return audio;
+  }
+
+  const assets = {
+    backgroundMusic: null,
+    roomBackground: loadImage('museum-room.png'),
+
+    chaChingSound: createAudio('ChaChing.mp3', 0.9, false),
+    sirenSound: createAudio('Siren.mp3', 0.55, true),
+    withMeSound: createAudio('WithMe.mp3', 0.95, false),
+    heyStopSound: createAudio('Hey!Stop.mp3', 0.95, false),
+
+    failVoiceFiles: [
+      'Didntwantthat.mp3',
+      'GottaGetThemRight.mp3',
+      'IllGetTheNext.mp3',
+      'NextTime.mp3'
+    ],
+
+    walkAnimations: {
+      south: [
+        loadImage('Nana South Walking_0_delay-0.2s.png'),
+        loadImage('Nana South Walking_1_delay-0.2s.png'),
+        loadImage('Nana South Walking_2_delay-0.2s.png'),
+        loadImage('Nana South Walking_3_delay-0.2s.png'),
+        loadImage('Nana South Walking_4_delay-0.2s.png'),
+        loadImage('Nana South Walking_5_delay-0.2s.png')
+      ],
+      'south-east': [
+        loadImage('Nana South-East Walking_0_delay-0.2s.png'),
+        loadImage('Nana South-East Walking_1_delay-0.2s.png'),
+        loadImage('Nana South-East Walking_2_delay-0.2s.png'),
+        loadImage('Nana South-East Walking_3_delay-0.2s.png'),
+        loadImage('Nana South-East Walking_4_delay-0.2s.png'),
+        loadImage('Nana South-East Walking_5_delay-0.2s.png')
+      ],
+      east: [
+        loadImage('Nana East Walking_0_delay-0.2s.png'),
+        loadImage('Nana East Walking_1_delay-0.2s.png'),
+        loadImage('Nana East Walking_2_delay-0.2s.png'),
+        loadImage('Nana East Walking_3_delay-0.2s.png'),
+        loadImage('Nana East Walking_4_delay-0.2s.png'),
+        loadImage('Nana East Walking_5_delay-0.2s.png')
+      ],
+      'north-east': [
+        loadImage('Nana North-East Walking_0_delay-0.2s.png'),
+        loadImage('Nana North-East Walking_1_delay-0.2s.png'),
+        loadImage('Nana North-East Walking_2_delay-0.2s.png'),
+        loadImage('Nana North-East Walking_3_delay-0.2s.png'),
+        loadImage('Nana North-East Walking_4_delay-0.2s.png'),
+        loadImage('Nana North-East Walking_5_delay-0.2s.png')
+      ],
+      north: [
+        loadImage('Nana North Walking_0_delay-0.2s.png'),
+        loadImage('Nana North Walking_1_delay-0.2s.png'),
+        loadImage('Nana North Walking_2_delay-0.2s.png'),
+        loadImage('Nana North Walking_3_delay-0.2s.png'),
+        loadImage('Nana North Walking_4_delay-0.2s.png'),
+        loadImage('Nana North Walking_5_delay-0.2s.png')
+      ],
+      'north-west': [
+        loadImage('Nana North-West Walking_0_delay-0.2s.png'),
+        loadImage('Nana North-West Walking_1_delay-0.2s.png'),
+        loadImage('Nana North-West Walking_2_delay-0.2s.png'),
+        loadImage('Nana North-West Walking_3_delay-0.2s.png'),
+        loadImage('Nana North-West Walking_4_delay-0.2s.png'),
+        loadImage('Nana North-West Walking_5_delay-0.2s.png')
+      ],
+      west: [
+        loadImage('Nana West Walking_0_delay-0.2s.png'),
+        loadImage('Nana West Walking_1_delay-0.2s.png'),
+        loadImage('Nana West Walking_2_delay-0.2s.png'),
+        loadImage('Nana West Walking_3_delay-0.2s.png'),
+        loadImage('Nana West Walking_4_delay-0.2s.png'),
+        loadImage('Nana West Walking_5_delay-0.2s.png')
+      ],
+      'south-west': [
+        loadImage('Nana South-West Walking_0_delay-0.2s.png'),
+        loadImage('Nana South-West Walking_1_delay-0.2s.png'),
+        loadImage('Nana South-West Walking_2_delay-0.2s.png'),
+        loadImage('Nana South-West Walking_3_delay-0.2s.png'),
+        loadImage('Nana South-West Walking_4_delay-0.2s.png'),
+        loadImage('Nana South-West Walking_5_delay-0.2s.png')
+      ]
+    },
+
+    pullAnimations: {
+      east: [
+        loadImage('Nana East Pull_0_delay-0.2s.png'),
+        loadImage('Nana East Pull_1_delay-0.2s.png'),
+        loadImage('Nana East Pull_2_delay-0.2s.png'),
+        loadImage('Nana East Pull_3_delay-0.2s.png'),
+        loadImage('Nana East Pull_4_delay-0.2s.png'),
+        loadImage('Nana East Pull_5_delay-0.2s.png')
+      ],
+      north: [
+        loadImage('Nana North Pull_0_delay-0.2s.png'),
+        loadImage('Nana North Pull_1_delay-0.2s.png'),
+        loadImage('Nana North Pull_2_delay-0.2s.png'),
+        loadImage('Nana North Pull_3_delay-0.2s.png'),
+        loadImage('Nana North Pull_4_delay-0.2s.png'),
+        loadImage('Nana North Pull_5_delay-0.2s.png')
+      ],
+      west: [
+        loadImage('Nana West Pull_0_delay-0.2s.png'),
+        loadImage('Nana West Pull_1_delay-0.2s.png'),
+        loadImage('Nana West Pull_2_delay-0.2s.png'),
+        loadImage('Nana West Pull_3_delay-0.2s.png'),
+        loadImage('Nana West Pull_4_delay-0.2s.png'),
+        loadImage('Nana West Pull_5_delay-0.2s.png')
+      ]
+    },
+
+    guardRunAnimations: {
+      east: loadSeq('Security Guard East Running_', 6),
+      west: loadSeq('Security Guard West Running_', 6),
+      north: loadSeq('Security Guard North Running_', 6),
+      south: loadSeq('Security Guard South Running_', 6),
+      'north-east': loadSeq('Security Guard North-East Running_', 6),
+      'north-west': loadSeq('Security Guard North-West Running_', 6),
+      'south-east': loadSeq('Security Guard South-East Running_', 6),
+      'south-west': loadSeq('Security Guard South-West Running_', 6)
+    },
+
+    guardWalkAnimations: {
+      south: loadSeq('Security Guard South Walking_', 6),
+      'south-east': loadSeq('Security Guard South-East Walking_', 6),
+      'south-west': loadSeq('Security Guard South-West Walking_', 6)
+    },
+
+    artImages: {
+      northA: loadImage('painting_abstract_small.png'),
+      northB: loadImage('painting_mona_lisa_large.png'),
+      northC: loadImage('painting_starry_night.png'),
+      westA: loadImage('painting_landscape_left_angle.png'),
+      westB: loadImage('painting_portrait_left_lower_angle.png'),
+      westC: loadImage('painting_portrait_left_lower_angle_2.png'),
+      westD: loadImage('painting_portrait_left_lower_angle_3.png'),
+      eastA: loadImage('painting_portrait_right_angle.png'),
+      eastB: loadImage('painting_mona_lisa_right_lower_angle.png'),
+      aboard: loadImage('A-Board_Art_Piece.png'),
+      pedestal: loadImage('statue_on_pedestal.png')
+    }
+  };
+
+  assets.backgroundMusic = createBackgroundMusic();
 
   const state = {
     save: loadSave(),
@@ -641,174 +660,174 @@ const assets = {
   }
 
   function createHeistItems() {
-  const items = [];
+    const items = [];
 
-  const cx = (x) => (x / 1024) * VIEW_W;
-  const cy = (y) => (y / 670) * VIEW_H;
+    const cx = (x) => (x / 1024) * VIEW_W;
+    const cy = (y) => (y / 670) * VIEW_H;
 
-  const northSlots = [
-    {
-      x: sx(898 - 175),
-      y: sy(443 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(305),
-      anchorY: cy(289),
-      wall: 'north',
-      image: assets.artImages.northA
-    },
-    {
-      x: sx(1414 - 175),
-      y: sy(393 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(479),
-      anchorY: cy(286),
-      wall: 'north',
-      image: assets.artImages.northB
-    },
-    {
-      x: sx(1925 - 175),
-      y: sy(440 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(655),
-      anchorY: cy(286),
-      wall: 'north',
-      image: assets.artImages.northC
-    }
-  ];
+    const northSlots = [
+      {
+        x: sx(898 - 175),
+        y: sy(443 - 75),
+        w: sx(350),
+        h: sy(150),
+        anchorX: cx(305),
+        anchorY: cy(289),
+        wall: 'north',
+        image: assets.artImages.northA
+      },
+      {
+        x: sx(1414 - 175),
+        y: sy(393 - 75),
+        w: sx(350),
+        h: sy(150),
+        anchorX: cx(479),
+        anchorY: cy(286),
+        wall: 'north',
+        image: assets.artImages.northB
+      },
+      {
+        x: sx(1925 - 175),
+        y: sy(440 - 75),
+        w: sx(350),
+        h: sy(150),
+        anchorX: cx(655),
+        anchorY: cy(286),
+        wall: 'north',
+        image: assets.artImages.northC
+      }
+    ];
 
-  const westSlots = [
-    {
-      x: sx(503 - 80),
-      y: sy(576 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(223),
-      anchorY: cy(342),
-      wall: 'west',
-      image: assets.artImages.westA
-    },
-    {
-      x: sx(291 - 80),
-      y: sy(806 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(149),
-      anchorY: cy(464),
-      wall: 'west',
-      image: shuffle([
-        assets.artImages.westB,
-        assets.artImages.westC,
-        assets.artImages.westD
-      ])[0]
-    }
-  ];
+    const westSlots = [
+      {
+        x: sx(503 - 80),
+        y: sy(576 - 160),
+        w: sx(160),
+        h: sy(320),
+        anchorX: cx(223),
+        anchorY: cy(342),
+        wall: 'west',
+        image: assets.artImages.westA
+      },
+      {
+        x: sx(291 - 80),
+        y: sy(806 - 160),
+        w: sx(160),
+        h: sy(320),
+        anchorX: cx(149),
+        anchorY: cy(464),
+        wall: 'west',
+        image: shuffle([
+          assets.artImages.westB,
+          assets.artImages.westC,
+          assets.artImages.westD
+        ])[0]
+      }
+    ];
 
-  const eastSlots = [
-    {
-      x: sx(2219 - 80),
-      y: sy(525 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(732),
-      anchorY: cy(324),
-      wall: 'east',
-      image: assets.artImages.eastA
-    },
-    {
-      x: sx(2405 - 80),
-      y: sy(721 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(779),
-      anchorY: cy(401),
-      wall: 'east',
-      image: assets.artImages.eastB
-    }
-  ];
+    const eastSlots = [
+      {
+        x: sx(2219 - 80),
+        y: sy(525 - 160),
+        w: sx(160),
+        h: sy(320),
+        anchorX: cx(732),
+        anchorY: cy(324),
+        wall: 'east',
+        image: assets.artImages.eastA
+      },
+      {
+        x: sx(2405 - 80),
+        y: sy(721 - 160),
+        w: sx(160),
+        h: sy(320),
+        anchorX: cx(779),
+        anchorY: cy(401),
+        wall: 'east',
+        image: assets.artImages.eastB
+      }
+    ];
 
-  let index = 0;
+    let index = 0;
 
-  northSlots.forEach((slot) => {
+    northSlots.forEach((slot) => {
+      items.push({
+        id: `item-${index}`,
+        type: 'wall',
+        status: 'available',
+        question: null,
+        ...slot
+      });
+      index += 1;
+    });
+
+    westSlots.forEach((slot) => {
+      items.push({
+        id: `item-${index}`,
+        type: 'wall',
+        status: 'available',
+        question: null,
+        ...slot
+      });
+      index += 1;
+    });
+
+    eastSlots.forEach((slot) => {
+      items.push({
+        id: `item-${index}`,
+        type: 'wall',
+        status: 'available',
+        question: null,
+        ...slot
+      });
+      index += 1;
+    });
+
+    const pedestalPos = randomFloorPoint(
+      sx(1050),
+      sx(1700),
+      sy(930),
+      sy(1190),
+      []
+    );
+
     items.push({
       id: `item-${index}`,
-      type: 'wall',
+      type: 'floor',
+      floorKind: 'pedestal',
       status: 'available',
       question: null,
-      ...slot
+      image: assets.artImages.pedestal,
+      anchorX: pedestalPos.x,
+      anchorY: pedestalPos.y - cy(10),
+      drawW: 78,
+      drawH: 125
     });
     index += 1;
-  });
 
-  westSlots.forEach((slot) => {
+    const aboardPos = randomFloorPoint(
+      sx(1820),
+      sx(2230),
+      sy(930),
+      sy(1220),
+      [{ x: pedestalPos.x, y: pedestalPos.y - cy(10) }]
+    );
+
     items.push({
       id: `item-${index}`,
-      type: 'wall',
+      type: 'floor',
+      floorKind: 'aboard',
       status: 'available',
       question: null,
-      ...slot
+      image: assets.artImages.aboard,
+      anchorX: aboardPos.x,
+      anchorY: aboardPos.y - cy(10),
+      drawW: 82,
+      drawH: 128
     });
-    index += 1;
-  });
 
-  eastSlots.forEach((slot) => {
-    items.push({
-      id: `item-${index}`,
-      type: 'wall',
-      status: 'available',
-      question: null,
-      ...slot
-    });
-    index += 1;
-  });
-
-  const pedestalPos = randomFloorPoint(
-    sx(1050),
-    sx(1700),
-    sy(930),
-    sy(1190),
-    []
-  );
-
-  items.push({
-    id: `item-${index}`,
-    type: 'floor',
-    floorKind: 'pedestal',
-    status: 'available',
-    question: null,
-    image: assets.artImages.pedestal,
-    anchorX: pedestalPos.x,
-    anchorY: pedestalPos.y - cy(10),
-    drawW: 78,
-    drawH: 125
-  });
-  index += 1;
-
-  const aboardPos = randomFloorPoint(
-    sx(1820),
-    sx(2230),
-    sy(930),
-    sy(1220),
-    [{ x: pedestalPos.x, y: pedestalPos.y - cy(10) }]
-  );
-
-  items.push({
-    id: `item-${index}`,
-    type: 'floor',
-    floorKind: 'aboard',
-    status: 'available',
-    question: null,
-    image: assets.artImages.aboard,
-    anchorX: aboardPos.x,
-    anchorY: aboardPos.y - cy(10),
-    drawW: 82,
-    drawH: 128
-  });
-
-  return items;
-}
+    return items;
+  }
 
   function buildScaledRunData(run) {
     for (const item of run.items) {
@@ -1123,6 +1142,19 @@ const assets = {
     if (overlay) overlay.classList.remove('show');
   }
 
+  function closeQuestionModal() {
+    questionModal.classList.add('hidden');
+    state.activeItem = null;
+    answerInput.blur();
+  }
+
+  function resetMovementKeys() {
+    state.keys.up = false;
+    state.keys.down = false;
+    state.keys.left = false;
+    state.keys.right = false;
+  }
+
   function ensureHomeworkPopup() {
     if (document.getElementById('homeworkOverlay')) return;
 
@@ -1262,6 +1294,9 @@ const assets = {
   function returnCaughtToHub() {
     if (!state.run) return;
 
+    closeQuestionModal();
+    resetMovementKeys();
+
     state.run.ended = true;
     state.run = null;
     state.activeItem = null;
@@ -1282,6 +1317,9 @@ const assets = {
 
   function returnToHub() {
     stopAllGameAudio();
+    closeQuestionModal();
+    resetMovementKeys();
+
     summaryOverlay.classList.add('hidden');
     state.run = null;
     state.activeItem = null;
@@ -1353,7 +1391,11 @@ const assets = {
   }
 
   function startHeist() {
+    if (state.run && !state.run.ended) return;
+
     hideHomeworkPopup();
+    closeQuestionModal();
+    resetMovementKeys();
 
     showScreen('game');
     resizeCanvas();
@@ -1465,13 +1507,12 @@ const assets = {
     const q = item.question;
 
     if (!q) {
-      state.activeItem = null;
-      questionModal.classList.add('hidden');
+      closeQuestionModal();
       return;
     }
 
     const input = answerInput.value;
-    questionModal.classList.add('hidden');
+    closeQuestionModal();
 
     markQuestionUsed(q.id);
 
@@ -1513,9 +1554,11 @@ const assets = {
       if (state.keys.down) dy += getMoveSpeed();
 
       if (dx !== 0 || dy !== 0) {
+        const move = normalizeVector(dx, dy, getMoveSpeed());
+
         state.player.moving = true;
         state.player.direction = vectorToDirection(dx, dy);
-        tryMove(dx, dy);
+        tryMove(move.dx, move.dy);
       }
 
       updateWalkAnimation(delta);
@@ -1540,9 +1583,11 @@ const assets = {
       if (state.keys.down) dy += constants.CHASE_PLAYER_SPEED;
 
       if (dx !== 0 || dy !== 0) {
+        const move = normalizeVector(dx, dy, constants.CHASE_PLAYER_SPEED);
+
         state.player.moving = true;
         state.player.direction = vectorToDirection(dx, dy);
-        tryMove(dx, dy);
+        tryMove(move.dx, move.dy);
       }
 
       moveTowards(
@@ -1787,6 +1832,9 @@ const assets = {
   if (backToHubBtn) {
     backToHubBtn.addEventListener('click', () => {
       stopAllGameAudio();
+      closeQuestionModal();
+      resetMovementKeys();
+
       state.run = null;
       state.activeItem = null;
       state.player.action = null;
@@ -1798,10 +1846,7 @@ const assets = {
   if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
 
   if (cancelAnswerBtn) {
-    cancelAnswerBtn.addEventListener('click', () => {
-      questionModal.classList.add('hidden');
-      state.activeItem = null;
-    });
+    cancelAnswerBtn.addEventListener('click', closeQuestionModal);
   }
 
   if (summaryContinueBtn) {
