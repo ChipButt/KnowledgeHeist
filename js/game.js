@@ -256,147 +256,184 @@ export function initGame() {
     );
   }
 
-  const assets = {
-    roomBackground: loadImage('museum-room.png'),
+ const backgroundMusicTracks = [
+  'Minuet Antique.mp3',
+  'track2.mp3',
+  'track3.mp3',
+  'track4.mp3',
+  'track5.mp3',
+  'track6.mp3',
+  'track7.mp3',
+  'track8.mp3',
+  'track9.mp3',
+  'track10.mp3'
+];
 
-    backgroundMusic: createAudio('Minuet Antique.mp3', 0.22, true),
-    chaChingSound: createAudio('ChaChing.mp3', 0.9, false),
-    sirenSound: createAudio('Siren.mp3', 0.55, true),
-    withMeSound: createAudio('WithMe.mp3', 0.95, false),
-    heyStopSound: createAudio('Hey!Stop.mp3', 0.95, false),
+let lastBackgroundMusicTrack = '';
 
-    failVoiceFiles: [
-      'Didntwantthat.mp3',
-      'GottaGetThemRight.mp3',
-      'IllGetTheNext.mp3',
-      'NextTime.mp3'
+function getNextBackgroundMusicTrack() {
+  const availableTracks = backgroundMusicTracks.filter(
+    (track) => track !== lastBackgroundMusicTrack
+  );
+
+  const nextTrack =
+    availableTracks[Math.floor(Math.random() * availableTracks.length)];
+
+  lastBackgroundMusicTrack = nextTrack;
+  return nextTrack;
+}
+
+function createBackgroundMusic() {
+  const audio = createAudio(getNextBackgroundMusicTrack(), 0.1, false);
+
+  audio.addEventListener('ended', () => {
+    assets.backgroundMusic = createBackgroundMusic();
+    safeRestartAudio(assets.backgroundMusic, 0.1);
+  });
+
+  return audio;
+}
+
+const assets = {
+  roomBackground: loadImage('museum-room.png'),
+
+  chaChingSound: createAudio('ChaChing.mp3', 0.9, false),
+  sirenSound: createAudio('Siren.mp3', 0.55, true),
+  withMeSound: createAudio('WithMe.mp3', 0.95, false),
+  heyStopSound: createAudio('Hey!Stop.mp3', 0.95, false),
+
+  failVoiceFiles: [
+    'Didntwantthat.mp3',
+    'GottaGetThemRight.mp3',
+    'IllGetTheNext.mp3',
+    'NextTime.mp3'
+  ],
+
+  walkAnimations: {
+    south: [
+      loadImage('Nana South Walking_0_delay-0.2s.png'),
+      loadImage('Nana South Walking_1_delay-0.2s.png'),
+      loadImage('Nana South Walking_2_delay-0.2s.png'),
+      loadImage('Nana South Walking_3_delay-0.2s.png'),
+      loadImage('Nana South Walking_4_delay-0.2s.png'),
+      loadImage('Nana South Walking_5_delay-0.2s.png')
     ],
+    'south-east': [
+      loadImage('Nana South-East Walking_0_delay-0.2s.png'),
+      loadImage('Nana South-East Walking_1_delay-0.2s.png'),
+      loadImage('Nana South-East Walking_2_delay-0.2s.png'),
+      loadImage('Nana South-East Walking_3_delay-0.2s.png'),
+      loadImage('Nana South-East Walking_4_delay-0.2s.png'),
+      loadImage('Nana South-East Walking_5_delay-0.2s.png')
+    ],
+    east: [
+      loadImage('Nana East Walking_0_delay-0.2s.png'),
+      loadImage('Nana East Walking_1_delay-0.2s.png'),
+      loadImage('Nana East Walking_2_delay-0.2s.png'),
+      loadImage('Nana East Walking_3_delay-0.2s.png'),
+      loadImage('Nana East Walking_4_delay-0.2s.png'),
+      loadImage('Nana East Walking_5_delay-0.2s.png')
+    ],
+    'north-east': [
+      loadImage('Nana North-East Walking_0_delay-0.2s.png'),
+      loadImage('Nana North-East Walking_1_delay-0.2s.png'),
+      loadImage('Nana North-East Walking_2_delay-0.2s.png'),
+      loadImage('Nana North-East Walking_3_delay-0.2s.png'),
+      loadImage('Nana North-East Walking_4_delay-0.2s.png'),
+      loadImage('Nana North-East Walking_5_delay-0.2s.png')
+    ],
+    north: [
+      loadImage('Nana North Walking_0_delay-0.2s.png'),
+      loadImage('Nana North Walking_1_delay-0.2s.png'),
+      loadImage('Nana North Walking_2_delay-0.2s.png'),
+      loadImage('Nana North Walking_3_delay-0.2s.png'),
+      loadImage('Nana North Walking_4_delay-0.2s.png'),
+      loadImage('Nana North Walking_5_delay-0.2s.png')
+    ],
+    'north-west': [
+      loadImage('Nana North-West Walking_0_delay-0.2s.png'),
+      loadImage('Nana North-West Walking_1_delay-0.2s.png'),
+      loadImage('Nana North-West Walking_2_delay-0.2s.png'),
+      loadImage('Nana North-West Walking_3_delay-0.2s.png'),
+      loadImage('Nana North-West Walking_4_delay-0.2s.png'),
+      loadImage('Nana North-West Walking_5_delay-0.2s.png')
+    ],
+    west: [
+      loadImage('Nana West Walking_0_delay-0.2s.png'),
+      loadImage('Nana West Walking_1_delay-0.2s.png'),
+      loadImage('Nana West Walking_2_delay-0.2s.png'),
+      loadImage('Nana West Walking_3_delay-0.2s.png'),
+      loadImage('Nana West Walking_4_delay-0.2s.png'),
+      loadImage('Nana West Walking_5_delay-0.2s.png')
+    ],
+    'south-west': [
+      loadImage('Nana South-West Walking_0_delay-0.2s.png'),
+      loadImage('Nana South-West Walking_1_delay-0.2s.png'),
+      loadImage('Nana South-West Walking_2_delay-0.2s.png'),
+      loadImage('Nana South-West Walking_3_delay-0.2s.png'),
+      loadImage('Nana South-West Walking_4_delay-0.2s.png'),
+      loadImage('Nana South-West Walking_5_delay-0.2s.png')
+    ]
+  },
 
-    walkAnimations: {
-      south: [
-        loadImage('Nana South Walking_0_delay-0.2s.png'),
-        loadImage('Nana South Walking_1_delay-0.2s.png'),
-        loadImage('Nana South Walking_2_delay-0.2s.png'),
-        loadImage('Nana South Walking_3_delay-0.2s.png'),
-        loadImage('Nana South Walking_4_delay-0.2s.png'),
-        loadImage('Nana South Walking_5_delay-0.2s.png')
-      ],
-      'south-east': [
-        loadImage('Nana South-East Walking_0_delay-0.2s.png'),
-        loadImage('Nana South-East Walking_1_delay-0.2s.png'),
-        loadImage('Nana South-East Walking_2_delay-0.2s.png'),
-        loadImage('Nana South-East Walking_3_delay-0.2s.png'),
-        loadImage('Nana South-East Walking_4_delay-0.2s.png'),
-        loadImage('Nana South-East Walking_5_delay-0.2s.png')
-      ],
-      east: [
-        loadImage('Nana East Walking_0_delay-0.2s.png'),
-        loadImage('Nana East Walking_1_delay-0.2s.png'),
-        loadImage('Nana East Walking_2_delay-0.2s.png'),
-        loadImage('Nana East Walking_3_delay-0.2s.png'),
-        loadImage('Nana East Walking_4_delay-0.2s.png'),
-        loadImage('Nana East Walking_5_delay-0.2s.png')
-      ],
-      'north-east': [
-        loadImage('Nana North-East Walking_0_delay-0.2s.png'),
-        loadImage('Nana North-East Walking_1_delay-0.2s.png'),
-        loadImage('Nana North-East Walking_2_delay-0.2s.png'),
-        loadImage('Nana North-East Walking_3_delay-0.2s.png'),
-        loadImage('Nana North-East Walking_4_delay-0.2s.png'),
-        loadImage('Nana North-East Walking_5_delay-0.2s.png')
-      ],
-      north: [
-        loadImage('Nana North Walking_0_delay-0.2s.png'),
-        loadImage('Nana North Walking_1_delay-0.2s.png'),
-        loadImage('Nana North Walking_2_delay-0.2s.png'),
-        loadImage('Nana North Walking_3_delay-0.2s.png'),
-        loadImage('Nana North Walking_4_delay-0.2s.png'),
-        loadImage('Nana North Walking_5_delay-0.2s.png')
-      ],
-      'north-west': [
-        loadImage('Nana North-West Walking_0_delay-0.2s.png'),
-        loadImage('Nana North-West Walking_1_delay-0.2s.png'),
-        loadImage('Nana North-West Walking_2_delay-0.2s.png'),
-        loadImage('Nana North-West Walking_3_delay-0.2s.png'),
-        loadImage('Nana North-West Walking_4_delay-0.2s.png'),
-        loadImage('Nana North-West Walking_5_delay-0.2s.png')
-      ],
-      west: [
-        loadImage('Nana West Walking_0_delay-0.2s.png'),
-        loadImage('Nana West Walking_1_delay-0.2s.png'),
-        loadImage('Nana West Walking_2_delay-0.2s.png'),
-        loadImage('Nana West Walking_3_delay-0.2s.png'),
-        loadImage('Nana West Walking_4_delay-0.2s.png'),
-        loadImage('Nana West Walking_5_delay-0.2s.png')
-      ],
-      'south-west': [
-        loadImage('Nana South-West Walking_0_delay-0.2s.png'),
-        loadImage('Nana South-West Walking_1_delay-0.2s.png'),
-        loadImage('Nana South-West Walking_2_delay-0.2s.png'),
-        loadImage('Nana South-West Walking_3_delay-0.2s.png'),
-        loadImage('Nana South-West Walking_4_delay-0.2s.png'),
-        loadImage('Nana South-West Walking_5_delay-0.2s.png')
-      ]
-    },
+  pullAnimations: {
+    east: [
+      loadImage('Nana East Pull_0_delay-0.2s.png'),
+      loadImage('Nana East Pull_1_delay-0.2s.png'),
+      loadImage('Nana East Pull_2_delay-0.2s.png'),
+      loadImage('Nana East Pull_3_delay-0.2s.png'),
+      loadImage('Nana East Pull_4_delay-0.2s.png'),
+      loadImage('Nana East Pull_5_delay-0.2s.png')
+    ],
+    north: [
+      loadImage('Nana North Pull_0_delay-0.2s.png'),
+      loadImage('Nana North Pull_1_delay-0.2s.png'),
+      loadImage('Nana North Pull_2_delay-0.2s.png'),
+      loadImage('Nana North Pull_3_delay-0.2s.png'),
+      loadImage('Nana North Pull_4_delay-0.2s.png'),
+      loadImage('Nana North Pull_5_delay-0.2s.png')
+    ],
+    west: [
+      loadImage('Nana West Pull_0_delay-0.2s.png'),
+      loadImage('Nana West Pull_1_delay-0.2s.png'),
+      loadImage('Nana West Pull_2_delay-0.2s.png'),
+      loadImage('Nana West Pull_3_delay-0.2s.png'),
+      loadImage('Nana West Pull_4_delay-0.2s.png'),
+      loadImage('Nana West Pull_5_delay-0.2s.png')
+    ]
+  },
 
-    pullAnimations: {
-      east: [
-        loadImage('Nana East Pull_0_delay-0.2s.png'),
-        loadImage('Nana East Pull_1_delay-0.2s.png'),
-        loadImage('Nana East Pull_2_delay-0.2s.png'),
-        loadImage('Nana East Pull_3_delay-0.2s.png'),
-        loadImage('Nana East Pull_4_delay-0.2s.png'),
-        loadImage('Nana East Pull_5_delay-0.2s.png')
-      ],
-      north: [
-        loadImage('Nana North Pull_0_delay-0.2s.png'),
-        loadImage('Nana North Pull_1_delay-0.2s.png'),
-        loadImage('Nana North Pull_2_delay-0.2s.png'),
-        loadImage('Nana North Pull_3_delay-0.2s.png'),
-        loadImage('Nana North Pull_4_delay-0.2s.png'),
-        loadImage('Nana North Pull_5_delay-0.2s.png')
-      ],
-      west: [
-        loadImage('Nana West Pull_0_delay-0.2s.png'),
-        loadImage('Nana West Pull_1_delay-0.2s.png'),
-        loadImage('Nana West Pull_2_delay-0.2s.png'),
-        loadImage('Nana West Pull_3_delay-0.2s.png'),
-        loadImage('Nana West Pull_4_delay-0.2s.png'),
-        loadImage('Nana West Pull_5_delay-0.2s.png')
-      ]
-    },
+  guardRunAnimations: {
+    east: loadSeq('Security Guard East Running_', 6),
+    west: loadSeq('Security Guard West Running_', 6),
+    north: loadSeq('Security Guard North Running_', 6),
+    south: loadSeq('Security Guard South Running_', 6),
+    'north-east': loadSeq('Security Guard North-East Running_', 6),
+    'north-west': loadSeq('Security Guard North-West Running_', 6),
+    'south-east': loadSeq('Security Guard South-East Running_', 6),
+    'south-west': loadSeq('Security Guard South-West Running_', 6)
+  },
 
-    guardRunAnimations: {
-      east: loadSeq('Security Guard East Running_', 6),
-      west: loadSeq('Security Guard West Running_', 6),
-      north: loadSeq('Security Guard North Running_', 6),
-      south: loadSeq('Security Guard South Running_', 6),
-      'north-east': loadSeq('Security Guard North-East Running_', 6),
-      'north-west': loadSeq('Security Guard North-West Running_', 6),
-      'south-east': loadSeq('Security Guard South-East Running_', 6),
-      'south-west': loadSeq('Security Guard South-West Running_', 6)
-    },
+  guardWalkAnimations: {
+    south: loadSeq('Security Guard South Walking_', 6),
+    'south-east': loadSeq('Security Guard South-East Walking_', 6),
+    'south-west': loadSeq('Security Guard South-West Walking_', 6)
+  },
 
-    guardWalkAnimations: {
-      south: loadSeq('Security Guard South Walking_', 6),
-      'south-east': loadSeq('Security Guard South-East Walking_', 6),
-      'south-west': loadSeq('Security Guard South-West Walking_', 6)
-    },
-
-    artImages: {
-      northA: loadImage('painting_abstract_small.png'),
-      northB: loadImage('painting_mona_lisa_large.png'),
-      northC: loadImage('painting_starry_night.png'),
-      westA: loadImage('painting_landscape_left_angle.png'),
-      westB: loadImage('painting_portrait_left_lower_angle.png'),
-      westC: loadImage('painting_portrait_left_lower_angle_2.png'),
-      westD: loadImage('painting_portrait_left_lower_angle_3.png'),
-      eastA: loadImage('painting_portrait_right_angle.png'),
-      eastB: loadImage('painting_mona_lisa_right_lower_angle.png'),
-      aboard: loadImage('A-Board_Art_Piece.png'),
-      pedestal: loadImage('statue_on_pedestal.png')
-    }
-  };
+  artImages: {
+    northA: loadImage('painting_abstract_small.png'),
+    northB: loadImage('painting_mona_lisa_large.png'),
+    northC: loadImage('painting_starry_night.png'),
+    westA: loadImage('painting_landscape_left_angle.png'),
+    westB: loadImage('painting_portrait_left_lower_angle.png'),
+    westC: loadImage('painting_portrait_left_lower_angle_2.png'),
+    westD: loadImage('painting_portrait_left_lower_angle_3.png'),
+    eastA: loadImage('painting_portrait_right_angle.png'),
+    eastB: loadImage('painting_mona_lisa_right_lower_angle.png'),
+    aboard: loadImage('A-Board_Art_Piece.png'),
+    pedestal: loadImage('statue_on_pedestal.png')
+  }
+};
 
   const state = {
     save: loadSave(),
