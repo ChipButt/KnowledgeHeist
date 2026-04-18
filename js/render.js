@@ -153,12 +153,16 @@ function getCurrentGuardImage(guard, assets) {
 
     const set = assets.guardWalkAnimations[dir] || assets.guardWalkAnimations.south;
     const frame = set[guard.frameIndex % set.length];
-    return imageReady(frame) ? frame : null;
+
+    if (imageReady(frame)) return frame;
+    return assets.guardFallbackSprites[dir] || assets.guardFallbackSprites.south;
   }
 
   const runSet = assets.guardRunAnimations[guard.direction] || assets.guardRunAnimations.south;
   const runFrame = runSet[guard.frameIndex % runSet.length];
-  return imageReady(runFrame) ? runFrame : null;
+
+  if (imageReady(runFrame)) return runFrame;
+  return assets.guardFallbackSprites[guard.direction] || assets.guardFallbackSprites.south;
 }
 
 function drawFallbackGuard(ctx, guard) {
@@ -175,7 +179,7 @@ function drawGuard(ctx, guard, assets) {
   const drawY = guard.y - 100;
   const img = getCurrentGuardImage(guard, assets);
 
-  if (img) {
+  if (imageReady(img)) {
     ctx.drawImage(img, drawX, drawY, 100, 100);
   } else {
     drawFallbackGuard(ctx, guard);
@@ -208,115 +212,6 @@ function drawPrompt(ctx, state, helpers) {
     ctx.fillText('Exit', state.player.x, state.player.y - 114);
   }
 }
-
-/* =========================================
-   DEBUG OVERLAY START
-   Remove this whole function later
-========================================= */
-function drawDebugOverlay(ctx, state, helpers) {
-  const floorPoly = helpers.getFloorPoly();
-  const interactRadius = helpers.getScaledInteractDistance();
-  const nearbyItem = helpers.getNearbyItem();
-
-  ctx.save();
-
-  // Playable floor boundary
-  if (Array.isArray(floorPoly) && floorPoly.length > 1) {
-    ctx.beginPath();
-    ctx.moveTo(floorPoly[0].x, floorPoly[0].y);
-    for (let i = 1; i < floorPoly.length; i += 1) {
-      ctx.lineTo(floorPoly[i].x, floorPoly[i].y);
-    }
-    ctx.closePath();
-
-    ctx.fillStyle = 'rgba(0, 255, 255, 0.06)';
-    ctx.fill();
-
-    ctx.setLineDash([10, 8]);
-    ctx.strokeStyle = 'rgba(0, 255, 255, 0.9)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // Nana interaction radius
-  if (state.player && state.player.visible) {
-    ctx.beginPath();
-    ctx.arc(state.player.x, state.player.y, interactRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 255, 120, 0.95)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.arc(state.player.x, state.player.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(0, 255, 120, 1)';
-    ctx.fill();
-  }
-
-  if (state.run) {
-    state.run.items.forEach((item) => {
-      if (item.status === 'stolen') return;
-
-      const isNearby = nearbyItem && nearbyItem.id === item.id;
-
-      // Interaction circle around item anchor
-      ctx.beginPath();
-      ctx.arc(item.anchorX, item.anchorY, interactRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = isNearby
-        ? 'rgba(255, 60, 60, 1)'
-        : 'rgba(255, 215, 0, 0.95)';
-      ctx.lineWidth = isNearby ? 3 : 2;
-      ctx.stroke();
-
-      // Anchor point
-      ctx.beginPath();
-      ctx.arc(item.anchorX, item.anchorY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = isNearby
-        ? 'rgba(255, 60, 60, 1)'
-        : 'rgba(255, 215, 0, 1)';
-      ctx.fill();
-
-      // Label
-      ctx.font = '12px monospace';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'bottom';
-      ctx.fillStyle = isNearby
-        ? 'rgba(255, 120, 120, 1)'
-        : 'rgba(255, 240, 180, 1)';
-      ctx.fillText(
-        `${item.id} ${item.type}${item.wall ? ` ${item.wall}` : ''}`,
-        item.anchorX + 8,
-        item.anchorY - 8
-      );
-
-      // Floor blocker box
-      const blocker = helpers.getFloorItemBlocker(item);
-      if (blocker) {
-        ctx.fillStyle = 'rgba(255, 140, 0, 0.12)';
-        ctx.fillRect(
-          blocker.x1,
-          blocker.y1,
-          blocker.x2 - blocker.x1,
-          blocker.y2 - blocker.y1
-        );
-
-        ctx.strokeStyle = 'rgba(255, 140, 0, 0.95)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(
-          blocker.x1,
-          blocker.y1,
-          blocker.x2 - blocker.x1,
-          blocker.y2 - blocker.y1
-        );
-      }
-    });
-  }
-
-  ctx.restore();
-}
-/* =========================================
-   DEBUG OVERLAY END
-========================================= */
 
 export function drawRoom(runtime) {
   const { canvas, ctx, state, assets, helpers, constants } = runtime;
@@ -371,16 +266,6 @@ export function drawRoom(runtime) {
   }
 
   drawPrompt(ctx, state, helpers);
-
-  /* =========================================
-     DEBUG OVERLAY START
-     Remove this one line later
-  ========================================= */
-  drawDebugOverlay(ctx, state, helpers);
-  /* =========================================
-     DEBUG OVERLAY END
-  ========================================= */
-
   ctx.restore();
 
   if (state.fx.wrongFlashTimer > 0) {
