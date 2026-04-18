@@ -603,171 +603,174 @@ export function initGame() {
   }
 
   function createHeistItems() {
-    const items = [];
+  const items = [];
 
-    const northSlots = [
-      {
-        x: sx(898 - 175),
-        y: sy(443 - 75),
-        w: sx(350),
-        h: sy(150),
-        anchorX: sx(975),
-        anchorY: sy(760),
-        wall: 'north',
-        image: assets.artImages.northA
-      },
-      {
-        x: sx(1414 - 175),
-        y: sy(393 - 75),
-        w: sx(350),
-        h: sy(150),
-        anchorX: sx(1410),
-        anchorY: sy(760),
-        wall: 'north',
-        image: assets.artImages.northB
-      },
-      {
-        x: sx(1925 - 175),
-        y: sy(440 - 75),
-        w: sx(350),
-        h: sy(150),
-        anchorX: sx(1845),
-        anchorY: sy(760),
-        wall: 'north',
-        image: assets.artImages.northC
-      }
-    ];
+  const cx = (x) => (x / 1024) * VIEW_W;
+  const cy = (y) => (y / 670) * VIEW_H;
 
-    const westSlots = [
-      {
-        x: sx(503 - 80),
-        y: sy(576 - 160),
-        w: sx(160),
-        h: sy(320),
-        anchorX: sx(690),
-        anchorY: sy(790),
-        wall: 'west',
-        image: assets.artImages.westA
-      },
-      {
-        x: sx(291 - 80),
-        y: sy(806 - 160),
-        w: sx(160),
-        h: sy(320),
-        anchorX: sx(530),
-        anchorY: sy(1015),
-        wall: 'west',
-        image: shuffle([
-          assets.artImages.westB,
-          assets.artImages.westC,
-          assets.artImages.westD
-        ])[0]
-      }
-    ];
+  const northSlots = [
+    {
+      x: sx(898 - 175),
+      y: sy(443 - 75),
+      w: sx(350),
+      h: sy(150),
+      anchorX: cx(305),
+      anchorY: cy(289),
+      wall: 'north',
+      image: assets.artImages.northA
+    },
+    {
+      x: sx(1414 - 175),
+      y: sy(393 - 75),
+      w: sx(350),
+      h: sy(150),
+      anchorX: cx(479),
+      anchorY: cy(286),
+      wall: 'north',
+      image: assets.artImages.northB
+    },
+    {
+      x: sx(1925 - 175),
+      y: sy(440 - 75),
+      w: sx(350),
+      h: sy(150),
+      anchorX: cx(655),
+      anchorY: cy(286),
+      wall: 'north',
+      image: assets.artImages.northC
+    }
+  ];
 
-    const eastSlots = [
-      {
-        x: sx(2219 - 80),
-        y: sy(525 - 160),
-        w: sx(160),
-        h: sy(320),
-        anchorX: sx(2040),
-        anchorY: sy(785),
-        wall: 'east',
-        image: assets.artImages.eastA
-      },
-      {
-        x: sx(2405 - 80),
-        y: sy(721 - 160),
-        w: sx(160),
-        h: sy(320),
-        anchorX: sx(2150),
-        anchorY: sy(1015),
-        wall: 'east',
-        image: assets.artImages.eastB
-      }
-    ];
+  const westSlots = [
+    {
+      x: sx(503 - 80),
+      y: sy(576 - 160),
+      w: sx(160),
+      h: sy(320),
+      anchorX: cx(223),
+      anchorY: cy(342),
+      wall: 'west',
+      image: assets.artImages.westA
+    },
+    {
+      x: sx(291 - 80),
+      y: sy(806 - 160),
+      w: sx(160),
+      h: sy(320),
+      anchorX: cx(149),
+      anchorY: cy(464),
+      wall: 'west',
+      image: shuffle([
+        assets.artImages.westB,
+        assets.artImages.westC,
+        assets.artImages.westD
+      ])[0]
+    }
+  ];
 
-    let index = 0;
+  const eastSlots = [
+    {
+      x: sx(2219 - 80),
+      y: sy(525 - 160),
+      w: sx(160),
+      h: sy(320),
+      anchorX: cx(732),
+      anchorY: cy(324),
+      wall: 'east',
+      image: assets.artImages.eastA
+    },
+    {
+      x: sx(2405 - 80),
+      y: sy(721 - 160),
+      w: sx(160),
+      h: sy(320),
+      anchorX: cx(779),
+      anchorY: cy(401),
+      wall: 'east',
+      image: assets.artImages.eastB
+    }
+  ];
 
-    northSlots.forEach((slot) => {
-      items.push({
-        id: `item-${index}`,
-        type: 'wall',
-        status: 'available',
-        question: null,
-        ...slot
-      });
-      index += 1;
-    });
+  let index = 0;
 
-    westSlots.forEach((slot) => {
-      items.push({
-        id: `item-${index}`,
-        type: 'wall',
-        status: 'available',
-        question: null,
-        ...slot
-      });
-      index += 1;
-    });
-
-    eastSlots.forEach((slot) => {
-      items.push({
-        id: `item-${index}`,
-        type: 'wall',
-        status: 'available',
-        question: null,
-        ...slot
-      });
-      index += 1;
-    });
-
-    const pedestalPos = randomFloorPoint(
-      sx(1050),
-      sx(1700),
-      sy(930),
-      sy(1190),
-      []
-    );
-
+  northSlots.forEach((slot) => {
     items.push({
       id: `item-${index}`,
-      type: 'floor',
-      floorKind: 'pedestal',
+      type: 'wall',
       status: 'available',
       question: null,
-      image: assets.artImages.pedestal,
-      anchorX: pedestalPos.x,
-      anchorY: pedestalPos.y,
-      drawW: 78,
-      drawH: 125
+      ...slot
     });
     index += 1;
+  });
 
-    const aboardPos = randomFloorPoint(
-      sx(1820),
-      sx(2230),
-      sy(930),
-      sy(1220),
-      [{ x: pedestalPos.x, y: pedestalPos.y }]
-    );
-
+  westSlots.forEach((slot) => {
     items.push({
       id: `item-${index}`,
-      type: 'floor',
-      floorKind: 'aboard',
+      type: 'wall',
       status: 'available',
       question: null,
-      image: assets.artImages.aboard,
-      anchorX: aboardPos.x,
-      anchorY: aboardPos.y,
-      drawW: 82,
-      drawH: 128
+      ...slot
     });
+    index += 1;
+  });
 
-    return items;
-  }
+  eastSlots.forEach((slot) => {
+    items.push({
+      id: `item-${index}`,
+      type: 'wall',
+      status: 'available',
+      question: null,
+      ...slot
+    });
+    index += 1;
+  });
+
+  const pedestalPos = randomFloorPoint(
+    sx(1050),
+    sx(1700),
+    sy(930),
+    sy(1190),
+    []
+  );
+
+  items.push({
+    id: `item-${index}`,
+    type: 'floor',
+    floorKind: 'pedestal',
+    status: 'available',
+    question: null,
+    image: assets.artImages.pedestal,
+    anchorX: pedestalPos.x,
+    anchorY: pedestalPos.y - cy(10),
+    drawW: 78,
+    drawH: 125
+  });
+  index += 1;
+
+  const aboardPos = randomFloorPoint(
+    sx(1820),
+    sx(2230),
+    sy(930),
+    sy(1220),
+    [{ x: pedestalPos.x, y: pedestalPos.y - cy(10) }]
+  );
+
+  items.push({
+    id: `item-${index}`,
+    type: 'floor',
+    floorKind: 'aboard',
+    status: 'available',
+    question: null,
+    image: assets.artImages.aboard,
+    anchorX: aboardPos.x,
+    anchorY: aboardPos.y - cy(10),
+    drawW: 82,
+    drawH: 128
+  });
+
+  return items;
+}
 
   function buildScaledRunData(run) {
     for (const item of run.items) {
