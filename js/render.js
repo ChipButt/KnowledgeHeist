@@ -89,7 +89,7 @@ function drawFloorItem(ctx, item) {
   ctx.restore();
 
   const img = resolveItemImage(item);
-  if (!img) return;
+  if (!imageReady(img)) return;
 
   if (item.status === 'failed') {
     ctx.save();
@@ -98,6 +98,9 @@ function drawFloorItem(ctx, item) {
     ctx.restore();
     return;
   }
+
+  ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
+}
 
   ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
 }
