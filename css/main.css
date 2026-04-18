@@ -1,0 +1,730 @@
+:root {
+  --bg: #0f1217;
+  --gold: #d8b15a;
+  --text: #f3efe5;
+  --hub-font: Georgia, "Times New Roman", Garamond, serif;
+  --ui-font: Arial, Helvetica, sans-serif;
+  --title-brown-light: #b59662;
+  --title-brown-mid: #9a7a4b;
+  --title-brown-dark: #4f311a;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui-font);
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+}
+
+.screen.active {
+  display: flex;
+}
+
+/* =========================
+   HUB SCREEN
+========================= */
+#hubScreen {
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 40%),
+    linear-gradient(180deg, #0e1116 0%, #151922 100%);
+}
+
+.hub-wrap {
+  width: min(1024px, 96vw);
+  aspect-ratio: 1024 / 559;
+  position: relative;
+  background-image: url("../Menu Screen.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  user-select: none;
+  font-family: var(--hub-font);
+}
+
+.hub-wrap::before,
+.hub-wrap::after {
+  pointer-events: none;
+}
+
+.hub-value,
+.hub-label,
+.hub-hotspot,
+.hub-log-cell,
+.hub-ui-button {
+  position: absolute;
+}
+
+.hub-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #f5f2df;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.95),
+    0 0 4px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  letter-spacing: 0.2px;
+}
+
+.hub-money {
+  font-size: clamp(17px, 1.7vw, 24px);
+}
+
+.hub-number {
+  font-size: clamp(18px, 1.75vw, 25px);
+}
+
+.hub-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #2c1c0f;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1;
+  pointer-events: none;
+  font-size: clamp(8px, 0.8vw, 12px);
+  letter-spacing: 0.15px;
+}
+
+/* Total Banked */
+#totalBanked {
+  left: 7.13%;
+  top: 27.91%;
+  width: 13.09%;
+  height: 4.29%;
+  font-size: clamp(14px, 1.2vw, 18px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Best Heist */
+#bestHeist {
+  left: 8.98%;
+  top: 62.25%;
+  width: 9.77%;
+  height: 3.22%;
+  font-size: clamp(13px, 1.15vw, 17px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Heists Played label */
+#heistsPlayedLabel {
+  left: 79.2%;
+  top: 53.85%;
+  width: 10.84%;
+  height: 2.68%;
+}
+
+/* Heists Played number */
+#heistsPlayed {
+  left: 82.03%;
+  top: 61.9%;
+  width: 5.86%;
+  height: 4%;
+  overflow: visible;
+  line-height: 1.1;
+  padding-bottom: 2px;
+}
+
+/* Paintings Stolen label */
+#paintingsStolenLabel {
+  left: 79.39%;
+  top: 72.27%;
+  width: 10.45%;
+  height: 2.86%;
+}
+
+/* Paintings Stolen number */
+#paintingsStolen {
+  left: 81.84%;
+  top: 80.36%;
+  width: 5.86%;
+  height: 3.58%;
+}
+
+/* TV buttons */
+.tv-btn {
+  position: absolute;
+  z-index: 100;
+  pointer-events: auto;
+  touch-action: manipulation;
+  border: 1px solid rgba(79, 49, 26, 0.35);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, var(--title-brown-light) 0%, var(--title-brown-mid) 100%);
+  color: var(--title-brown-dark);
+  font-weight: 700;
+  font-family: var(--hub-font);
+  cursor: pointer;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -2px 0 rgba(79, 49, 26, 0.22),
+    0 3px 8px rgba(0, 0, 0, 0.28);
+  padding: 0 3px;
+  transform: rotate(-5deg);
+  transform-origin: center center;
+  transition: transform 0.08s ease, filter 0.08s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+
+#startHeistBtn {
+  left: 27.73%;
+  top: 70.15%;
+  width: 7.81%;
+  height: 4.45%;
+  font-size: clamp(7.8px, 0.75vw, 11px);
+}
+
+#instructionsBtn {
+  left: 27.44%;
+  top: 75.55%;
+  width: 8.11%;
+  height: 4.65%;
+  font-size: clamp(8.8px, 0.86vw, 11.8px);
+  letter-spacing: -0.1px;
+}
+
+/* Leaderboard */
+#leaderboardBtn {
+  left: 49.9%;
+  top: 96.78%;
+  width: 14.65%;
+  height: 5.37%;
+  transform: translate(-50%, -50%);
+  border: none;
+  background: transparent;
+  color: #e9dfc3;
+  font-weight: 700;
+  font-family: var(--hub-font);
+  cursor: pointer;
+  font-size: clamp(11px, 1vw, 15px);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.98),
+    0 0 8px rgba(0, 0, 0, 0.45);
+  z-index: 100;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+/* Invisible reset hotspot over dynamite */
+#resetProgressBtn {
+  left: 64.45%;
+  top: 85.51%;
+  width: 7.23%;
+  height: 6.8%;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 101;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+#resetProgressBtn:focus-visible,
+#leaderboardBtn:focus-visible,
+.tv-btn:focus-visible {
+  outline: 2px solid #fff6b3;
+  outline-offset: 2px;
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Heist history cells */
+.hub-log-cell {
+  transform: translate(-50%, -50%);
+  color: #3a2c1f;
+  font-size: clamp(8px, 0.8vw, 12px);
+  line-height: 1;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: var(--hub-font);
+}
+
+.hub-log-cell.result.success {
+  color: #3f7e3a;
+  font-weight: 700;
+}
+
+.hub-log-cell.result.fail {
+  color: #9a3f3f;
+  font-weight: 700;
+}
+
+/* =========================
+   POPUPS
+========================= */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.56);
+  z-index: 10000;
+}
+
+.overlay.show {
+  display: flex;
+}
+
+.popup-panel {
+  width: min(760px, 94vw);
+  max-height: 84vh;
+  overflow: auto;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+}
+
+.instructions-panel {
+  background: linear-gradient(180deg, #efe6d2 0%, #e1d2b0 100%);
+  color: #2f2519;
+  border: 12px solid #6d5539;
+  padding: 22px 24px 20px;
+  text-align: center;
+  font-family: var(--hub-font);
+}
+
+.instructions-panel h2 {
+  margin: 0 0 10px;
+  font-size: clamp(24px, 3vw, 38px);
+}
+
+.instructions-panel .instructions-copy {
+  font-size: clamp(15px, 1.5vw, 20px);
+  line-height: 1.55;
+  white-space: pre-line;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.popup-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #2c394c;
+  color: #f2ede1;
+  font-family: var(--ui-font);
+}
+
+.popup-actions .danger {
+  background: #9f3939;
+}
+
+.confirm-panel {
+  background: linear-gradient(180deg, #ece2cd 0%, #ddceb1 100%);
+  color: #2f2519;
+  border: 12px solid #6d5539;
+  padding: 22px 24px 20px;
+  text-align: center;
+  font-family: var(--hub-font);
+}
+
+.confirm-panel h2 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2.5vw, 34px);
+}
+
+.confirm-panel p {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 20px);
+  line-height: 1.5;
+}
+
+/* =========================
+   GAME SCREEN
+========================= */
+#gameScreen {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  padding: 14px 14px 20px;
+  background: linear-gradient(180deg, #090c12 0%, #0e1117 100%);
+  font-family: var(--ui-font);
+}
+
+.game-topbar {
+  width: min(1100px, 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.game-chip,
+.game-topbar button {
+  border-radius: 999px;
+  background: #2a3140;
+  color: #f4efe3;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.game-topbar button {
+  cursor: pointer;
+}
+
+.game-shell {
+  width: min(1100px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.canvas-wrap {
+  width: min(100%, 960px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: #101722;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1024 / 670;
+  background: #111;
+}
+
+.game-controls {
+  width: min(100%, 960px);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#joystick {
+  position: relative;
+  width: 168px;
+  height: 112px;
+}
+
+.joy-btn {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: #3a4353;
+  color: #f5f1e9;
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.joy-btn[data-dir="up"] {
+  left: 56px;
+  top: 0;
+}
+
+.joy-btn[data-dir="left"] {
+  left: 0;
+  top: 56px;
+}
+
+.joy-btn[data-dir="down"] {
+  left: 56px;
+  top: 56px;
+}
+
+.joy-btn[data-dir="right"] {
+  left: 112px;
+  top: 56px;
+}
+
+#interactBtn {
+  border: none;
+  border-radius: 12px;
+  background: var(--gold);
+  color: #1d1710;
+  font-weight: 800;
+  font-size: 18px;
+  padding: 16px 28px;
+  min-width: 140px;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+#gameBanner {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 22, 29, 0.92);
+  color: #f8f1db;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  font-family: var(--ui-font);
+}
+
+#gameBanner.show {
+  opacity: 1;
+}
+
+#questionModal,
+#summaryOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.58);
+  font-family: var(--ui-font);
+}
+
+#questionModal.hidden,
+#summaryOverlay.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(620px, 94vw);
+  background: #f0e6d0;
+  color: #241c14;
+  border-radius: 16px;
+  border: 8px solid #77593c;
+  padding: 18px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.42);
+}
+
+.modal-card h2 {
+  margin: 0 0 12px;
+  font-size: 24px;
+  text-align: center;
+}
+
+#questionText,
+#summaryTitle,
+#summarySubtitle {
+  text-align: center;
+  line-height: 1.45;
+}
+
+#answerInput {
+  width: 100%;
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 2px solid #b8ab94;
+  background: #fffdf7;
+  padding: 12px 14px;
+  font-size: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.modal-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #283545;
+  color: #f3ede2;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+@media (max-width: 900px) {
+  #hubScreen {
+    padding: 6px;
+    align-items: flex-start;
+  }
+
+  .hub-wrap {
+    width: 100vw;
+    max-width: 100vw;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  #totalBanked {
+    font-size: clamp(11px, 1.8vw, 15px);
+  }
+
+  #bestHeist {
+    font-size: clamp(10px, 1.7vw, 14px);
+  }
+
+  #heistsPlayedLabel,
+  #paintingsStolenLabel {
+    font-size: clamp(7px, 1vw, 10px);
+  }
+
+  #heistsPlayed,
+  #paintingsStolen {
+    font-size: clamp(14px, 2vw, 20px);
+    line-height: 1;
+    padding-bottom: 0;
+  }
+
+  .hub-log-cell {
+    font-size: clamp(6px, 0.8vw, 9px);
+  }
+
+  #startHeistBtn {
+    width: 8.9%;
+    height: 4.05%;
+    font-size: clamp(7px, 0.82vw, 10px);
+  }
+
+  #instructionsBtn {
+    width: 9.35%;
+    height: 4.05%;
+    font-size: clamp(6.8px, 0.78vw, 9.6px);
+  }
+
+  #leaderboardBtn {
+    top: 95.9%;
+    width: 15.5%;
+    font-size: clamp(9px, 1vw, 13px);
+  }
+
+  .game-controls {
+    justify-content: center;
+  }
+
+  #interactBtn {
+    width: 100%;
+    max-width: 240px;
+  }
+}
+
+@media (max-width: 600px) {
+  #hubScreen {
+    padding: 0;
+  }
+
+  .hub-wrap {
+    width: 100vw;
+    max-width: 100vw;
+  }
+
+  #totalBanked {
+    font-size: clamp(8px, 1.5vw, 11px);
+  }
+
+  #bestHeist {
+    font-size: clamp(7px, 1.35vw, 10px);
+  }
+
+  #heistsPlayedLabel,
+  #paintingsStolenLabel {
+    font-size: clamp(5px, 0.7vw, 7px);
+  }
+
+  #heistsPlayed,
+  #paintingsStolen {
+    font-size: clamp(10px, 1.5vw, 14px);
+  }
+
+  .hub-log-cell {
+    font-size: clamp(4px, 0.6vw, 6px);
+  }
+
+  #startHeistBtn {
+    left: 27.6%;
+    top: 70.1%;
+    width: 8.6%;
+    height: 3.8%;
+    font-size: clamp(5.2px, 0.62vw, 7.2px);
+  }
+
+  #instructionsBtn {
+    left: 27.35%;
+    top: 75.45%;
+    width: 9.15%;
+    height: 3.8%;
+    font-size: clamp(4.9px, 0.58vw, 6.8px);
+  }
+
+  #leaderboardBtn {
+    top: 95.5%;
+    width: 14.2%;
+    font-size: clamp(7px, 0.78vw, 10px);
+  }
+
+  .game-topbar {
+    gap: 6px;
+  }
+
+  .game-controls {
+    justify-content: center;
+  }
+
+  #interactBtn {
+    width: 100%;
+    max-width: 240px;
+  }
+}
