@@ -132,7 +132,7 @@ function drawPlayer(ctx, player, assets) {
   if (!player.visible) return;
 
   const drawX = player.x - 50;
-  const drawY = player.y - 100;
+  const drawY = player.y - 110;
   const img = getCurrentPlayerImage(player, assets);
 
   if (imageReady(img)) {
