@@ -31,10 +31,14 @@ export function initGame() {
   const banner = document.getElementById('gameBanner');
 
   const canvas = document.getElementById('gameCanvas');
-  if (!canvas) throw new Error('Missing #gameCanvas');
+  if (!canvas) {
+    throw new Error('Missing #gameCanvas');
+  }
 
   const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Could not get 2D context');
+  if (!ctx) {
+    throw new Error('Could not get 2D context');
+  }
 
   const interactBtn = document.getElementById('interactBtn');
   const joystick = document.getElementById('joystick');
@@ -381,6 +385,17 @@ export function initGame() {
       south: loadSeq('Security Guard South Walking_', 6),
       'south-east': loadSeq('Security Guard South-East Walking_', 6),
       'south-west': loadSeq('Security Guard South-West Walking_', 6)
+    },
+
+    guardFallbackSprites: {
+      east: loadImage('Security Guard East.png'),
+      west: loadImage('Security Guard West.png'),
+      north: loadImage('Security Guard North.png'),
+      south: loadImage('Security Guard South.png'),
+      'north-east': loadImage('Security Guard North-East.png'),
+      'north-west': loadImage('Security Guard North-West.png'),
+      'south-east': loadImage('Security Guard South-East.png'),
+      'south-west': loadImage('Security Guard South-West.png')
     },
 
     artImages: {
@@ -1176,7 +1191,9 @@ export function initGame() {
     });
 
     const closeBtn = document.getElementById('homeworkCloseBtn');
-    if (closeBtn) closeBtn.addEventListener('click', hideHomeworkPopup);
+    if (closeBtn) {
+      closeBtn.addEventListener('click', hideHomeworkPopup);
+    }
   }
 
   function endHeist(escaped) {
@@ -1624,10 +1641,7 @@ export function initGame() {
     helpers: {
       getNearbyItem,
       getExitZone,
-      pointInRect,
-      getFloorPoly,
-      getFloorItemBlocker,
-      getScaledInteractDistance: () => sx(constants.INTERACT_DISTANCE)
+      pointInRect
     }
   };
 
