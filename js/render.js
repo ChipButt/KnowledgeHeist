@@ -24,7 +24,12 @@ function drawFallbackRoom(ctx, canvas) {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
-  ctx.fillRect(canvas.width * 0.22, canvas.height * 0.1, canvas.width * 0.56, canvas.height * 0.35);
+  ctx.fillRect(
+    canvas.width * 0.22,
+    canvas.height * 0.1,
+    canvas.width * 0.56,
+    canvas.height * 0.35
+  );
 
   ctx.fillStyle = 'rgba(0,0,0,0.06)';
   ctx.fillRect(0, canvas.height * 0.55, canvas.width, canvas.height * 0.45);
@@ -98,9 +103,6 @@ function drawFloorItem(ctx, item) {
     ctx.restore();
     return;
   }
-
-  ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
-}
 
   ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
 }
@@ -212,14 +214,7 @@ function drawPrompt(ctx, state, helpers) {
 }
 
 export function drawRoom(runtime) {
-  const {
-    canvas,
-    ctx,
-    state,
-    assets,
-    helpers,
-    constants
-  } = runtime;
+  const { canvas, ctx, state, assets, helpers, constants } = runtime;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -235,8 +230,12 @@ export function drawRoom(runtime) {
   drawExitMat(ctx, helpers.getExitZone());
 
   if (state.run) {
-    const wallItems = state.run.items.filter((item) => item.type === 'wall' && item.status !== 'stolen');
-    const floorItems = state.run.items.filter((item) => item.type === 'floor' && item.status !== 'stolen');
+    const wallItems = state.run.items.filter(
+      (item) => item.type === 'wall' && item.status !== 'stolen'
+    );
+    const floorItems = state.run.items.filter(
+      (item) => item.type === 'floor' && item.status !== 'stolen'
+    );
 
     wallItems.forEach((item) => drawWallItem(ctx, item));
 
@@ -263,9 +262,7 @@ export function drawRoom(runtime) {
       });
     }
 
-    drawables
-      .sort((a, b) => a.y - b.y)
-      .forEach((entry) => entry.draw());
+    drawables.sort((a, b) => a.y - b.y).forEach((entry) => entry.draw());
   }
 
   drawPrompt(ctx, state, helpers);
@@ -277,17 +274,21 @@ export function drawRoom(runtime) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  if (
+  const showGuardFlash =
     state.fx.guardFlashTimer > 0 ||
-    (state.run &&
+    (
+      state.run &&
       (
         state.run.mode === 'chase' ||
         state.run.mode === 'escort' ||
         state.run.mode === 'escort_wait'
-      ))
-  ) {
+      )
+    );
+
+  if (showGuardFlash) {
     const pulse = Math.floor(performance.now() / 120) % 2;
-    ctx.fillStyle = pulse === 0 ? 'rgba(255,0,0,0.10)' : 'rgba(0,100,255,0.10)';
+    ctx.fillStyle =
+      pulse === 0 ? 'rgba(255,0,0,0.10)' : 'rgba(0,100,255,0.10)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
