@@ -288,6 +288,7 @@ function createBackgroundMusic() {
 
   audio.addEventListener('ended', () => {
     assets.backgroundMusic = createBackgroundMusic();
+    assets.backgroundMusic.play()
     safeRestartAudio(assets.backgroundMusic, 0.1);
   });
 
