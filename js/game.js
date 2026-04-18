@@ -1372,7 +1372,7 @@ const assets = {
 
     state.player = {
       x: sx(1410),
-      y: sy(1220),
+      y: sy(1280),
       direction: 'south',
       moving: false,
       visible: true,
