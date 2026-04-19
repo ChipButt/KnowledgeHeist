@@ -46,6 +46,8 @@ export function initGame() {
   let VIEW_W = canvas.width;
   let VIEW_H = canvas.height;
 
+  const DEBUG_INTERACTION = false;
+
   const sx = (x) => (x / SOURCE_W) * VIEW_W;
   const sy = (y) => (y / SOURCE_H) * VIEW_H;
 
@@ -68,7 +70,6 @@ export function initGame() {
 
     INTERACT_DISTANCE: 90,
     CATCH_DISTANCE: 28,
-
     POINTER_DEADZONE: 14
   };
 
@@ -86,6 +87,10 @@ export function initGame() {
 
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
+  }
+
+  function getPlayerFeetOffsetY() {
+    return Math.max(22, VIEW_H * 0.09);
   }
 
   function loadImage(src) {
@@ -196,17 +201,27 @@ export function initGame() {
   }
 
   function vectorToDirection(dx, dy) {
-    const sxn = Math.sign(dx);
-    const syn = Math.sign(dy);
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
 
-    if (sxn === 0 && syn < 0) return 'north';
-    if (sxn === 0 && syn > 0) return 'south';
-    if (sxn > 0 && syn === 0) return 'east';
-    if (sxn < 0 && syn === 0) return 'west';
-    if (sxn > 0 && syn < 0) return 'north-east';
-    if (sxn < 0 && syn < 0) return 'north-west';
-    if (sxn > 0 && syn > 0) return 'south-east';
-    if (sxn < 0 && syn > 0) return 'south-west';
+    if (absX < 0.001 && absY < 0.001) return 'south';
+
+    if (absX > absY * 1.8) {
+      return dx > 0 ? 'east' : 'west';
+    }
+
+    if (absY > absX * 1.8) {
+      return dy > 0 ? 'south' : 'north';
+    }
+
+    if (dx > 0 && dy < 0) return 'north-east';
+    if (dx < 0 && dy < 0) return 'north-west';
+    if (dx > 0 && dy > 0) return 'south-east';
+    if (dx < 0 && dy > 0) return 'south-west';
+
+    if (dx > 0) return 'east';
+    if (dx < 0) return 'west';
+    if (dy < 0) return 'north';
     return 'south';
   }
 
@@ -517,8 +532,226 @@ export function initGame() {
       currentY: 0,
       dragX: 0,
       dragY: 0
+    },
+    confirm: {
+      open: false,
+      onConfirm: null,
+      onCancel: null
     }
   };
+
+  function ensureHomeworkPopup() {
+    if (document.getElementById('homeworkOverlay')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #homeworkOverlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.48);
+        z-index: 9999;
+        padding: 18px;
+      }
+      #homeworkOverlay.show {
+        display: flex;
+      }
+      #homeworkBoard {
+        width: min(760px, 94vw);
+        max-height: 82vh;
+        overflow: auto;
+        background: linear-gradient(180deg, #1f3b2b 0%, #14261c 100%);
+        border: 12px solid #6f5437;
+        border-radius: 18px;
+        box-shadow: 0 20px 55px rgba(0,0,0,0.45);
+        color: #f2f5ef;
+        padding: 22px 22px 18px;
+        font-family: "Trebuchet MS", Arial, sans-serif;
+      }
+      #homeworkBoard h2 {
+        margin: 0 0 6px;
+        color: #f5f7f1;
+        font-size: 30px;
+        line-height: 1.1;
+        text-align: center;
+      }
+      #homeworkBoard .chalk-sub {
+        text-align: center;
+        margin-bottom: 18px;
+        font-size: 17px;
+        color: #d9e8dd;
+      }
+      #homeworkList {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .homework-item {
+        border-top: 1px dashed rgba(240,255,240,0.26);
+        padding-top: 12px;
+      }
+      .homework-question {
+        font-size: 17px;
+        line-height: 1.35;
+        color: #ffffff;
+        margin-bottom: 6px;
+      }
+      .homework-answer {
+        font-size: 16px;
+        line-height: 1.3;
+        color: #d6f2d2;
+      }
+      .homework-close {
+        display: block;
+        margin: 18px auto 0;
+        border: none;
+        border-radius: 999px;
+        background: #ece7d8;
+        color: #1b1b1b;
+        padding: 10px 18px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'homeworkOverlay';
+    overlay.innerHTML = `
+      <div id="homeworkBoard" role="dialog" aria-modal="true" aria-labelledby="homeworkTitle">
+        <h2 id="homeworkTitle">Preparation for Next Heist</h2>
+        <div class="chalk-sub">Best do your homework.</div>
+        <div id="homeworkList"></div>
+        <button class="homework-close" id="homeworkCloseBtn">Got it</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) hideHomeworkPopup();
+    });
+
+    const closeBtn = document.getElementById('homeworkCloseBtn');
+    if (closeBtn) closeBtn.addEventListener('click', hideHomeworkPopup);
+  }
+
+  function ensureConfirmPopup() {
+    if (document.getElementById('confirmChoiceOverlay')) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      #confirmChoiceOverlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.58);
+        z-index: 9600;
+        padding: 18px;
+      }
+      #confirmChoiceOverlay.show {
+        display: flex;
+      }
+      #confirmChoiceCard {
+        width: min(560px, 94vw);
+        background: #f0e6d0;
+        color: #241c14;
+        border-radius: 16px;
+        border: 8px solid #77593c;
+        padding: 20px;
+        box-shadow: 0 16px 50px rgba(0,0,0,0.42);
+        text-align: center;
+      }
+      #confirmChoiceTitle {
+        margin: 0 0 12px;
+        font-size: 24px;
+      }
+      #confirmChoiceText {
+        line-height: 1.5;
+        margin-bottom: 16px;
+      }
+      #confirmChoiceActions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      #confirmChoiceActions button {
+        border: none;
+        border-radius: 999px;
+        padding: 10px 18px;
+        font-weight: 700;
+        cursor: pointer;
+        background: #283545;
+        color: #f3ede2;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'confirmChoiceOverlay';
+    overlay.innerHTML = `
+      <div id="confirmChoiceCard" role="dialog" aria-modal="true" aria-labelledby="confirmChoiceTitle">
+        <h2 id="confirmChoiceTitle">Are you sure?</h2>
+        <div id="confirmChoiceText"></div>
+        <div id="confirmChoiceActions">
+          <button id="confirmChoiceYesBtn" type="button">Yes</button>
+          <button id="confirmChoiceNoBtn" type="button">No</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const closeAsCancel = () => {
+      const cancelFn = state.confirm.onCancel;
+      closeConfirmPopup();
+      if (typeof cancelFn === 'function') cancelFn();
+    };
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeAsCancel();
+    });
+
+    document.getElementById('confirmChoiceYesBtn')?.addEventListener('click', () => {
+      const confirmFn = state.confirm.onConfirm;
+      closeConfirmPopup();
+      if (typeof confirmFn === 'function') confirmFn();
+    });
+
+    document.getElementById('confirmChoiceNoBtn')?.addEventListener('click', closeAsCancel);
+  }
+
+  function openConfirmPopup({ title, text, onConfirm, onCancel }) {
+    ensureConfirmPopup();
+
+    const overlay = document.getElementById('confirmChoiceOverlay');
+    const titleEl = document.getElementById('confirmChoiceTitle');
+    const textEl = document.getElementById('confirmChoiceText');
+
+    state.confirm.open = true;
+    state.confirm.onConfirm = onConfirm || null;
+    state.confirm.onCancel = onCancel || null;
+
+    if (titleEl) titleEl.textContent = title;
+    if (textEl) textEl.textContent = text;
+    if (overlay) overlay.classList.add('show');
+  }
+
+  function closeConfirmPopup() {
+    const overlay = document.getElementById('confirmChoiceOverlay');
+    if (overlay) overlay.classList.remove('show');
+
+    state.confirm.open = false;
+    state.confirm.onConfirm = null;
+    state.confirm.onCancel = null;
+  }
+
+  function isConfirmPopupOpen() {
+    return state.confirm.open;
+  }
 
   function stopAllGameAudio() {
     stopAudio(assets.backgroundMusic);
@@ -819,8 +1052,8 @@ export function initGame() {
       image: assets.artImages.pedestal,
       anchorX: pedestalPos.x,
       anchorY: pedestalPos.y - cy(10),
-      drawW: 78,
-      drawH: 125
+      drawW: 80,
+      drawH: 118
     });
     index += 1;
 
@@ -841,8 +1074,8 @@ export function initGame() {
       image: assets.artImages.aboard,
       anchorX: aboardPos.x,
       anchorY: aboardPos.y - cy(10),
-      drawW: 82,
-      drawH: 128
+      drawW: 84,
+      drawH: 122
     });
 
     return items;
@@ -852,11 +1085,11 @@ export function initGame() {
     for (const item of run.items) {
       if (item.type === 'floor') {
         if (item.floorKind === 'pedestal') {
-          item.drawW = Math.max(90, sx(125));
-          item.drawH = Math.max(125, sy(190));
+          item.drawW = Math.max(74, sx(96));
+          item.drawH = Math.max(108, sy(150));
         } else {
-          item.drawW = Math.max(95, sx(132));
-          item.drawH = Math.max(130, sy(196));
+          item.drawW = Math.max(78, sx(104));
+          item.drawH = Math.max(112, sy(158));
         }
       }
     }
@@ -948,21 +1181,69 @@ export function initGame() {
     });
   }
 
-  function remainingAvailableItems() {
-    if (!state.run) return 0;
-    return state.run.items.filter((item) => item.status === 'available').length;
+  function getPlayerInteractPoint() {
+    return {
+      x: state.player.x,
+      y: state.player.y - getPlayerFeetOffsetY()
+    };
+  }
+
+  function getItemInteractPoint(item) {
+    if (item.type === 'floor') {
+      return {
+        x: item.anchorX,
+        y: item.anchorY - Math.max(6, item.drawH * 0.08)
+      };
+    }
+
+    if (item.wall === 'north') {
+      return {
+        x: item.x + item.w * 0.5,
+        y: item.y + item.h + sy(72)
+      };
+    }
+
+    if (item.wall === 'west') {
+      return {
+        x: item.x + item.w * 0.42,
+        y: item.y + item.h + sy(82)
+      };
+    }
+
+    if (item.wall === 'east') {
+      return {
+        x: item.x + item.w * 0.58,
+        y: item.y + item.h + sy(82)
+      };
+    }
+
+    return {
+      x: item.anchorX,
+      y: item.anchorY
+    };
+  }
+
+  function getItemInteractRadius(item) {
+    if (item.type === 'floor') return Math.max(34, sx(44));
+    if (item.wall === 'north') return Math.max(34, sx(50));
+    return Math.max(30, sx(42));
   }
 
   function getNearbyItem() {
     if (!state.run || state.run.mode !== 'play') return null;
 
+    const playerPoint = getPlayerInteractPoint();
     let nearest = null;
     let nearestDist = Infinity;
 
     for (const item of state.run.items) {
       if (item.status !== 'available') continue;
-      const d = distance(state.player.x, state.player.y, item.anchorX, item.anchorY);
-      if (d < sx(constants.INTERACT_DISTANCE) && d < nearestDist) {
+
+      const itemPoint = getItemInteractPoint(item);
+      const allowedDist = getItemInteractRadius(item);
+      const d = distance(playerPoint.x, playerPoint.y, itemPoint.x, itemPoint.y);
+
+      if (d <= allowedDist && d < nearestDist) {
         nearest = item;
         nearestDist = d;
       }
@@ -1051,7 +1332,7 @@ export function initGame() {
     state.player.controlLocked = false;
     state.run.mode = 'play';
 
-    if (remainingAvailableItems() === 0) {
+    if (state.run.items.every((itemEntry) => itemEntry.status !== 'available')) {
       showBanner('All items attempted. Head for the exit.');
     }
   }
@@ -1231,6 +1512,7 @@ export function initGame() {
     if (state.screen !== 'game') return;
     if (!state.run || state.run.ended) return;
     if (!questionModal.classList.contains('hidden')) return;
+    if (isConfirmPopupOpen()) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
     const point = getCanvasPointFromEvent(e);
@@ -1290,106 +1572,7 @@ export function initGame() {
       if (typeof target.requestFullscreen === 'function') {
         await target.requestFullscreen();
       }
-    } catch (_) {
-      // Ignore fullscreen failures. Some mobile browsers do not allow it.
-    }
-  }
-
-  function ensureHomeworkPopup() {
-    if (document.getElementById('homeworkOverlay')) return;
-
-    const style = document.createElement('style');
-    style.textContent = `
-      #homeworkOverlay {
-        position: fixed;
-        inset: 0;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0,0,0,0.48);
-        z-index: 9999;
-        padding: 18px;
-      }
-      #homeworkOverlay.show {
-        display: flex;
-      }
-      #homeworkBoard {
-        width: min(760px, 94vw);
-        max-height: 82vh;
-        overflow: auto;
-        background: linear-gradient(180deg, #1f3b2b 0%, #14261c 100%);
-        border: 12px solid #6f5437;
-        border-radius: 18px;
-        box-shadow: 0 20px 55px rgba(0,0,0,0.45);
-        color: #f2f5ef;
-        padding: 22px 22px 18px;
-        font-family: "Trebuchet MS", Arial, sans-serif;
-      }
-      #homeworkBoard h2 {
-        margin: 0 0 6px;
-        color: #f5f7f1;
-        font-size: 30px;
-        line-height: 1.1;
-        text-align: center;
-      }
-      #homeworkBoard .chalk-sub {
-        text-align: center;
-        margin-bottom: 18px;
-        font-size: 17px;
-        color: #d9e8dd;
-      }
-      #homeworkList {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .homework-item {
-        border-top: 1px dashed rgba(240,255,240,0.26);
-        padding-top: 12px;
-      }
-      .homework-question {
-        font-size: 17px;
-        line-height: 1.35;
-        color: #ffffff;
-        margin-bottom: 6px;
-      }
-      .homework-answer {
-        font-size: 16px;
-        line-height: 1.3;
-        color: #d6f2d2;
-      }
-      .homework-close {
-        display: block;
-        margin: 18px auto 0;
-        border: none;
-        border-radius: 999px;
-        background: #ece7d8;
-        color: #1b1b1b;
-        padding: 10px 18px;
-        font-weight: 700;
-        cursor: pointer;
-      }
-    `;
-    document.head.appendChild(style);
-
-    const overlay = document.createElement('div');
-    overlay.id = 'homeworkOverlay';
-    overlay.innerHTML = `
-      <div id="homeworkBoard" role="dialog" aria-modal="true" aria-labelledby="homeworkTitle">
-        <h2 id="homeworkTitle">Preparation for Next Heist</h2>
-        <div class="chalk-sub">Best do your homework.</div>
-        <div id="homeworkList"></div>
-        <button class="homework-close" id="homeworkCloseBtn">Got it</button>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) hideHomeworkPopup();
-    });
-
-    const closeBtn = document.getElementById('homeworkCloseBtn');
-    if (closeBtn) closeBtn.addEventListener('click', hideHomeworkPopup);
+    } catch (_) {}
   }
 
   function endHeist(escaped) {
@@ -1435,6 +1618,7 @@ export function initGame() {
     if (!state.run) return;
 
     closeQuestionModal();
+    closeConfirmPopup();
     resetMovementKeys();
     resetPointerInput();
 
@@ -1459,6 +1643,7 @@ export function initGame() {
   function returnToHub() {
     stopAllGameAudio();
     closeQuestionModal();
+    closeConfirmPopup();
     resetMovementKeys();
     resetPointerInput();
 
@@ -1468,6 +1653,30 @@ export function initGame() {
     state.player.action = null;
     showScreen('hub');
     maybeShowHomeworkPopup();
+  }
+
+  function handleReturnToBase() {
+    if (!state.run || state.run.ended) {
+      showScreen('hub');
+      return;
+    }
+
+    openConfirmPopup({
+      title: 'Return to Base?',
+      text: `Are you sure you want to return home? You'll lose your current haul of ${formatMoney(state.run.haul)}.`,
+      onConfirm: () => {
+        stopAllGameAudio();
+        closeQuestionModal();
+        resetMovementKeys();
+        resetPointerInput();
+
+        state.run = null;
+        state.activeItem = null;
+        state.player.action = null;
+        showScreen('hub');
+        maybeShowHomeworkPopup();
+      }
+    });
   }
 
   function showScreen(name) {
@@ -1496,40 +1705,7 @@ export function initGame() {
 
   function applyJoystickLayout() {
     if (!joystick) return;
-
-    joystick.style.position = 'relative';
-    joystick.style.width = '168px';
-    joystick.style.height = '112px';
-    joystick.style.display = 'block';
-
-    const up = joystick.querySelector('[data-dir="up"]');
-    const down = joystick.querySelector('[data-dir="down"]');
-    const left = joystick.querySelector('[data-dir="left"]');
-    const right = joystick.querySelector('[data-dir="right"]');
-
-    [up, down, left, right].forEach((btn) => {
-      if (!btn) return;
-      btn.style.position = 'absolute';
-      btn.style.width = '48px';
-      btn.style.height = '48px';
-    });
-
-    if (up) {
-      up.style.left = '56px';
-      up.style.top = '0px';
-    }
-    if (left) {
-      left.style.left = '0px';
-      left.style.top = '56px';
-    }
-    if (down) {
-      down.style.left = '56px';
-      down.style.top = '56px';
-    }
-    if (right) {
-      right.style.left = '112px';
-      right.style.top = '56px';
-    }
+    joystick.style.display = 'none';
   }
 
   function startHeist() {
@@ -1537,6 +1713,7 @@ export function initGame() {
 
     hideHomeworkPopup();
     closeQuestionModal();
+    closeConfirmPopup();
     resetMovementKeys();
     resetPointerInput();
 
@@ -1597,22 +1774,30 @@ export function initGame() {
   function interact() {
     if (!state.run || state.run.ended) return;
     if (state.player.controlLocked || state.player.action) return;
+    if (isConfirmPopupOpen()) return;
 
     const exit = getExitZone();
+    const playerPoint = getPlayerInteractPoint();
 
     if (
       (state.run.mode === 'play' || state.run.mode === 'chase') &&
-      pointInRect(state.player.x, state.player.y, exit)
+      pointInRect(playerPoint.x, playerPoint.y, exit)
     ) {
       if (state.run.haul <= 0) {
         showBanner('You need some stolen art before escaping.');
         return;
       }
 
-      state.player.controlLocked = true;
-      state.run.mode = 'escape';
-      state.player.direction = 'south';
-      showBanner('Escaping...');
+      openConfirmPopup({
+        title: 'Leave the Museum?',
+        text: `Are you sure you want to leave? You'll bank ${formatMoney(state.run.haul)}.`,
+        onConfirm: () => {
+          state.player.controlLocked = true;
+          state.run.mode = 'escape';
+          state.player.direction = 'south';
+          showBanner('Escaping...');
+        }
+      });
       return;
     }
 
@@ -1713,6 +1898,7 @@ export function initGame() {
 
     if (state.screen !== 'game' || !state.run || state.run.ended) return;
     if (!questionModal.classList.contains('hidden') && state.run.mode === 'play') return;
+    if (isConfirmPopupOpen()) return;
 
     state.player.moving = false;
     state.guard.moving = false;
@@ -1867,9 +2053,49 @@ export function initGame() {
     helpers: {
       getNearbyItem,
       getExitZone,
-      pointInRect
+      pointInRect,
+      getPlayerInteractPoint,
+      getItemInteractPoint,
+      getItemInteractRadius
     }
   };
+
+  function drawInteractionDebug() {
+    if (!DEBUG_INTERACTION || !state.run) return;
+
+    ctx.save();
+
+    const playerPoint = getPlayerInteractPoint();
+    ctx.strokeStyle = 'rgba(0,255,0,0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(playerPoint.x, playerPoint.y, 10, 0, Math.PI * 2);
+    ctx.stroke();
+
+    state.run.items.forEach((item) => {
+      if (item.status === 'stolen') return;
+
+      const p = getItemInteractPoint(item);
+      const r = getItemInteractRadius(item);
+
+      ctx.strokeStyle = 'rgba(255,0,0,0.95)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,0,0,0.18)';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(item.id, p.x, p.y - r - 6);
+    });
+
+    ctx.restore();
+  }
 
   function gameLoop(timestamp) {
     if (!state.lastTimestamp) state.lastTimestamp = timestamp;
@@ -1879,111 +2105,7 @@ export function initGame() {
     try {
       update(delta);
       drawRoom(runtime);
-
-      /*
-      ******************************************************************
-      *                    DEBUG SYSTEM: HITBOX VISUALIZATION            *
-      *                                                                *
-      *  THIS SECTION OF CODE DISPLAYS RED OUTLINES AROUND HITBOXES.    *
-      *  USE THIS FOR ALIGNMENT AND DEBUGGING ONLY. DELETE THIS BLOCK   *
-      *  WHEN DEBUGGING IS COMPLETE TO RESTORE NORMAL GAMEPLAY VIEW.    *
-      ******************************************************************
-      */
-      if (state.run) {
-        ctx.save();
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
-        ctx.lineWidth = 2;
-
-        state.run.items.forEach((item) => {
-          if (item.status === 'stolen') return;
-
-          if (item.type === 'wall') {
-            ctx.strokeRect(item.x, item.y, item.w, item.h);
-
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.18)';
-            ctx.fillRect(item.x, item.y, item.w, item.h);
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(item.id, item.x + 4, item.y + 4);
-          }
-
-          if (item.type === 'floor') {
-            const drawX = item.anchorX - item.drawW / 2;
-            const drawY = item.anchorY - item.drawH;
-
-            ctx.strokeRect(drawX, drawY, item.drawW, item.drawH);
-
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.18)';
-            ctx.fillRect(drawX, drawY, item.drawW, item.drawH);
-
-            const blocker = getFloorItemBlocker(item);
-            if (blocker) {
-              ctx.strokeStyle = 'rgba(0, 255, 255, 0.95)';
-              ctx.strokeRect(
-                blocker.x1,
-                blocker.y1,
-                blocker.x2 - blocker.x1,
-                blocker.y2 - blocker.y1
-              );
-              ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
-            }
-
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '12px Arial';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'top';
-            ctx.fillText(item.id, drawX + 4, drawY + 4);
-          }
-        });
-
-        ctx.strokeStyle = 'rgba(0, 255, 0, 0.95)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(state.player.x, state.player.y, sx(constants.INTERACT_DISTANCE), 0, Math.PI * 2);
-        ctx.stroke();
-
-        const exit = getExitZone();
-        ctx.strokeStyle = 'rgba(255, 255, 0, 0.95)';
-        ctx.strokeRect(exit.x1, exit.y1, exit.x2 - exit.x1, exit.y2 - exit.y1);
-
-        const guardDoor = getGuardDoorZone();
-        ctx.strokeStyle = 'rgba(255, 128, 0, 0.95)';
-        ctx.strokeRect(
-          guardDoor.x1,
-          guardDoor.y1,
-          guardDoor.x2 - guardDoor.x1,
-          guardDoor.y2 - guardDoor.y1
-        );
-
-        if (state.pointer.active) {
-          ctx.strokeStyle = 'rgba(0, 150, 255, 0.95)';
-          ctx.fillStyle = 'rgba(0, 150, 255, 0.15)';
-          ctx.beginPath();
-          ctx.arc(state.pointer.startX, state.pointer.startY, sx(constants.POINTER_DEADZONE), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.moveTo(state.pointer.startX, state.pointer.startY);
-          ctx.lineTo(state.pointer.currentX, state.pointer.currentY);
-          ctx.stroke();
-
-          ctx.beginPath();
-          ctx.arc(state.pointer.currentX, state.pointer.currentY, 8, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        ctx.restore();
-      }
-      /*
-      ******************************************************************
-      *                    END OF DEBUG SYSTEM                          *
-      *  DELETE EVERYTHING BETWEEN THE TWO DEBUG HEADERS ABOVE.         *
-      ******************************************************************
-      */
+      drawInteractionDebug();
     } catch (err) {
       console.error(err);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2026,17 +2148,19 @@ export function initGame() {
     if (k === 'arrowleft' || k === 'a') state.keys.left = true;
     if (k === 'arrowright' || k === 'd') state.keys.right = true;
 
-    if ((k === 'e' || k === ' ') && questionModal.classList.contains('hidden') && state.screen === 'game') {
+    if (k === 'enter' && questionModal.classList.contains('hidden') && state.screen === 'game' && !isConfirmPopupOpen()) {
       e.preventDefault();
       interact();
     }
 
     if (k === 'enter' && !questionModal.classList.contains('hidden')) {
+      e.preventDefault();
       submitAnswer();
     }
 
     if (k === 'escape') {
       hideHomeworkPopup();
+      closeConfirmPopup();
       resetPointerInput();
     }
   });
@@ -2145,18 +2269,7 @@ export function initGame() {
   if (interactBtn) interactBtn.addEventListener('click', interact);
 
   if (backToHubBtn) {
-    backToHubBtn.addEventListener('click', () => {
-      stopAllGameAudio();
-      closeQuestionModal();
-      resetMovementKeys();
-      resetPointerInput();
-
-      state.run = null;
-      state.activeItem = null;
-      state.player.action = null;
-      showScreen('hub');
-      maybeShowHomeworkPopup();
-    });
+    backToHubBtn.addEventListener('click', handleReturnToBase);
   }
 
   if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
@@ -2180,6 +2293,7 @@ export function initGame() {
   showScreen('hub');
   applyJoystickLayout();
   ensureHomeworkPopup();
+  ensureConfirmPopup();
   resizeCanvas();
   maybeShowHomeworkPopup();
   requestAnimationFrame(gameLoop);
