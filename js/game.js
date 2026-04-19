@@ -82,6 +82,10 @@ export function initGame() {
     return isMobileLike() ? constants.MOVE_SPEED_MOBILE : constants.MOVE_SPEED_DESKTOP;
   }
 
+  function getCatchDistance() {
+    return Math.max(18, sx(constants.CATCH_DISTANCE));
+  }
+
   function loadImage(src) {
     const img = new Image();
     img.src = src;
@@ -261,6 +265,8 @@ export function initGame() {
   }
 
   function stopAudio(audio) {
+    if (!audio) return;
+
     try {
       audio.pause();
       audio.currentTime = 0;
@@ -301,11 +307,12 @@ export function initGame() {
   }
 
   function createBackgroundMusic() {
-    const audio = createAudio(getNextBackgroundMusicTrack(), 0.1, false);
+    const audio = createAudio(getNextBackgroundMusicTrack(), 0.22, false);
 
     audio.addEventListener('ended', () => {
-      assets.backgroundMusic = createBackgroundMusic();
-      safeRestartAudio(assets.backgroundMusic, 0.22);
+      audio.src = getNextBackgroundMusicTrack();
+      audio.load();
+      safeRestartAudio(audio, 0.22);
     });
 
     return audio;
@@ -843,7 +850,35 @@ export function initGame() {
     }
   }
 
+  function scaleValue(value, fromSize, toSize) {
+    if (!fromSize) return value;
+    return value * (toSize / fromSize);
+  }
+
+  function rescaleActiveRun(prevW, prevH, nextW, nextH) {
+    if (!state.run || !prevW || !prevH) return;
+
+    for (const item of state.run.items) {
+      if (typeof item.x === 'number') item.x = scaleValue(item.x, prevW, nextW);
+      if (typeof item.y === 'number') item.y = scaleValue(item.y, prevH, nextH);
+      if (typeof item.w === 'number') item.w = scaleValue(item.w, prevW, nextW);
+      if (typeof item.h === 'number') item.h = scaleValue(item.h, prevH, nextH);
+      if (typeof item.anchorX === 'number') item.anchorX = scaleValue(item.anchorX, prevW, nextW);
+      if (typeof item.anchorY === 'number') item.anchorY = scaleValue(item.anchorY, prevH, nextH);
+      if (typeof item.drawW === 'number') item.drawW = scaleValue(item.drawW, prevW, nextW);
+      if (typeof item.drawH === 'number') item.drawH = scaleValue(item.drawH, prevH, nextH);
+    }
+
+    state.player.x = scaleValue(state.player.x, prevW, nextW);
+    state.player.y = scaleValue(state.player.y, prevH, nextH);
+    state.guard.x = scaleValue(state.guard.x, prevW, nextW);
+    state.guard.y = scaleValue(state.guard.y, prevH, nextH);
+  }
+
   function resizeCanvas() {
+    const prevW = canvas.width || VIEW_W || 1;
+    const prevH = canvas.height || VIEW_H || 1;
+
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
@@ -854,7 +889,9 @@ export function initGame() {
     VIEW_W = width;
     VIEW_H = height;
 
-    if (state.run) {
+    if (state.run && (prevW !== width || prevH !== height)) {
+      rescaleActiveRun(prevW, prevH, width, height);
+    } else if (state.run) {
       buildScaledRunData(state.run);
     }
   }
@@ -1598,7 +1635,7 @@ export function initGame() {
         vectorToDirection
       );
 
-      if (distance(state.guard.x, state.guard.y, state.player.x, state.player.y) < constants.CATCH_DISTANCE) {
+      if (distance(state.guard.x, state.guard.y, state.player.x, state.player.y) < getCatchDistance()) {
         state.run.mode = 'escort';
         state.player.controlLocked = true;
 
@@ -1722,6 +1759,93 @@ export function initGame() {
     try {
       update(delta);
       drawRoom(runtime);
+
+      /*
+      ******************************************************************
+      *                    DEBUG SYSTEM: HITBOX VISUALIZATION            *
+      *                                                                *
+      *  THIS SECTION OF CODE DISPLAYS RED OUTLINES AROUND HITBOXES.    *
+      *  USE THIS FOR ALIGNMENT AND DEBUGGING ONLY. DELETE THIS BLOCK   *
+      *  WHEN DEBUGGING IS COMPLETE TO RESTORE NORMAL GAMEPLAY VIEW.    *
+      ******************************************************************
+      */
+      if (state.run) {
+        ctx.save();
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+        ctx.lineWidth = 2;
+
+        state.run.items.forEach((item) => {
+          if (item.status === 'stolen') return;
+
+          if (item.type === 'wall') {
+            ctx.strokeRect(item.x, item.y, item.w, item.h);
+
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.18)';
+            ctx.fillRect(item.x, item.y, item.w, item.h);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(item.id, item.x + 4, item.y + 4);
+          }
+
+          if (item.type === 'floor') {
+            const drawX = item.anchorX - item.drawW / 2;
+            const drawY = item.anchorY - item.drawH;
+
+            ctx.strokeRect(drawX, drawY, item.drawW, item.drawH);
+
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.18)';
+            ctx.fillRect(drawX, drawY, item.drawW, item.drawH);
+
+            const blocker = getFloorItemBlocker(item);
+            if (blocker) {
+              ctx.strokeStyle = 'rgba(0, 255, 255, 0.95)';
+              ctx.strokeRect(
+                blocker.x1,
+                blocker.y1,
+                blocker.x2 - blocker.x1,
+                blocker.y2 - blocker.y1
+              );
+              ctx.strokeStyle = 'rgba(255, 0, 0, 0.9)';
+            }
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(item.id, drawX + 4, drawY + 4);
+          }
+        });
+
+        ctx.strokeStyle = 'rgba(0, 255, 0, 0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(state.player.x, state.player.y, sx(constants.INTERACT_DISTANCE), 0, Math.PI * 2);
+        ctx.stroke();
+
+        const exit = getExitZone();
+        ctx.strokeStyle = 'rgba(255, 255, 0, 0.95)';
+        ctx.strokeRect(exit.x1, exit.y1, exit.x2 - exit.x1, exit.y2 - exit.y1);
+
+        const guardDoor = getGuardDoorZone();
+        ctx.strokeStyle = 'rgba(255, 128, 0, 0.95)';
+        ctx.strokeRect(
+          guardDoor.x1,
+          guardDoor.y1,
+          guardDoor.x2 - guardDoor.x1,
+          guardDoor.y2 - guardDoor.y1
+        );
+
+        ctx.restore();
+      }
+      /*
+      ******************************************************************
+      *                    END OF DEBUG SYSTEM                          *
+      *  DELETE EVERYTHING BETWEEN THE TWO DEBUG HEADERS ABOVE.         *
+      ******************************************************************
+      */
     } catch (err) {
       console.error(err);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1866,28 +1990,3 @@ export function initGame() {
     startHeist
   };
 }
-/*
-******************************************************************
-*                    DEBUG SYSTEM: HITBOX VISUALIZATION        *
-*                                                                  *
-*  THIS SECTION OF CODE DISPLAYS RED OUTLINES AROUND HITBOXES.   *
-*  USE THIS FOR ALIGNMENT AND DEBUGGING ONLY. REMOVE OR COMMENT    *
-*  THIS OUT WHEN DEBUGGING IS COMPLETE TO RESTORE NORMAL GAMEPLAY. *
-******************************************************************
-*/
-function drawHitboxes(ctx) {
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255,0,0,0.8)';
-  ctx.lineWidth = 2;
-  state.run.items.forEach(item => {
-    if (item.type === 'wall') {
-      ctx.strokeRect(item.x, item.y, item.w, item.h);
-    } else if (item.type === 'floor') {
-      ctx.strokeRect(item.anchorX - item.drawW / 2, item.anchorY - item.drawH, item.drawW, item.drawH);
-    }
-  });
-  ctx.restore();
-}
-
-// Inside your game loop, just before or after drawRoom:
-drawHitboxes(ctx);
