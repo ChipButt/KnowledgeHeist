@@ -54,6 +54,18 @@ export function initGame() {
   const PLAYER_DRAW_Y_OFFSET = 10;
   const PLAYER_FEET_POINT_Y = 0.63;
 
+  const ITEM_INTERACT_ZONES_SOURCE = {
+    'item-0': { x1: 814, y1: 644, x2: 974, y2: 685 },
+    'item-1': { x1: 1331, y1: 645, x2: 1492, y2: 686 },
+    'item-2': { x1: 1848, y1: 645, x2: 2008, y2: 686 },
+
+    'item-3': { x1: 498, y1: 752, x2: 609, y2: 889 },
+    'item-4': { x1: 292, y1: 1032, x2: 410, y2: 1161 },
+
+    'item-5': { x1: 2155, y1: 683, x2: 2263, y2: 821 },
+    'item-6': { x1: 2328, y1: 910, x2: 2416, y2: 1034 }
+  };
+
   const sx = (x) => (x / SOURCE_W) * VIEW_W;
   const sy = (y) => (y / SOURCE_H) * VIEW_H;
 
@@ -299,13 +311,13 @@ export function initGame() {
   }
 
   const backgroundMusicTracks = [
-  'Gallery of Era.mp3',
-  'Gallery of Eras.mp3',
-  'Gallery of Golden Years long.mp3',
-  'Gallery of Golden Years.mp3',
-  'Gallery Relax Machine.mp3',
-  'Gallery Time Machine.mp3'
-];
+    'Gallery of Era.mp3',
+    'Gallery of Eras.mp3',
+    'Gallery of Golden Years long.mp3',
+    'Gallery of Golden Years.mp3',
+    'Gallery Relax Machine.mp3',
+    'Gallery Time Machine.mp3'
+  ];
 
   let lastBackgroundMusicTrack = '';
 
@@ -1188,33 +1200,46 @@ export function initGame() {
     };
   }
 
-  function getItemInteractPoint(item) {
+  function getItemInteractZone(item) {
+    if (!item) return null;
+
     if (item.type === 'floor') {
-      return {
-        x: item.anchorX,
-        y: item.anchorY - Math.max(6, item.drawH * 0.08)
-      };
+      const widthMul = item.floorKind === 'pedestal' ? 0.38 : 0.24;
+      const zoneHeight = item.floorKind === 'pedestal'
+        ? Math.max(10, item.drawH * 0.12)
+        : Math.max(12, item.drawH * 0.18);
+
+      const x1 = item.anchorX - item.drawW * widthMul;
+      const x2 = item.anchorX + item.drawW * widthMul;
+      const y2 = item.anchorY + 2;
+      const y1 = y2 - zoneHeight;
+
+      return { x1, y1, x2, y2 };
     }
 
-    if (item.wall === 'north') {
-      return {
-        x: item.x + item.w * 0.5,
-        y: item.y + item.h + sy(72)
-      };
-    }
+    const zone = ITEM_INTERACT_ZONES_SOURCE[item.id];
+    if (!zone) return null;
 
-    if (item.wall === 'west') {
-      return {
-        x: item.x + item.w * 0.42,
-        y: item.y + item.h + sy(82)
-      };
-    }
+    return {
+      x1: sx(zone.x1),
+      y1: sy(zone.y1),
+      x2: sx(zone.x2),
+      y2: sy(zone.y2)
+    };
+  }
 
-    if (item.wall === 'east') {
-      return {
-        x: item.x + item.w * 0.58,
-        y: item.y + item.h + sy(82)
-      };
+  function getZoneCenter(zone) {
+    return {
+      x: (zone.x1 + zone.x2) / 2,
+      y: (zone.y1 + zone.y2) / 2
+    };
+  }
+
+  function getItemInteractPoint(item) {
+    const zone = getItemInteractZone(item);
+
+    if (zone) {
+      return getZoneCenter(zone);
     }
 
     return {
@@ -1224,8 +1249,13 @@ export function initGame() {
   }
 
   function getItemInteractRadius(item) {
+    const zone = getItemInteractZone(item);
+
+    if (zone) {
+      return Math.max(zone.x2 - zone.x1, zone.y2 - zone.y1) / 2;
+    }
+
     if (item.type === 'floor') return Math.max(34, sx(44));
-    if (item.wall === 'north') return Math.max(34, sx(50));
     return Math.max(30, sx(42));
   }
 
@@ -1238,6 +1268,22 @@ export function initGame() {
 
     for (const item of state.run.items) {
       if (item.status !== 'available') continue;
+
+      const zone = getItemInteractZone(item);
+
+      if (zone) {
+        if (!pointInRect(playerPoint.x, playerPoint.y, zone)) continue;
+
+        const center = getZoneCenter(zone);
+        const d = distance(playerPoint.x, playerPoint.y, center.x, center.y);
+
+        if (d < nearestDist) {
+          nearest = item;
+          nearestDist = d;
+        }
+
+        continue;
+      }
 
       const itemPoint = getItemInteractPoint(item);
       const allowedDist = getItemInteractRadius(item);
@@ -2056,7 +2102,8 @@ export function initGame() {
       pointInRect,
       getPlayerInteractPoint,
       getItemInteractPoint,
-      getItemInteractRadius
+      getItemInteractRadius,
+      getItemInteractZone
     }
   };
 
@@ -2074,6 +2121,23 @@ export function initGame() {
 
     state.run.items.forEach((item) => {
       if (item.status === 'stolen') return;
+
+      const zone = getItemInteractZone(item);
+
+      if (zone) {
+        ctx.strokeStyle = 'rgba(0,255,0,0.95)';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
+
+        ctx.fillStyle = 'rgba(0,255,0,0.18)';
+        ctx.fillRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
+
+        ctx.fillStyle = '#fff';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.id, (zone.x1 + zone.x2) / 2, zone.y1 - 6);
+        return;
+      }
 
       const p = getItemInteractPoint(item);
       const r = getItemInteractRadius(item);
@@ -2211,22 +2275,40 @@ export function initGame() {
           }
         }
 
-        const p = getItemInteractPoint(item);
-        const r = getItemInteractRadius(item);
+        const zone = getItemInteractZone(item);
 
-        ctx.strokeStyle = 'rgba(0,255,0,0.95)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        ctx.stroke();
+        if (zone) {
+          ctx.strokeStyle = 'rgba(0,255,0,0.95)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
 
-        ctx.fillStyle = 'rgba(0,255,0,0.18)';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-        ctx.fill();
+          ctx.fillStyle = 'rgba(0,255,0,0.18)';
+          ctx.fillRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
 
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(`${item.id}`, p.x + 4, p.y + 4);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(
+            `${item.id}`,
+            (zone.x1 + zone.x2) / 2,
+            zone.y1 - 6
+          );
+        } else {
+          const p = getItemInteractPoint(item);
+          const r = getItemInteractRadius(item);
+
+          ctx.strokeStyle = 'rgba(0,255,0,0.95)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(0,255,0,0.18)';
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(`${item.id}`, p.x + 4, p.y + 4);
+        }
       });
 
       const playerPoint = getPlayerInteractPoint();
@@ -2331,14 +2413,18 @@ export function initGame() {
     if (k === 'arrowleft' || k === 'a') state.keys.left = true;
     if (k === 'arrowright' || k === 'd') state.keys.right = true;
 
-    if (k === 'enter' && questionModal.classList.contains('hidden') && state.screen === 'game' && !isConfirmPopupOpen()) {
-      e.preventDefault();
-      interact();
-    }
+    if (k === 'enter') {
+      if (questionModal.classList.contains('hidden') && state.screen === 'game' && !isConfirmPopupOpen()) {
+        e.preventDefault();
+        interact();
+        return;
+      }
 
-    if (k === 'enter' && !questionModal.classList.contains('hidden')) {
-      e.preventDefault();
-      submitAnswer();
+      if (!questionModal.classList.contains('hidden')) {
+        e.preventDefault();
+        submitAnswer();
+        return;
+      }
     }
 
     if (k === 'escape') {
