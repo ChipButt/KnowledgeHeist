@@ -67,7 +67,9 @@ export function initGame() {
     BANNER_MS: 2500,
 
     INTERACT_DISTANCE: 90,
-    CATCH_DISTANCE: 28
+    CATCH_DISTANCE: 28,
+
+    POINTER_DEADZONE: 14
   };
 
   function isMobileLike() {
@@ -505,6 +507,16 @@ export function initGame() {
       sirenStarted: false,
       withMePlayed: false,
       withMeFinished: true
+    },
+    pointer: {
+      active: false,
+      pointerId: null,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0,
+      dragX: 0,
+      dragY: 0
     }
   };
 
@@ -840,11 +852,11 @@ export function initGame() {
     for (const item of run.items) {
       if (item.type === 'floor') {
         if (item.floorKind === 'pedestal') {
-          item.drawW = Math.max(60, sx(78));
-          item.drawH = Math.max(90, sy(125));
+          item.drawW = Math.max(90, sx(125));
+          item.drawH = Math.max(125, sy(190));
         } else {
-          item.drawW = Math.max(60, sx(82));
-          item.drawH = Math.max(90, sy(128));
+          item.drawW = Math.max(95, sx(132));
+          item.drawH = Math.max(130, sy(196));
         }
       }
     }
@@ -1192,6 +1204,97 @@ export function initGame() {
     state.keys.right = false;
   }
 
+  function resetPointerInput() {
+    state.pointer.active = false;
+    state.pointer.pointerId = null;
+    state.pointer.startX = 0;
+    state.pointer.startY = 0;
+    state.pointer.currentX = 0;
+    state.pointer.currentY = 0;
+    state.pointer.dragX = 0;
+    state.pointer.dragY = 0;
+  }
+
+  function hasKeyboardInput() {
+    return state.keys.up || state.keys.down || state.keys.left || state.keys.right;
+  }
+
+  function getCanvasPointFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((e.clientX - rect.left) / rect.width) * VIEW_W,
+      y: ((e.clientY - rect.top) / rect.height) * VIEW_H
+    };
+  }
+
+  function startPointerControl(e) {
+    if (state.screen !== 'game') return;
+    if (!state.run || state.run.ended) return;
+    if (!questionModal.classList.contains('hidden')) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    const point = getCanvasPointFromEvent(e);
+
+    state.pointer.active = true;
+    state.pointer.pointerId = e.pointerId;
+    state.pointer.startX = point.x;
+    state.pointer.startY = point.y;
+    state.pointer.currentX = point.x;
+    state.pointer.currentY = point.y;
+    state.pointer.dragX = 0;
+    state.pointer.dragY = 0;
+
+    if (canvas.setPointerCapture) {
+      try {
+        canvas.setPointerCapture(e.pointerId);
+      } catch (_) {}
+    }
+  }
+
+  function updatePointerControl(e) {
+    if (!state.pointer.active) return;
+    if (state.pointer.pointerId !== e.pointerId) return;
+
+    const point = getCanvasPointFromEvent(e);
+    state.pointer.currentX = point.x;
+    state.pointer.currentY = point.y;
+
+    const rawDx = state.pointer.currentX - state.pointer.startX;
+    const rawDy = state.pointer.currentY - state.pointer.startY;
+    const len = Math.hypot(rawDx, rawDy);
+
+    if (len < sx(constants.POINTER_DEADZONE)) {
+      state.pointer.dragX = 0;
+      state.pointer.dragY = 0;
+      return;
+    }
+
+    state.pointer.dragX = rawDx / len;
+    state.pointer.dragY = rawDy / len;
+  }
+
+  function endPointerControl(e) {
+    if (!state.pointer.active) return;
+    if (e && state.pointer.pointerId !== null && e.pointerId !== state.pointer.pointerId) return;
+    resetPointerInput();
+  }
+
+  async function requestGameFullscreen() {
+    if (!isMobileLike()) return;
+    if (document.fullscreenElement) return;
+
+    const target = gameScreen || document.documentElement;
+    if (!target) return;
+
+    try {
+      if (typeof target.requestFullscreen === 'function') {
+        await target.requestFullscreen();
+      }
+    } catch (_) {
+      // Ignore fullscreen failures. Some mobile browsers do not allow it.
+    }
+  }
+
   function ensureHomeworkPopup() {
     if (document.getElementById('homeworkOverlay')) return;
 
@@ -1333,6 +1436,7 @@ export function initGame() {
 
     closeQuestionModal();
     resetMovementKeys();
+    resetPointerInput();
 
     state.run.ended = true;
     state.run = null;
@@ -1356,6 +1460,7 @@ export function initGame() {
     stopAllGameAudio();
     closeQuestionModal();
     resetMovementKeys();
+    resetPointerInput();
 
     summaryOverlay.classList.add('hidden');
     state.run = null;
@@ -1433,6 +1538,7 @@ export function initGame() {
     hideHomeworkPopup();
     closeQuestionModal();
     resetMovementKeys();
+    resetPointerInput();
 
     showScreen('game');
     resizeCanvas();
@@ -1484,6 +1590,8 @@ export function initGame() {
 
     updateRunStats();
     showBanner('Heist started.');
+
+    requestGameFullscreen();
   }
 
   function interact() {
@@ -1526,6 +1634,7 @@ export function initGame() {
     questionTextEl.textContent = `${q.question} (${formatMoney(Number(q.value || 0))})`;
     answerInput.value = '';
     questionModal.classList.remove('hidden');
+    resetPointerInput();
     window.scrollTo(0, 0);
 
     setTimeout(() => {
@@ -1572,6 +1681,33 @@ export function initGame() {
     state.activeItem = null;
   }
 
+  function getDirectionalInput(speed) {
+    let dx = 0;
+    let dy = 0;
+
+    if (hasKeyboardInput()) {
+      if (state.keys.left) dx -= speed;
+      if (state.keys.right) dx += speed;
+      if (state.keys.up) dy -= speed;
+      if (state.keys.down) dy += speed;
+      return normalizeVector(dx, dy, speed);
+    }
+
+    if (state.pointer.active) {
+      dx = state.pointer.dragX;
+      dy = state.pointer.dragY;
+
+      if (dx !== 0 || dy !== 0) {
+        return {
+          dx: dx * speed,
+          dy: dy * speed
+        };
+      }
+    }
+
+    return { dx: 0, dy: 0 };
+  }
+
   function update(delta) {
     updateFX(delta);
 
@@ -1582,19 +1718,11 @@ export function initGame() {
     state.guard.moving = false;
 
     if (state.run.mode === 'play') {
-      let dx = 0;
-      let dy = 0;
+      const move = getDirectionalInput(getMoveSpeed());
 
-      if (state.keys.left) dx -= getMoveSpeed();
-      if (state.keys.right) dx += getMoveSpeed();
-      if (state.keys.up) dy -= getMoveSpeed();
-      if (state.keys.down) dy += getMoveSpeed();
-
-      if (dx !== 0 || dy !== 0) {
-        const move = normalizeVector(dx, dy, getMoveSpeed());
-
+      if (move.dx !== 0 || move.dy !== 0) {
         state.player.moving = true;
-        state.player.direction = vectorToDirection(dx, dy);
+        state.player.direction = vectorToDirection(move.dx, move.dy);
         tryMove(move.dx, move.dy);
       }
 
@@ -1611,19 +1739,11 @@ export function initGame() {
     }
 
     if (state.run.mode === 'chase') {
-      let dx = 0;
-      let dy = 0;
+      const move = getDirectionalInput(constants.CHASE_PLAYER_SPEED);
 
-      if (state.keys.left) dx -= constants.CHASE_PLAYER_SPEED;
-      if (state.keys.right) dx += constants.CHASE_PLAYER_SPEED;
-      if (state.keys.up) dy -= constants.CHASE_PLAYER_SPEED;
-      if (state.keys.down) dy += constants.CHASE_PLAYER_SPEED;
-
-      if (dx !== 0 || dy !== 0) {
-        const move = normalizeVector(dx, dy, constants.CHASE_PLAYER_SPEED);
-
+      if (move.dx !== 0 || move.dy !== 0) {
         state.player.moving = true;
-        state.player.direction = vectorToDirection(dx, dy);
+        state.player.direction = vectorToDirection(move.dx, move.dy);
         tryMove(move.dx, move.dy);
       }
 
@@ -1838,42 +1958,26 @@ export function initGame() {
           guardDoor.y2 - guardDoor.y1
         );
 
+        if (state.pointer.active) {
+          ctx.strokeStyle = 'rgba(0, 150, 255, 0.95)';
+          ctx.fillStyle = 'rgba(0, 150, 255, 0.15)';
+          ctx.beginPath();
+          ctx.arc(state.pointer.startX, state.pointer.startY, sx(constants.POINTER_DEADZONE), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(state.pointer.startX, state.pointer.startY);
+          ctx.lineTo(state.pointer.currentX, state.pointer.currentY);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(state.pointer.currentX, state.pointer.currentY, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
         ctx.restore();
       }
-      if (state.run) {
-  ctx.save();
-  ctx.strokeStyle = 'rgba(0, 0, 255, 0.9)'; // Use a distinct color like blue
-  ctx.lineWidth = 2;
-
-  // Highlight each item's interaction area
-  state.run.items.forEach((item) => {
-    let iBoxX, iBoxY, iBoxW, iBoxH;
-    if (item.type === 'wall') {
-      iBoxX = item.x;
-      iBoxY = item.y;
-      iBoxW = item.w;
-      iBoxH = item.h;
-    } else if (item.type === 'floor') {
-      iBoxX = item.anchorX - item.drawW / 2;
-      iBoxY = item.anchorY - item.drawH;
-      iBoxW = item.drawW;
-      iBoxH = item.drawH;
-    } else {
-      return; // Skip if not wall or floor
-    }
-
-    ctx.strokeRect(iBoxX, iBoxY, iBoxW, iBoxH);
-  });
-
-  // Highlight player interaction area
-  ctx.strokeStyle = 'rgba(255, 255, 0, 0.9)'; // Use a distinct color like yellow
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.arc(state.player.x, state.player.y, sx(constants.INTERACT_DISTANCE), 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.restore();
-}
       /*
       ******************************************************************
       *                    END OF DEBUG SYSTEM                          *
@@ -1933,6 +2037,7 @@ export function initGame() {
 
     if (k === 'escape') {
       hideHomeworkPopup();
+      resetPointerInput();
     }
   });
 
@@ -1985,6 +2090,58 @@ export function initGame() {
     btn.addEventListener('mouseleave', () => press(false));
   });
 
+  canvas.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (state.screen !== 'game') return;
+      e.preventDefault();
+      startPointerControl(e);
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    'pointermove',
+    (e) => {
+      if (!state.pointer.active) return;
+      e.preventDefault();
+      updatePointerControl(e);
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    'pointerup',
+    (e) => {
+      e.preventDefault();
+      endPointerControl(e);
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    'pointercancel',
+    (e) => {
+      e.preventDefault();
+      endPointerControl(e);
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    'pointerleave',
+    (e) => {
+      if (state.pointer.active && e.pointerType === 'mouse') {
+        endPointerControl(e);
+      }
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener('contextmenu', (e) => {
+    if (state.screen === 'game') e.preventDefault();
+  });
+
   if (interactBtn) interactBtn.addEventListener('click', interact);
 
   if (backToHubBtn) {
@@ -1992,6 +2149,7 @@ export function initGame() {
       stopAllGameAudio();
       closeQuestionModal();
       resetMovementKeys();
+      resetPointerInput();
 
       state.run = null;
       state.activeItem = null;
@@ -2004,7 +2162,10 @@ export function initGame() {
   if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
 
   if (cancelAnswerBtn) {
-    cancelAnswerBtn.addEventListener('click', closeQuestionModal);
+    cancelAnswerBtn.addEventListener('click', () => {
+      closeQuestionModal();
+      resetPointerInput();
+    });
   }
 
   if (summaryContinueBtn) {
@@ -2012,6 +2173,9 @@ export function initGame() {
   }
 
   window.addEventListener('resize', resizeCanvas);
+  document.addEventListener('fullscreenchange', () => {
+    setTimeout(resizeCanvas, 60);
+  });
 
   showScreen('hub');
   applyJoystickLayout();
