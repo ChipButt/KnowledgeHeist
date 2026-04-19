@@ -67,10 +67,13 @@
   <!-- GAME -->
   <section id="gameScreen" class="screen">
     <div class="game-topbar">
-      <div class="game-chip">Current haul: <span id="haulValue">£0.00</span></div>
-      <div class="game-chip">Strikes: <span id="strikesValue">0 / 3</span></div>
-      <div class="game-chip">Paintings left: <span id="paintingsLeftValue">0</span></div>
-      <button id="backToHubBtn" type="button">Back to hub</button>
+      <div class="game-topbar-left">
+        <div class="game-chip">Current haul: <span id="haulValue">£0.00</span></div>
+        <div class="game-chip">Paintings left: <span id="paintingsLeftValue">0</span></div>
+        <div class="game-chip">Strikes left: <span id="strikesValue">0 / 3</span></div>
+      </div>
+
+      <button id="backToHubBtn" type="button">Back to Base</button>
     </div>
 
     <div class="game-shell">
@@ -79,14 +82,7 @@
       </div>
 
       <div class="game-controls">
-        <div id="joystick">
-          <button class="joy-btn" data-dir="up" type="button">▲</button>
-          <button class="joy-btn" data-dir="left" type="button">◀</button>
-          <button class="joy-btn" data-dir="down" type="button">▼</button>
-          <button class="joy-btn" data-dir="right" type="button">▶</button>
-        </div>
-
-        <button id="interactBtn" type="button">INTERACT</button>
+        <button id="interactBtn" type="button" aria-label="Grab">GRAB</button>
       </div>
     </div>
   </section>
@@ -122,11 +118,12 @@
       <div class="instructions-copy">
 On a computer:
 Use the arrow keys to move.
-Press Space to interact.
+Press Enter to grab.
+You can also click and hold on the game area to move Nana.
 
 On a mobile:
-Use the on-screen joystick to move.
-Use the interact button to attempt to grab items.
+Drag on the game area to move Nana.
+Use the GRAB button to attempt to steal items.
 
 Walk Nana around the museum.
 Move up to an artwork or floor item and attempt to grab it.
