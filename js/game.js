@@ -47,6 +47,7 @@ export function initGame() {
   let VIEW_H = canvas.height;
 
   const DEBUG_INTERACTION = false;
+  const DEBUG_LAYOUT_OVERLAY = true;
 
   const sx = (x) => (x / SOURCE_W) * VIEW_W;
   const sy = (y) => (y / SOURCE_H) * VIEW_H;
@@ -2097,6 +2098,197 @@ export function initGame() {
     ctx.restore();
   }
 
+  function drawLayoutOverlay() {
+    if (!DEBUG_LAYOUT_OVERLAY) return;
+
+    ctx.save();
+
+    // whole image border
+    ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2);
+
+    // source grid
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+
+    for (let x = 0; x <= SOURCE_W; x += 256) {
+      const px = sx(x);
+      ctx.strokeStyle = 'rgba(80,180,255,0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, 0);
+      ctx.lineTo(px, VIEW_H);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(80,180,255,0.92)';
+      ctx.fillText(`x:${x}`, px + 2, 2);
+    }
+
+    for (let y = 0; y <= SOURCE_H; y += 128) {
+      const py = sy(y);
+      ctx.strokeStyle = 'rgba(255,180,80,0.18)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, py);
+      ctx.lineTo(VIEW_W, py);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(255,180,80,0.92)';
+      ctx.fillText(`y:${y}`, 2, py + 2);
+    }
+
+    // floor polygon
+    const floorPoly = getFloorPoly();
+    ctx.strokeStyle = 'rgba(0,255,255,0.95)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(floorPoly[0].x, floorPoly[0].y);
+    for (let i = 1; i < floorPoly.length; i += 1) {
+      ctx.lineTo(floorPoly[i].x, floorPoly[i].y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+
+    // floor polygon point labels
+    ctx.fillStyle = 'rgba(0,255,255,0.95)';
+    floorPoly.forEach((p, i) => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillText(`F${i + 1}`, p.x + 6, p.y + 6);
+    });
+
+    // exit zone
+    const exit = getExitZone();
+    ctx.strokeStyle = 'rgba(255,255,0,0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(exit.x1, exit.y1, exit.x2 - exit.x1, exit.y2 - exit.y1);
+    ctx.fillStyle = 'rgba(255,255,0,0.18)';
+    ctx.fillRect(exit.x1, exit.y1, exit.x2 - exit.x1, exit.y2 - exit.y1);
+    ctx.fillStyle = 'rgba(255,255,0,0.95)';
+    ctx.fillText('EXIT ZONE', exit.x1 + 4, exit.y1 + 4);
+
+    // guard door zone
+    const guardDoor = getGuardDoorZone();
+    ctx.strokeStyle = 'rgba(255,0,255,0.95)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      guardDoor.x1,
+      guardDoor.y1,
+      guardDoor.x2 - guardDoor.x1,
+      guardDoor.y2 - guardDoor.y1
+    );
+    ctx.fillStyle = 'rgba(255,0,255,0.18)';
+    ctx.fillRect(
+      guardDoor.x1,
+      guardDoor.y1,
+      guardDoor.x2 - guardDoor.x1,
+      guardDoor.y2 - guardDoor.y1
+    );
+    ctx.fillStyle = 'rgba(255,0,255,0.95)';
+    ctx.fillText('GUARD DOOR', guardDoor.x1 + 4, guardDoor.y1 + 4);
+
+    // item art boxes + interaction points
+    if (state.run) {
+      state.run.items.forEach((item) => {
+        if (item.type === 'wall') {
+          ctx.strokeStyle = 'rgba(255,0,0,0.9)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(item.x, item.y, item.w, item.h);
+        }
+
+        if (item.type === 'floor') {
+          const drawX = item.anchorX - item.drawW / 2;
+          const drawY = item.anchorY - item.drawH;
+
+          ctx.strokeStyle = 'rgba(255,120,0,0.95)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(drawX, drawY, item.drawW, item.drawH);
+
+          const blocker = getFloorItemBlocker(item);
+          if (blocker) {
+            ctx.strokeStyle = 'rgba(0,255,255,0.95)';
+            ctx.strokeRect(
+              blocker.x1,
+              blocker.y1,
+              blocker.x2 - blocker.x1,
+              blocker.y2 - blocker.y1
+            );
+          }
+        }
+
+        const p = getItemInteractPoint(item);
+        const r = getItemInteractRadius(item);
+
+        ctx.strokeStyle = 'rgba(0,255,0,0.95)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(0,255,0,0.18)';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(`${item.id}`, p.x + 4, p.y + 4);
+      });
+
+      const playerPoint = getPlayerInteractPoint();
+      ctx.strokeStyle = 'rgba(0,140,255,0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(playerPoint.x, playerPoint.y, 9, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,140,255,0.95)';
+      ctx.fillText('PLAYER FEET POINT', playerPoint.x + 10, playerPoint.y + 6);
+    }
+
+    // pointer drag visual
+    if (state.pointer.active) {
+      ctx.strokeStyle = 'rgba(0,150,255,0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(state.pointer.startX, state.pointer.startY, sx(constants.POINTER_DEADZONE), 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(state.pointer.startX, state.pointer.startY);
+      ctx.lineTo(state.pointer.currentX, state.pointer.currentY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(state.pointer.currentX, state.pointer.currentY, 7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // legend
+    const legendX = 12;
+    const legendY = VIEW_H - 132;
+    const legendW = 280;
+    const legendH = 120;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.64)';
+    ctx.fillRect(legendX, legendY, legendW, legendH);
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.strokeRect(legendX, legendY, legendW, legendH);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.fillText(`SOURCE: ${SOURCE_W} x ${SOURCE_H}`, legendX + 8, legendY + 8);
+    ctx.fillText(`VIEW: ${VIEW_W} x ${VIEW_H}`, legendX + 8, legendY + 24);
+    ctx.fillText('White = image border', legendX + 8, legendY + 42);
+    ctx.fillText('Cyan = floor polygon / floor blockers', legendX + 8, legendY + 58);
+    ctx.fillText('Yellow = exit zone', legendX + 8, legendY + 74);
+    ctx.fillText('Magenta = guard door zone', legendX + 8, legendY + 90);
+    ctx.fillText('Green = interaction locations', legendX + 8, legendY + 106);
+
+    ctx.restore();
+  }
+
   function gameLoop(timestamp) {
     if (!state.lastTimestamp) state.lastTimestamp = timestamp;
     const delta = timestamp - state.lastTimestamp;
@@ -2106,6 +2298,7 @@ export function initGame() {
       update(delta);
       drawRoom(runtime);
       drawInteractionDebug();
+      drawLayoutOverlay();
     } catch (err) {
       console.error(err);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
