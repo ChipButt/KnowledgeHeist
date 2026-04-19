@@ -49,6 +49,11 @@ export function initGame() {
   const DEBUG_INTERACTION = false;
   const DEBUG_LAYOUT_OVERLAY = true;
 
+  const PLAYER_DRAW_W = 100;
+  const PLAYER_DRAW_H = 100;
+  const PLAYER_DRAW_Y_OFFSET = 10;
+  const PLAYER_FEET_POINT_Y = 0.63;
+
   const sx = (x) => (x / SOURCE_W) * VIEW_W;
   const sy = (y) => (y / SOURCE_H) * VIEW_H;
 
@@ -88,10 +93,6 @@ export function initGame() {
 
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
-  }
-
-  function getPlayerFeetOffsetY() {
-    return Math.max(22, VIEW_H * 0.09);
   }
 
   function loadImage(src) {
@@ -1183,9 +1184,11 @@ export function initGame() {
   }
 
   function getPlayerInteractPoint() {
+    const drawTopY = state.player.y - PLAYER_DRAW_H - PLAYER_DRAW_Y_OFFSET;
+
     return {
       x: state.player.x,
-      y: state.player.y - getPlayerFeetOffsetY()
+      y: drawTopY + (PLAYER_DRAW_H * PLAYER_FEET_POINT_Y)
     };
   }
 
@@ -2103,12 +2106,10 @@ export function initGame() {
 
     ctx.save();
 
-    // whole image border
     ctx.strokeStyle = 'rgba(255,255,255,0.65)';
     ctx.lineWidth = 2;
     ctx.strokeRect(1, 1, VIEW_W - 2, VIEW_H - 2);
 
-    // source grid
     ctx.font = '11px Arial';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
@@ -2139,7 +2140,6 @@ export function initGame() {
       ctx.fillText(`y:${y}`, 2, py + 2);
     }
 
-    // floor polygon
     const floorPoly = getFloorPoly();
     ctx.strokeStyle = 'rgba(0,255,255,0.95)';
     ctx.lineWidth = 2;
@@ -2151,7 +2151,6 @@ export function initGame() {
     ctx.closePath();
     ctx.stroke();
 
-    // floor polygon point labels
     ctx.fillStyle = 'rgba(0,255,255,0.95)';
     floorPoly.forEach((p, i) => {
       ctx.beginPath();
@@ -2160,7 +2159,6 @@ export function initGame() {
       ctx.fillText(`F${i + 1}`, p.x + 6, p.y + 6);
     });
 
-    // exit zone
     const exit = getExitZone();
     ctx.strokeStyle = 'rgba(255,255,0,0.95)';
     ctx.lineWidth = 2;
@@ -2170,7 +2168,6 @@ export function initGame() {
     ctx.fillStyle = 'rgba(255,255,0,0.95)';
     ctx.fillText('EXIT ZONE', exit.x1 + 4, exit.y1 + 4);
 
-    // guard door zone
     const guardDoor = getGuardDoorZone();
     ctx.strokeStyle = 'rgba(255,0,255,0.95)';
     ctx.lineWidth = 2;
@@ -2190,7 +2187,6 @@ export function initGame() {
     ctx.fillStyle = 'rgba(255,0,255,0.95)';
     ctx.fillText('GUARD DOOR', guardDoor.x1 + 4, guardDoor.y1 + 4);
 
-    // item art boxes + interaction points
     if (state.run) {
       state.run.items.forEach((item) => {
         if (item.type === 'wall') {
@@ -2247,7 +2243,6 @@ export function initGame() {
       ctx.fillText('PLAYER FEET POINT', playerPoint.x + 10, playerPoint.y + 6);
     }
 
-    // pointer drag visual
     if (state.pointer.active) {
       ctx.strokeStyle = 'rgba(0,150,255,0.95)';
       ctx.lineWidth = 2;
@@ -2265,10 +2260,9 @@ export function initGame() {
       ctx.stroke();
     }
 
-    // legend
     const legendX = 12;
     const legendY = VIEW_H - 132;
-    const legendW = 280;
+    const legendW = 320;
     const legendH = 120;
 
     ctx.fillStyle = 'rgba(0,0,0,0.64)';
@@ -2280,11 +2274,11 @@ export function initGame() {
     ctx.font = '12px Arial';
     ctx.fillText(`SOURCE: ${SOURCE_W} x ${SOURCE_H}`, legendX + 8, legendY + 8);
     ctx.fillText(`VIEW: ${VIEW_W} x ${VIEW_H}`, legendX + 8, legendY + 24);
-    ctx.fillText('White = image border', legendX + 8, legendY + 42);
-    ctx.fillText('Cyan = floor polygon / floor blockers', legendX + 8, legendY + 58);
-    ctx.fillText('Yellow = exit zone', legendX + 8, legendY + 74);
-    ctx.fillText('Magenta = guard door zone', legendX + 8, legendY + 90);
-    ctx.fillText('Green = interaction locations', legendX + 8, legendY + 106);
+    ctx.fillText(`PLAYER FEET Y: ${PLAYER_FEET_POINT_Y * 100}% of sprite`, legendX + 8, legendY + 40);
+    ctx.fillText('White = image border', legendX + 8, legendY + 58);
+    ctx.fillText('Cyan = floor polygon / floor blockers', legendX + 8, legendY + 74);
+    ctx.fillText('Yellow = exit zone', legendX + 8, legendY + 90);
+    ctx.fillText('Magenta = guard door zone', legendX + 8, legendY + 106);
 
     ctx.restore();
   }
