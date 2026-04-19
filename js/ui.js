@@ -6,7 +6,7 @@ import {
   clearAllProgress
 } from './storage.js';
 
-const HUB_MUSIC_FILE = 'hub-music-placeholder.mp3';
+const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 const PLAYER_NAME_KEY = 'nanaHeistPlayerName_v1';
 
 const hubCellPositions = {
