@@ -33,7 +33,7 @@
       </button>
 
       <button class="hub-ui-button" id="leaderboardBtn" type="button">
-        Leaderboard
+        Leaderboards
       </button>
 
       <button
@@ -122,18 +122,17 @@ Press Enter to grab.
 You can also click and hold on the game area to move Nana.
 
 On a mobile:
-Drag on the game area to move.
+Drag on the game area to move Nana.
 Use the GRAB button to attempt to steal items.
 
-Walk around the museum.
-Move up to a piece of art and attempt to grab it.
+Walk Nana around the museum.
+Move up to an artwork or floor item and attempt to grab it.
 Each item triggers a question.
 Get it right and you steal it.
-Get it wrong and the item is locked down 
-and you gain one strike.
+Get it wrong and it greys out and you get a strike.
 Three strikes brings in the guard.
 If you make it to the exit, you escape with your haul.
-
+Questions only get used once until you reset your progress.
       </div>
       <div class="popup-actions">
         <button id="closeInstructionsBtn" type="button">Close</button>
@@ -153,13 +152,44 @@ If you make it to the exit, you escape with your haul.
     </div>
   </div>
 
-  <!-- LEADERBOARD OVERLAY -->
+  <!-- LEADERBOARDS OVERLAY -->
   <div id="leaderboardOverlay" class="overlay">
     <div class="popup-panel confirm-panel">
-      <h2>Leaderboard</h2>
-      <p>Leaderboard coming soon.</p>
-      <div class="popup-actions">
-        <button id="closeLeaderboardBtn" type="button">Close</button>
+      <div id="leaderboardMenuScreen">
+        <h2>Leaderboards</h2>
+        <p>Choose which leaderboard you want to view.</p>
+        <div class="popup-actions">
+          <button id="showBestHeistBoardBtn" type="button">Best Heist</button>
+          <button id="showTotalBankedBoardBtn" type="button">Total Banked</button>
+          <button id="closeLeaderboardBtn" type="button">Return to Main Hub</button>
+        </div>
+      </div>
+
+      <div id="leaderboardBoardScreen" style="display:none;">
+        <h2 id="leaderboardViewTitle">Best Heist</h2>
+        <p id="leaderboardViewSubtitle">Top scores</p>
+
+        <div id="leaderboardStatusText"></div>
+
+        <div id="leaderboardTableWrap">
+          <table id="leaderboardTable" aria-label="Leaderboard">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Score</th>
+                <th>Extra</th>
+              </tr>
+            </thead>
+            <tbody id="leaderboardTableBody"></tbody>
+          </table>
+        </div>
+
+        <div class="popup-actions">
+          <button id="swapLeaderboardBtn" type="button">Show Total Banked</button>
+          <button id="backToLeaderboardMenuBtn" type="button">Choose Another Board</button>
+          <button id="closeLeaderboardFromBoardBtn" type="button">Return to Main Hub</button>
+        </div>
       </div>
     </div>
   </div>
