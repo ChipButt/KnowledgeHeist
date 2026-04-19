@@ -47,7 +47,7 @@ export function initGame() {
   let VIEW_H = canvas.height;
 
   const DEBUG_INTERACTION = false;
-  const DEBUG_LAYOUT_OVERLAY = true;
+  const DEBUG_LAYOUT_OVERLAY = false;
 
   const PLAYER_DRAW_W = 100;
   const PLAYER_DRAW_H = 100;
