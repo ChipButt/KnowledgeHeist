@@ -114,12 +114,12 @@ function getCurrentPlayerImage(player, assets) {
   }
 
   const set = assets.walkAnimations[player.direction] || assets.walkAnimations.south;
-  return set[player.walkFrameIndex];
+  return set[player.walkFrameIndex] || set[0];
 }
 
 function drawFallbackPlayer(ctx, player) {
   const drawX = player.x - 50;
-  const drawY = player.y - 100;
+  const drawY = player.y - 110;
 
   ctx.fillStyle = '#f3d082';
   ctx.fillRect(drawX + 34, drawY + 14, 32, 72);
@@ -131,12 +131,14 @@ function drawFallbackPlayer(ctx, player) {
 function drawPlayer(ctx, player, assets) {
   if (!player.visible) return;
 
-  const drawX = player.x - 50;
-  const drawY = player.y - 110;
+  const drawW = 100;
+  const drawH = 100;
+  const drawX = player.x - drawW / 2;
+  const drawY = player.y - drawH - 10;
   const img = getCurrentPlayerImage(player, assets);
 
   if (imageReady(img)) {
-    ctx.drawImage(img, drawX, drawY, 100, 100);
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
   } else {
     drawFallbackPlayer(ctx, player);
   }
@@ -171,12 +173,14 @@ function drawFallbackGuard(ctx, guard) {
 function drawGuard(ctx, guard, assets) {
   if (!guard.active || !guard.visible) return;
 
-  const drawX = guard.x - 50;
-  const drawY = guard.y - 100;
+  const drawW = 100;
+  const drawH = 100;
+  const drawX = guard.x - drawW / 2;
+  const drawY = guard.y - drawH - 10;
   const img = getCurrentGuardImage(guard, assets);
 
   if (img) {
-    ctx.drawImage(img, drawX, drawY, 100, 100);
+    ctx.drawImage(img, drawX, drawY, drawW, drawH);
   } else {
     drawFallbackGuard(ctx, guard);
   }
@@ -186,27 +190,21 @@ function drawPrompt(ctx, state, helpers) {
   if (!state.run || state.run.mode !== 'play' || state.player.controlLocked) return;
 
   const item = helpers.getNearbyItem();
-  if (item) {
-    ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fillRect(state.player.x - 70, state.player.y - 124, 140, 20);
-    ctx.fillStyle = '#f7e7b0';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Attempt to grab', state.player.x, state.player.y - 114);
-    return;
-  }
+  if (!item) return;
 
-  const exit = helpers.getExitZone();
-  if (helpers.pointInRect(state.player.x, state.player.y, exit)) {
-    ctx.fillStyle = 'rgba(0,0,0,0.72)';
-    ctx.fillRect(state.player.x - 30, state.player.y - 124, 60, 20);
-    ctx.fillStyle = '#f7e7b0';
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Exit', state.player.x, state.player.y - 114);
-  }
+  const itemPoint = helpers.getItemInteractPoint
+    ? helpers.getItemInteractPoint(item)
+    : { x: item.anchorX, y: item.anchorY };
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(0,0,0,0.72)';
+  ctx.fillRect(itemPoint.x - 42, itemPoint.y - 44, 84, 20);
+  ctx.fillStyle = '#f7e7b0';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('GRAB', itemPoint.x, itemPoint.y - 34);
+  ctx.restore();
 }
 
 export function drawRoom(runtime) {
