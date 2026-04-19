@@ -1866,3 +1866,28 @@ export function initGame() {
     startHeist
   };
 }
+/*
+******************************************************************
+*                    DEBUG SYSTEM: HITBOX VISUALIZATION        *
+*                                                                  *
+*  THIS SECTION OF CODE DISPLAYS RED OUTLINES AROUND HITBOXES.   *
+*  USE THIS FOR ALIGNMENT AND DEBUGGING ONLY. REMOVE OR COMMENT    *
+*  THIS OUT WHEN DEBUGGING IS COMPLETE TO RESTORE NORMAL GAMEPLAY. *
+******************************************************************
+*/
+function drawHitboxes(ctx) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(255,0,0,0.8)';
+  ctx.lineWidth = 2;
+  state.run.items.forEach(item => {
+    if (item.type === 'wall') {
+      ctx.strokeRect(item.x, item.y, item.w, item.h);
+    } else if (item.type === 'floor') {
+      ctx.strokeRect(item.anchorX - item.drawW / 2, item.anchorY - item.drawH, item.drawW, item.drawH);
+    }
+  });
+  ctx.restore();
+}
+
+// Inside your game loop, just before or after drawRoom:
+drawHitboxes(ctx);
