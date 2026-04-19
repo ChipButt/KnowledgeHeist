@@ -299,17 +299,13 @@ export function initGame() {
   }
 
   const backgroundMusicTracks = [
-    'Minuet Antique.mp3',
-    'track2.mp3',
-    'track3.mp3',
-    'track4.mp3',
-    'track5.mp3',
-    'track6.mp3',
-    'track7.mp3',
-    'track8.mp3',
-    'track9.mp3',
-    'track10.mp3'
-  ];
+  'Gallery of Era.mp3',
+  'Gallery of Eras.mp3',
+  'Gallery of Golden Years long.mp3',
+  'Gallery of Golden Years.mp3',
+  'Gallery Relax Machine.mp3',
+  'Gallery Time Machine.mp3'
+];
 
   let lastBackgroundMusicTrack = '';
 
