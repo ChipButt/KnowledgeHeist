@@ -63,7 +63,7 @@ export function initGame() {
     'item-4': { x1: 292, y1: 1032, x2: 410, y2: 1161 },
 
     'item-5': { x1: 2155, y1: 683, x2: 2263, y2: 821 },
-    'item-6': { x1: 2328, y1: 910, x2: 2416, y2: 1034 }
+    'item-6': { x1: 2313, y1: 889, x2: 2431, y2: 1055 }
   };
 
   const sx = (x) => (x / SOURCE_W) * VIEW_W;
@@ -220,13 +220,8 @@ export function initGame() {
 
     if (absX < 0.001 && absY < 0.001) return 'south';
 
-    if (absX > absY * 1.8) {
-      return dx > 0 ? 'east' : 'west';
-    }
-
-    if (absY > absX * 1.8) {
-      return dy > 0 ? 'south' : 'north';
-    }
+    if (absX > absY * 1.8) return dx > 0 ? 'east' : 'west';
+    if (absY > absX * 1.8) return dy > 0 ? 'south' : 'north';
 
     if (dx > 0 && dy < 0) return 'north-east';
     if (dx < 0 && dy < 0) return 'north-west';
@@ -1621,6 +1616,44 @@ export function initGame() {
     } catch (_) {}
   }
 
+  function openExitConfirm() {
+    if (!state.run || state.run.ended) return;
+    if (isConfirmPopupOpen()) return;
+    if (state.player.controlLocked || state.player.action) return;
+
+    if (state.run.haul <= 0) {
+      showBanner('You need some stolen art before escaping.');
+      return;
+    }
+
+    openConfirmPopup({
+      title: 'Leave the Museum?',
+      text: `Do you want to leave now? Your current heist amount is ${formatMoney(state.run.haul)}.`,
+      onConfirm: () => {
+        state.player.controlLocked = true;
+        state.run.mode = 'escape';
+        state.player.direction = 'south';
+        showBanner('Escaping...');
+      },
+      onCancel: () => {}
+    });
+  }
+
+  function updateExitZoneTrigger() {
+    if (!state.run || state.run.ended) return;
+    if (state.run.mode !== 'play' && state.run.mode !== 'chase') return;
+
+    const exit = getExitZone();
+    const playerPoint = getPlayerInteractPoint();
+    const isInExitZone = pointInRect(playerPoint.x, playerPoint.y, exit);
+
+    if (isInExitZone && !state.run.wasInExitZone) {
+      openExitConfirm();
+    }
+
+    state.run.wasInExitZone = isInExitZone;
+  }
+
   function endHeist(escaped) {
     if (!state.run || state.run.ended) return;
 
@@ -1773,7 +1806,8 @@ export function initGame() {
       wrongQuestions: [],
       ended: false,
       mode: 'play',
-      failVoicePool: shuffle([...assets.failVoiceFiles])
+      failVoicePool: shuffle([...assets.failVoiceFiles]),
+      wasInExitZone: false
     };
 
     buildScaledRunData(state.run);
@@ -1829,21 +1863,7 @@ export function initGame() {
       (state.run.mode === 'play' || state.run.mode === 'chase') &&
       pointInRect(playerPoint.x, playerPoint.y, exit)
     ) {
-      if (state.run.haul <= 0) {
-        showBanner('You need some stolen art before escaping.');
-        return;
-      }
-
-      openConfirmPopup({
-        title: 'Leave the Museum?',
-        text: `Are you sure you want to leave? You'll bank ${formatMoney(state.run.haul)}.`,
-        onConfirm: () => {
-          state.player.controlLocked = true;
-          state.run.mode = 'escape';
-          state.player.direction = 'south';
-          showBanner('Escaping...');
-        }
-      });
+      openExitConfirm();
       return;
     }
 
@@ -1958,6 +1978,7 @@ export function initGame() {
         tryMove(move.dx, move.dy);
       }
 
+      updateExitZoneTrigger();
       updateWalkAnimation(delta);
       updateGuardAnimation(delta);
       return;
@@ -1978,6 +1999,8 @@ export function initGame() {
         state.player.direction = vectorToDirection(move.dx, move.dy);
         tryMove(move.dx, move.dy);
       }
+
+      updateExitZoneTrigger();
 
       moveTowards(
         state.guard,
