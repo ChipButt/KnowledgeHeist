@@ -1840,6 +1840,40 @@ export function initGame() {
 
         ctx.restore();
       }
+      if (state.run) {
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0, 0, 255, 0.9)'; // Use a distinct color like blue
+  ctx.lineWidth = 2;
+
+  // Highlight each item's interaction area
+  state.run.items.forEach((item) => {
+    let iBoxX, iBoxY, iBoxW, iBoxH;
+    if (item.type === 'wall') {
+      iBoxX = item.x;
+      iBoxY = item.y;
+      iBoxW = item.w;
+      iBoxH = item.h;
+    } else if (item.type === 'floor') {
+      iBoxX = item.anchorX - item.drawW / 2;
+      iBoxY = item.anchorY - item.drawH;
+      iBoxW = item.drawW;
+      iBoxH = item.drawH;
+    } else {
+      return; // Skip if not wall or floor
+    }
+
+    ctx.strokeRect(iBoxX, iBoxY, iBoxW, iBoxH);
+  });
+
+  // Highlight player interaction area
+  ctx.strokeStyle = 'rgba(255, 255, 0, 0.9)'; // Use a distinct color like yellow
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(state.player.x, state.player.y, sx(constants.INTERACT_DISTANCE), 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.restore();
+}
       /*
       ******************************************************************
       *                    END OF DEBUG SYSTEM                          *
