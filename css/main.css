@@ -435,122 +435,130 @@ body {
    GAME SCREEN
 ========================= */
 #gameScreen {
+  position: relative;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
-  gap: 14px;
-  padding: 14px 14px 20px;
-  background: linear-gradient(180deg, #090c12 0%, #0e1117 100%);
+  padding: 0;
+  background: #090c12;
   font-family: var(--ui-font);
+  overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .game-topbar {
-  width: min(1100px, 100%);
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 30;
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.game-topbar-left {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 150px);
 }
 
 .game-chip,
 .game-topbar button {
   border-radius: 999px;
-  background: #2a3140;
-  color: #f4efe3;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  padding: 10px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 9px 14px;
   font-weight: 700;
   font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.game-chip {
+  background: rgba(42, 49, 64, 0.92);
+  color: #f4efe3;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.26);
 }
 
 .game-topbar button {
+  pointer-events: auto;
+}
+
+#backToHubBtn {
+  background: linear-gradient(180deg, #e1bf6d 0%, #c7922f 100%);
+  color: #1c150a;
+  border: 1px solid rgba(80, 54, 13, 0.45);
+  font-weight: 800;
   cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 6px 14px rgba(0, 0, 0, 0.28);
 }
 
 .game-shell {
-  width: min(1100px, 100%);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  align-items: center;
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
 }
 
 .canvas-wrap {
-  width: min(100%, 960px);
-  border-radius: 16px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
   overflow: hidden;
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: none;
   background: #101722;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
 }
 
 #gameCanvas {
   display: block;
   width: 100%;
-  aspect-ratio: 1024 / 670;
+  height: 100%;
   background: #111;
 }
 
 .game-controls {
-  width: min(100%, 960px);
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 30;
   display: flex;
-  justify-content: space-between;
   align-items: flex-end;
-  gap: 12px;
-  flex-wrap: wrap;
+  justify-content: flex-start;
+  pointer-events: none;
 }
 
 #joystick {
-  position: relative;
-  width: 168px;
-  height: 112px;
-}
-
-.joy-btn {
-  position: absolute;
-  width: 48px;
-  height: 48px;
-  border: none;
-  border-radius: 10px;
-  background: #3a4353;
-  color: #f5f1e9;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-.joy-btn[data-dir="up"] {
-  left: 56px;
-  top: 0;
-}
-
-.joy-btn[data-dir="left"] {
-  left: 0;
-  top: 56px;
-}
-
-.joy-btn[data-dir="down"] {
-  left: 56px;
-  top: 56px;
-}
-
-.joy-btn[data-dir="right"] {
-  left: 112px;
-  top: 56px;
+  display: none !important;
 }
 
 #interactBtn {
+  pointer-events: auto;
+  width: 86px;
+  height: 86px;
+  min-width: 86px;
   border: none;
-  border-radius: 12px;
-  background: var(--gold);
-  color: #1d1710;
-  font-weight: 800;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #ff7777 0%, #d72f2f 55%, #9f1515 100%);
+  color: #fff6f6;
+  font-weight: 900;
   font-size: 18px;
-  padding: 16px 28px;
-  min-width: 140px;
+  letter-spacing: 0.4px;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
+    0 8px 18px rgba(0, 0, 0, 0.38);
 }
 
 #gameBanner {
@@ -698,13 +706,38 @@ body {
     font-size: clamp(9px, 1vw, 13px);
   }
 
+  .game-topbar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 8px;
+  }
+
+  .game-topbar-left {
+    gap: 6px;
+    max-width: calc(100% - 128px);
+  }
+
+  .game-chip,
+  .game-topbar button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  #backToHubBtn {
+    min-width: 116px;
+  }
+
   .game-controls {
-    justify-content: center;
+    left: 10px;
+    bottom: 10px;
   }
 
   #interactBtn {
-    width: 100%;
-    max-width: 240px;
+    width: 78px;
+    height: 78px;
+    min-width: 78px;
+    font-size: 16px;
   }
 }
 
@@ -755,15 +788,36 @@ body {
   }
 
   .game-topbar {
+    top: 6px;
+    left: 6px;
+    right: 6px;
     gap: 6px;
   }
 
+  .game-topbar-left {
+    gap: 5px;
+    max-width: calc(100% - 110px);
+  }
+
+  .game-chip,
+  .game-topbar button {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  #backToHubBtn {
+    min-width: 102px;
+  }
+
   .game-controls {
-    justify-content: center;
+    left: 8px;
+    bottom: 8px;
   }
 
   #interactBtn {
-    width: 100%;
-    max-width: 240px;
+    width: 72px;
+    height: 72px;
+    min-width: 72px;
+    font-size: 15px;
   }
 }
