@@ -1,6 +1,7 @@
-export const SAVE_KEY = 'nanaHeistSave_v11';
-export const LAST_HEIST_WRONG_KEY = 'nanaHeistLastWrong_v11';
+export const SAVE_KEY = 'nanaHeistSave_v12';
+export const LAST_HEIST_WRONG_KEY = 'nanaHeistLastWrong_v12';
 export const HISTORY_KEY = 'nanaHeistHistory_v1';
+export const SETTINGS_KEY = 'nanaHeistSettings_v1';
 
 function getDefaultSave() {
   return {
@@ -12,8 +13,22 @@ function getDefaultSave() {
   };
 }
 
+export function getDefaultSettings() {
+  return {
+    playerName: '',
+    hubVolume: 22,
+    gameMusicVolume: 22,
+    voiceVolume: 90,
+    difficulty: 'medium'
+  };
+}
+
 function dispatchDataUpdated() {
   window.dispatchEvent(new CustomEvent('nanaheist:data-updated'));
+}
+
+function dispatchSettingsUpdated() {
+  window.dispatchEvent(new CustomEvent('nanaheist:settings-updated'));
 }
 
 export function loadSave() {
@@ -38,6 +53,33 @@ export function loadSave() {
 export function saveProgress(saveData) {
   localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
   dispatchDataUpdated();
+}
+
+export function loadSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (!raw) return getDefaultSettings();
+
+    const parsed = JSON.parse(raw);
+    const defaults = getDefaultSettings();
+
+    return {
+      playerName: String(parsed.playerName || defaults.playerName),
+      hubVolume: Number(parsed.hubVolume ?? defaults.hubVolume),
+      gameMusicVolume: Number(parsed.gameMusicVolume ?? defaults.gameMusicVolume),
+      voiceVolume: Number(parsed.voiceVolume ?? defaults.voiceVolume),
+      difficulty: ['easy', 'medium', 'hard'].includes(parsed.difficulty)
+        ? parsed.difficulty
+        : defaults.difficulty
+    };
+  } catch {
+    return getDefaultSettings();
+  }
+}
+
+export function saveSettings(settings) {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  dispatchSettingsUpdated();
 }
 
 export function loadLastHeistWrong() {
@@ -100,5 +142,7 @@ export function clearAllProgress() {
   localStorage.removeItem(SAVE_KEY);
   localStorage.removeItem(LAST_HEIST_WRONG_KEY);
   localStorage.removeItem(HISTORY_KEY);
+  localStorage.removeItem(SETTINGS_KEY);
   dispatchDataUpdated();
+  dispatchSettingsUpdated();
 }
