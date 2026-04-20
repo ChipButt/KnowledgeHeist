@@ -3,7 +3,7 @@ export const QUESTION_BANK = [
     id: "q001",
     question: "What was The Beatles’ last studio album released before their breakup?",
     answers: [
-      "let it be"
+      "Let It Be"
     ],
     matchType: "contains",
     value: 956,
@@ -13,7 +13,7 @@ export const QUESTION_BANK = [
     id: "q002",
     question: "Which song by Sam Smith and Kim Petras topped the Billboard Hot 100 in 2022?",
     answers: [
-      "unholy"
+      "Unholy"
     ],
     matchType: "exact",
     value: 602,
@@ -23,7 +23,7 @@ export const QUESTION_BANK = [
     id: "q003",
     question: "Which singer was discovered on YouTube before releasing “Just the Way You Are”?",
     answers: [
-      "bruno mars"
+      "Bruno Mars"
     ],
     matchType: "contains",
     value: 1626,
@@ -33,7 +33,7 @@ export const QUESTION_BANK = [
     id: "q004",
     question: "Which Scottish singer released “Wish You the Best” in 2023?",
     answers: [
-      "lewis capaldi"
+      "Lewis Capaldi"
     ],
     matchType: "contains",
     value: 1503,
@@ -43,7 +43,7 @@ export const QUESTION_BANK = [
     id: "q005",
     question: "Who was the first woman ever inducted into the Rock & Roll Hall of Fame?",
     answers: [
-      "aretha franklin"
+      "Aretha Franklin"
     ],
     matchType: "contains",
     value: 1414,
@@ -53,8 +53,8 @@ export const QUESTION_BANK = [
     id: "q006",
     question: "Which country hosted Eurovision 2023?",
     answers: [
-      "united kingdom",
-      "united kingdom (on behalf of ukraine)"
+      "United Kingdom",
+      "United Kingdom (on behalf of Ukraine)"
     ],
     matchType: "contains",
     value: 1071,
@@ -64,7 +64,7 @@ export const QUESTION_BANK = [
     id: "q007",
     question: "Which American band had hits with “The Middle” and “Sweetness”?",
     answers: [
-      "jimmy eat world"
+      "Jimmy Eat World"
     ],
     matchType: "contains",
     value: 919,
@@ -86,7 +86,7 @@ export const QUESTION_BANK = [
     id: "q009",
     question: "Which band’s members include Will Champion, Jonny Buckland, Guy Berryman, and Chris Martin?",
     answers: [
-      "coldplay"
+      "Coldplay"
     ],
     matchType: "exact",
     value: 856,
@@ -96,7 +96,7 @@ export const QUESTION_BANK = [
     id: "q010",
     question: "Which Swedish band reformed in 2018 after a 35-year hiatus?",
     answers: [
-      "abba"
+      "ABBA"
     ],
     matchType: "exact",
     value: 2918,
@@ -106,7 +106,7 @@ export const QUESTION_BANK = [
     id: "q011",
     question: "Which actress played Queen Elizabeth II in the first two seasons of The Crown?",
     answers: [
-      "claire foy"
+      "Claire Foy"
     ],
     matchType: "contains",
     value: 2228,
@@ -116,7 +116,7 @@ export const QUESTION_BANK = [
     id: "q012",
     question: "Which classic film’s final line is “Louis, I think this is the beginning of a beautiful friendship”?",
     answers: [
-      "casablanca"
+      "Casablanca"
     ],
     matchType: "exact",
     value: 630,
@@ -126,7 +126,7 @@ export const QUESTION_BANK = [
     id: "q013",
     question: "Which actor plays Tommy Shelby in Peaky Blinders?",
     answers: [
-      "cillian murphy"
+      "Cillian Murphy"
     ],
     matchType: "contains",
     value: 622,
@@ -146,8 +146,8 @@ export const QUESTION_BANK = [
     id: "q015",
     question: "What is the name of the main spaceship in the Star Trek film & TV series?",
     answers: [
-      "uss enterprise",
-      "enterprise"
+      "USS Enterprise",
+      "Enterprise"
     ],
     matchType: "contains",
     value: 1395,
@@ -157,7 +157,7 @@ export const QUESTION_BANK = [
     id: "q016",
     question: "Which actor played the title role in The Revenant?",
     answers: [
-      "leonardo dicaprio"
+      "Leonardo DiCaprio"
     ],
     matchType: "contains",
     value: 1452,
@@ -167,7 +167,7 @@ export const QUESTION_BANK = [
     id: "q017",
     question: "What is the name of the fictional paper company in The Office (US)?",
     answers: [
-      "dunder mifflin"
+      "Dunder Mifflin"
     ],
     matchType: "contains",
     value: 2569,
@@ -177,7 +177,7 @@ export const QUESTION_BANK = [
     id: "q018",
     question: "Which comedy series is set in the fictional town of Pawnee, Indiana?",
     answers: [
-      "parks and recreation"
+      "Parks and Recreation"
     ],
     matchType: "contains",
     value: 2965,
@@ -187,7 +187,7 @@ export const QUESTION_BANK = [
     id: "q019",
     question: "Which streaming series was Netflix’s first major original hit?",
     answers: [
-      "house of cards"
+      "House of Cards"
     ],
     matchType: "contains",
     value: 608,
@@ -197,7 +197,7 @@ export const QUESTION_BANK = [
     id: "q020",
     question: "Which actor plays both Gollum and Caesar in the Planet of the Apes reboot series?",
     answers: [
-      "andy serkis"
+      "Andy Serkis"
     ],
     matchType: "contains",
     value: 2798,
@@ -207,7 +207,7 @@ export const QUESTION_BANK = [
     id: "q021",
     question: "What is the only sovereign country beginning with the letter F in English, that is NOT in Europe?",
     answers: [
-      "fiji"
+      "Fiji"
     ],
     matchType: "exact",
     value: 1314,
@@ -217,7 +217,7 @@ export const QUESTION_BANK = [
     id: "q022",
     question: "What is the Capital of Vietnam?",
     answers: [
-      "hanoi"
+      "Hanoi"
     ],
     matchType: "exact",
     value: 2732,
@@ -227,8 +227,8 @@ export const QUESTION_BANK = [
     id: "q023",
     question: "What is the scientific name for the lower Jaw bone?",
     answers: [
-      "mandible",
-      "mandebal"
+      "Mandible",
+      "Mandebal"
     ],
     matchType: "exact",
     value: 2218,
@@ -238,7 +238,7 @@ export const QUESTION_BANK = [
     id: "q024",
     question: "What does the “D” in D-Day stand for?",
     answers: [
-      "day"
+      "Day"
     ],
     matchType: "exact",
     value: 1402,
@@ -248,7 +248,7 @@ export const QUESTION_BANK = [
     id: "q025",
     question: "In Greek mythology, what was Medusa's hair made of?",
     answers: [
-      "snakes"
+      "Snakes"
     ],
     matchType: "exact",
     value: 2339,
@@ -258,8 +258,8 @@ export const QUESTION_BANK = [
     id: "q026",
     question: "What is the name of the smallest bone in the human body?",
     answers: [
-      "stapes",
-      "stapes (in the ear)"
+      "Stapes",
+      "Stapes (in the ear)"
     ],
     matchType: "contains",
     value: 2913,
@@ -269,7 +269,7 @@ export const QUESTION_BANK = [
     id: "q027",
     question: "In Morse code, what letter is represented by three dots?",
     answers: [
-      "s"
+      "S"
     ],
     matchType: "exact",
     value: 1639,
@@ -279,7 +279,7 @@ export const QUESTION_BANK = [
     id: "q028",
     question: "What is the fastest rotating planet in our solar system?",
     answers: [
-      "jupiter"
+      "Jupiter"
     ],
     matchType: "exact",
     value: 526,
@@ -289,7 +289,7 @@ export const QUESTION_BANK = [
     id: "q029",
     question: "What mathematical symbol did ancient Romans not use?",
     answers: [
-      "zero"
+      "Zero"
     ],
     matchType: "exact",
     value: 1153,
@@ -299,7 +299,7 @@ export const QUESTION_BANK = [
     id: "q030",
     question: "What country has the most volcanoes in the world?",
     answers: [
-      "indonesia"
+      "Indonesia"
     ],
     matchType: "exact",
     value: 2231,
@@ -309,7 +309,7 @@ export const QUESTION_BANK = [
     id: "q031",
     question: "What fruit contains an enzyme called bromelain that can tenderize meat but also breaks down gelatin?",
     answers: [
-      "pineapple"
+      "Pineapple"
     ],
     matchType: "exact",
     value: 1893,
@@ -331,7 +331,7 @@ export const QUESTION_BANK = [
     id: "q033",
     question: "What animal's milk is used to make Roquefort cheese?",
     answers: [
-      "sheep"
+      "Sheep"
     ],
     matchType: "exact",
     value: 1136,
@@ -341,7 +341,7 @@ export const QUESTION_BANK = [
     id: "q034",
     question: "What traditional Middle Eastern dip is made with pureed roasted eggplant, tahini, lemon juice, and garlic?",
     answers: [
-      "baba ganoush"
+      "Baba Ganoush"
     ],
     matchType: "contains",
     value: 1381,
@@ -351,7 +351,7 @@ export const QUESTION_BANK = [
     id: "q035",
     question: "What type of fish eggs are used in true caviar?",
     answers: [
-      "sturgeon"
+      "Sturgeon"
     ],
     matchType: "exact",
     value: 1878,
@@ -361,8 +361,8 @@ export const QUESTION_BANK = [
     id: "q036",
     question: "What is the main ingredient in black pudding?",
     answers: [
-      "pig's blood",
-      "pigs blood"
+      "Pig's blood",
+      "Pigs blood"
     ],
     matchType: "contains",
     value: 918,
@@ -372,8 +372,8 @@ export const QUESTION_BANK = [
     id: "q037",
     question: "What popular soft drink, launched in 1905, was originally marketed as a health tonic with lithium salts?",
     answers: [
-      "7up",
-      "7-up"
+      "7UP",
+      "7-Up"
     ],
     matchType: "exact",
     value: 879,
@@ -383,8 +383,8 @@ export const QUESTION_BANK = [
     id: "q038",
     question: "What part of the plant does saffron come from?",
     answers: [
-      "the stigma of the crocus flower",
-      "stigma"
+      "The stigma of the crocus flower",
+      "Stigma"
     ],
     matchType: "contains",
     value: 2056,
@@ -394,7 +394,7 @@ export const QUESTION_BANK = [
     id: "q039",
     question: "Which fruit has varieties such as Cavendish, Red Dacca, and Plantain?",
     answers: [
-      "banana"
+      "Banana"
     ],
     matchType: "exact",
     value: 896,
@@ -404,7 +404,7 @@ export const QUESTION_BANK = [
     id: "q040",
     question: "What is the name of the thin, Russian pancakes often served with sour cream or caviar?",
     answers: [
-      "blini"
+      "Blini"
     ],
     matchType: "exact",
     value: 1970,
@@ -414,7 +414,7 @@ export const QUESTION_BANK = [
     id: "q041",
     question: "What is the process by which plants lose water through their leaves?",
     answers: [
-      "transpiration"
+      "Transpiration"
     ],
     matchType: "exact",
     value: 1908,
@@ -424,7 +424,7 @@ export const QUESTION_BANK = [
     id: "q042",
     question: "Which Shakespeare play includes the line “All the world’s a stage”?",
     answers: [
-      "as you like it"
+      "As You Like It"
     ],
     matchType: "contains",
     value: 2972,
@@ -454,7 +454,7 @@ export const QUESTION_BANK = [
     id: "q045",
     question: "In history, what was the name of the ship that Charles Darwin sailed on during his voyage of discovery?",
     answers: [
-      "hms beagle"
+      "HMS Beagle"
     ],
     matchType: "contains",
     value: 2381,
@@ -474,7 +474,7 @@ export const QUESTION_BANK = [
     id: "q047",
     question: "What does “CPU” stand for in computing?",
     answers: [
-      "central processing unit"
+      "Central Processing Unit"
     ],
     matchType: "contains",
     value: 1011,
@@ -484,7 +484,7 @@ export const QUESTION_BANK = [
     id: "q048",
     question: "What element has the atomic number 6?",
     answers: [
-      "carbon"
+      "Carbon"
     ],
     matchType: "exact",
     value: 2050,
@@ -494,7 +494,7 @@ export const QUESTION_BANK = [
     id: "q049",
     question: "Which country has the longest coastline in the world?",
     answers: [
-      "canada"
+      "Canada"
     ],
     matchType: "exact",
     value: 822,
@@ -504,7 +504,7 @@ export const QUESTION_BANK = [
     id: "q050",
     question: "Which type of cloud is typically associated with thunderstorms?",
     answers: [
-      "cumulonimbus"
+      "Cumulonimbus"
     ],
     matchType: "exact",
     value: 2761,
@@ -524,7 +524,7 @@ export const QUESTION_BANK = [
     id: "q052",
     question: "Which British automaker used the slogan “Grace... Space... Pace” to advertise its vehicles?",
     answers: [
-      "jaguar"
+      "Jaguar"
     ],
     matchType: "exact",
     value: 1981,
@@ -534,7 +534,7 @@ export const QUESTION_BANK = [
     id: "q053",
     question: "Which UK city introduced the first Clean Air Zone (CAZ) outside of London in 2021?",
     answers: [
-      "bath"
+      "Bath"
     ],
     matchType: "exact",
     value: 2864,
@@ -544,8 +544,8 @@ export const QUESTION_BANK = [
     id: "q054",
     question: "What was the name of the lightweight British kit car inspired by Lotus Seven and still in production today?",
     answers: [
-      "caterham 7",
-      "caterham seven"
+      "Caterham 7",
+      "Caterham Seven"
     ],
     matchType: "contains",
     value: 1287,
@@ -555,7 +555,7 @@ export const QUESTION_BANK = [
     id: "q055",
     question: "Which British electric vehicle startup unveiled the \"One\" hypercar claiming 0–60 mph in under 2 seconds?",
     answers: [
-      "apex motors"
+      "Apex Motors"
     ],
     matchType: "contains",
     value: 784,
@@ -565,7 +565,7 @@ export const QUESTION_BANK = [
     id: "q056",
     question: "Which UK motorway is the longest, running from Rugby to Gretna?",
     answers: [
-      "m6"
+      "M6"
     ],
     matchType: "exact",
     value: 687,
@@ -575,7 +575,7 @@ export const QUESTION_BANK = [
     id: "q057",
     question: "Which British car manufacturer produced the Stag, a 2+2 convertible powered by a V8 engine?",
     answers: [
-      "triumph"
+      "Triumph"
     ],
     matchType: "exact",
     value: 1433,
@@ -585,7 +585,7 @@ export const QUESTION_BANK = [
     id: "q058",
     question: "What do the letters “TVR” stand for in the name of the British sports car company?",
     answers: [
-      "trevor"
+      "Trevor"
     ],
     matchType: "exact",
     value: 1685,
@@ -608,7 +608,7 @@ export const QUESTION_BANK = [
     id: "q060",
     question: "What colour were UK number plates before reflective yellow and white were made standard?",
     answers: [
-      "black with white or silver letters"
+      "Black with white or silver letters"
     ],
     matchType: "contains",
     value: 1453,
@@ -618,9 +618,9 @@ export const QUESTION_BANK = [
     id: "q061",
     question: "What was the name of the type of Motorcycle that was used in Terminator 2?",
     answers: [
-      "harley davidson fatboy",
-      "harley-davidson fat boy",
-      "fat boy"
+      "Harley Davidson Fatboy",
+      "Harley-Davidson Fat Boy",
+      "Fat Boy"
     ],
     matchType: "contains",
     value: 913,
@@ -643,7 +643,7 @@ export const QUESTION_BANK = [
     id: "q063",
     question: "Which animated 1990s TV series featured Throttle, Modo, and Vinnie, who rode advanced motorcycles and fought evil on Earth after fleeing their home planet?",
     answers: [
-      "biker mice from mars"
+      "Biker Mice from Mars"
     ],
     matchType: "contains",
     value: 1638,
@@ -653,7 +653,7 @@ export const QUESTION_BANK = [
     id: "q064",
     question: "What’s the common term for a passenger riding on the back seat of a motorcycle?",
     answers: [
-      "pillion"
+      "Pillion"
     ],
     matchType: "exact",
     value: 2357,
@@ -663,7 +663,7 @@ export const QUESTION_BANK = [
     id: "q065",
     question: "In which city is the annual Isle of Man TT motorcycle race held?",
     answers: [
-      "douglas"
+      "Douglas"
     ],
     matchType: "exact",
     value: 1994,
@@ -683,7 +683,7 @@ export const QUESTION_BANK = [
     id: "q067",
     question: "What kind of motorcycle race typically takes place on unpaved surfaces with jumps and tight turns?",
     answers: [
-      "motocross"
+      "Motocross"
     ],
     matchType: "exact",
     value: 2016,
@@ -693,8 +693,8 @@ export const QUESTION_BANK = [
     id: "q068",
     question: "What is the only type of motorcycle specifically engineered for competitive racing that features no brakes, no rear suspension, and a single fixed gear?",
     answers: [
-      "speedway bike",
-      "speedway motorcycle"
+      "Speedway bike",
+      "Speedway motorcycle"
     ],
     matchType: "contains",
     value: 1955,
@@ -704,8 +704,8 @@ export const QUESTION_BANK = [
     id: "q069",
     question: "Which American manufacturer introduced the “Scout” model as a smaller sibling to the “Chief”?",
     answers: [
-      "indian motorcycle",
-      "indian"
+      "Indian Motorcycle",
+      "Indian"
     ],
     matchType: "contains",
     value: 1358,
@@ -715,7 +715,7 @@ export const QUESTION_BANK = [
     id: "q070",
     question: "Which science fiction film featured a light-trail-leaving motorcycle known as a “Light Cycle”?",
     answers: [
-      "tron"
+      "Tron"
     ],
     matchType: "exact",
     value: 1593,
@@ -725,7 +725,7 @@ export const QUESTION_BANK = [
     id: "q071",
     question: "Which country won the FIFA World Cup in 2006?",
     answers: [
-      "italy"
+      "Italy"
     ],
     matchType: "exact",
     value: 792,
@@ -735,7 +735,7 @@ export const QUESTION_BANK = [
     id: "q072",
     question: "Which Premier League football team is nicknamed \"The Foxes\"?",
     answers: [
-      "leicester city"
+      "Leicester City"
     ],
     matchType: "contains",
     value: 2995,
@@ -745,7 +745,7 @@ export const QUESTION_BANK = [
     id: "q073",
     question: "Which England footballer missed a penalty in the 1996 Euros semi-final shootout?",
     answers: [
-      "gareth southgate"
+      "Gareth Southgate"
     ],
     matchType: "contains",
     value: 1200,
@@ -755,7 +755,7 @@ export const QUESTION_BANK = [
     id: "q074",
     question: "In which sport do competitors perform in a velodrome?",
     answers: [
-      "cycling"
+      "Cycling"
     ],
     matchType: "exact",
     value: 2687,
@@ -775,7 +775,7 @@ export const QUESTION_BANK = [
     id: "q076",
     question: "Which boxer bit part of Evander Holyfield's ear off during a match?",
     answers: [
-      "mike tyson"
+      "Mike Tyson"
     ],
     matchType: "contains",
     value: 1169,
@@ -785,7 +785,7 @@ export const QUESTION_BANK = [
     id: "q077",
     question: "In what sport would you perform a Fosbury Flop?",
     answers: [
-      "high jump"
+      "High jump"
     ],
     matchType: "contains",
     value: 2393,
@@ -805,7 +805,7 @@ export const QUESTION_BANK = [
     id: "q079",
     question: "Which Formula 1 team did Ayrton Senna drive for when he died?",
     answers: [
-      "williams"
+      "Williams"
     ],
     matchType: "exact",
     value: 1605,
@@ -815,7 +815,7 @@ export const QUESTION_BANK = [
     id: "q080",
     question: "In which sport do competitors use a \"foil\"?",
     answers: [
-      "fencing"
+      "Fencing"
     ],
     matchType: "exact",
     value: 2781,
@@ -825,7 +825,7 @@ export const QUESTION_BANK = [
     id: "q081",
     question: "Which punk band released the 1977 single God Save the Queen?",
     answers: [
-      "sex pistols"
+      "Sex Pistols"
     ],
     matchType: "contains",
     value: 1399,
@@ -835,7 +835,7 @@ export const QUESTION_BANK = [
     id: "q082",
     question: "Which Canadian artist broke through with the hit Call Me Maybe?",
     answers: [
-      "carly rae jepsen"
+      "Carly Rae Jepsen"
     ],
     matchType: "contains",
     value: 1828,
@@ -845,7 +845,7 @@ export const QUESTION_BANK = [
     id: "q083",
     question: "Who composed the film score for The Lion King (1994)?",
     answers: [
-      "hans zimmer"
+      "Hans Zimmer"
     ],
     matchType: "contains",
     value: 729,
@@ -855,8 +855,8 @@ export const QUESTION_BANK = [
     id: "q084",
     question: "Which group had a hit with “I Want You Back” in 1969?",
     answers: [
-      "the jackson 5",
-      "jackson 5"
+      "The Jackson 5",
+      "Jackson 5"
     ],
     matchType: "contains",
     value: 1438,
@@ -866,7 +866,7 @@ export const QUESTION_BANK = [
     id: "q085",
     question: "What is the stage name of Alecia Beth Moore?",
     answers: [
-      "pink"
+      "Pink"
     ],
     matchType: "exact",
     value: 631,
@@ -876,7 +876,7 @@ export const QUESTION_BANK = [
     id: "q086",
     question: "Who had a global hit in 2013 with “Wake Me Up”?",
     answers: [
-      "avicii"
+      "Avicii"
     ],
     matchType: "exact",
     value: 1792,
@@ -886,7 +886,7 @@ export const QUESTION_BANK = [
     id: "q087",
     question: "In which city did The Beatles play their final rooftop concert in 1969?",
     answers: [
-      "london"
+      "London"
     ],
     matchType: "exact",
     value: 2143,
@@ -896,7 +896,7 @@ export const QUESTION_BANK = [
     id: "q088",
     question: "Which instrument uses a double reed and has a distinctive nasal tone?",
     answers: [
-      "oboe"
+      "Oboe"
     ],
     matchType: "exact",
     value: 1596,
@@ -906,9 +906,9 @@ export const QUESTION_BANK = [
     id: "q089",
     question: "Which 2023 viral hit includes the lyrics “It’s me, hi, I’m the problem, it’s me”?",
     answers: [
-      "anti-hero",
-      "anti hero",
-      "anti-hero - taylor swift"
+      "Anti-Hero",
+      "Anti Hero",
+      "Anti-Hero - Taylor Swift"
     ],
     matchType: "contains",
     value: 771,
@@ -918,7 +918,7 @@ export const QUESTION_BANK = [
     id: "q090",
     question: "Which artist won the 2023 BRIT Award for Best New Artist?",
     answers: [
-      "wet leg"
+      "Wet Leg"
     ],
     matchType: "contains",
     value: 1364,
@@ -928,7 +928,7 @@ export const QUESTION_BANK = [
     id: "q091",
     question: "Which 2008 film features the quote, “Why so serious?”",
     answers: [
-      "the dark knight"
+      "The Dark Knight"
     ],
     matchType: "contains",
     value: 2823,
@@ -938,7 +938,7 @@ export const QUESTION_BANK = [
     id: "q092",
     question: "Which 2014 film was shot over 12 years with the same cast?",
     answers: [
-      "boyhood"
+      "Boyhood"
     ],
     matchType: "exact",
     value: 1788,
@@ -948,7 +948,7 @@ export const QUESTION_BANK = [
     id: "q093",
     question: "Which British show features the characters Del Boy and Rodney?",
     answers: [
-      "only fools and horses"
+      "Only Fools and Horses"
     ],
     matchType: "contains",
     value: 1370,
@@ -958,7 +958,7 @@ export const QUESTION_BANK = [
     id: "q094",
     question: "What is the name of the fictional metal in Black Panther and the MCU that powers Wakanda’s technology?",
     answers: [
-      "vibranium"
+      "Vibranium"
     ],
     matchType: "exact",
     value: 2544,
@@ -968,7 +968,7 @@ export const QUESTION_BANK = [
     id: "q095",
     question: "In The Big Bang Theory, what is Sheldon Cooper’s profession?",
     answers: [
-      "theoretical physicist"
+      "Theoretical Physicist"
     ],
     matchType: "contains",
     value: 2120,
@@ -978,7 +978,7 @@ export const QUESTION_BANK = [
     id: "q096",
     question: "In which country is the 2006 movie Pan’s Labyrinth set?",
     answers: [
-      "spain"
+      "Spain"
     ],
     matchType: "exact",
     value: 2379,
@@ -988,7 +988,7 @@ export const QUESTION_BANK = [
     id: "q097",
     question: "Which actress played Eleven in Stranger Things?",
     answers: [
-      "millie bobby brown"
+      "Millie Bobby Brown"
     ],
     matchType: "contains",
     value: 1085,
@@ -998,8 +998,8 @@ export const QUESTION_BANK = [
     id: "q098",
     question: "Which 2001 fantasy film featured the line: “Even the smallest person can change the course of the future”?",
     answers: [
-      "the lord of the rings: the fellowship of the ring",
-      "the fellowship of the ring"
+      "The Lord of the Rings: The Fellowship of the Ring",
+      "The Fellowship of the Ring"
     ],
     matchType: "contains",
     value: 1584,
@@ -1009,7 +1009,7 @@ export const QUESTION_BANK = [
     id: "q099",
     question: "Which show features contestants competing in bizarre games while wearing numbered tracksuits for people in masks?",
     answers: [
-      "squid game"
+      "Squid Game"
     ],
     matchType: "contains",
     value: 1071,
