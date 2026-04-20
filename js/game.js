@@ -564,28 +564,32 @@ export function initGame() {
   }
 
   function showScreen(name) {
-    state.screen = name;
+  state.screen = name;
 
-    if (hubScreen) hubScreen.classList.toggle('active', name === 'hub');
-    if (gameScreen) gameScreen.classList.toggle('active', name === 'game');
+  if (hubScreen) hubScreen.classList.toggle('active', name === 'hub');
+  if (gameScreen) gameScreen.classList.toggle('active', name === 'game');
 
-    if (name === 'game') {
-      lockPageForGame();
-      canvas.style.touchAction = 'none';
-      window.scrollTo(0, 0);
-      resizeCanvas();
-      applyGameAudioSettings(assets);
+  if (name === 'game') {
+    lockPageForGame();
+    canvas.style.touchAction = 'none';
+    window.scrollTo(0, 0);
+    resizeCanvas();
+    applyGameAudioSettings(assets);
 
-      if (!isPortraitBlocked()) {
-        tryFullscreenAndLandscape();
-      }
-    } else {
-      stopAllGameAudio(assets);
-      unlockPageFromGame();
-      canvas.style.touchAction = '';
-      window.scrollTo(0, 0);
+    if (!isPortraitBlocked()) {
+      tryFullscreenAndLandscape();
     }
+  } else if (name === 'hub') {
+    lockPageForGame();
+    canvas.style.touchAction = '';
+    window.scrollTo(0, 0);
+  } else {
+    stopAllGameAudio(assets);
+    unlockPageFromGame();
+    canvas.style.touchAction = '';
+    window.scrollTo(0, 0);
   }
+}
 
   function startHeist() {
     if (state.run && !state.run.ended) return;
