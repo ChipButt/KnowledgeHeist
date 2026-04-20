@@ -1,10 +1,11 @@
+import { clearLastHeistWrong } from './storage.js';
 import { createAssets } from './assets.js';
 import { applyGameAudioSettings, safeRestartAudio } from './audio.js';
 import { createBaseState, createGuardState, createPlayerState, createRunState } from './gameState.js';
 import { drawRoom } from './render.js';
-import { DEBUG, drawInteractionDebug, drawLayoutOverlay } from './debug.js';
+import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
 import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
-import { buildScaledRunData, createHeistItems, getItemInteractPoint, getItemInteractRadius, getItemInteractZone, pointHitsFloorBlocker, rescaleActiveRun } from './items.js';
+import { buildScaledRunData, createHeistItems, getItemInteractPoint, getItemInteractRadius, getItemInteractZone, pointHitsFloorBlocker } from './items.js';
 import { askQuestionForItem, endHeist, formatMoney, getNearbyItem, getPlayerInteractPoint, playWithMe, stopAllGameAudio, submitAnswer as submitAnswerFlow, updateFX, updatePullAnimation } from './gameFlow.js';
 import { endPointerControl, getDirectionalInput, getMoveSpeed, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
 
@@ -170,9 +171,6 @@ export function initGame() {
   }
 
   function resizeCanvas() {
-    const prevW = canvas.width || VIEW_W || 1;
-    const prevH = canvas.height || VIEW_H || 1;
-
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
@@ -183,9 +181,7 @@ export function initGame() {
     VIEW_W = width;
     VIEW_H = height;
 
-    if (state.run && (prevW !== width || prevH !== height)) {
-      rescaleActiveRun({ state, prevW, prevH, nextW: width, nextH: height });
-    } else if (state.run) {
+    if (state.run) {
       buildScaledRunData(state.run, sx, sy);
     }
   }
@@ -238,6 +234,8 @@ export function initGame() {
 
   function hideHomeworkPopup() {
     homeworkOverlay.classList.add('hidden');
+    state.homework.pending = [];
+    clearLastHeistWrong();
   }
 
   function updateWalkAnimation(delta) {
@@ -927,7 +925,6 @@ export function initGame() {
 
   showScreen('hub');
   resizeCanvas();
-  maybeShowHomeworkPopup();
   requestAnimationFrame(gameLoop);
 
   return {
