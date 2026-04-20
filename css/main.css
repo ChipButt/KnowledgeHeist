@@ -249,6 +249,8 @@ body.game-active {
   z-index: 100;
   overflow: hidden;
   box-shadow: none;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .image-button img {
@@ -282,18 +284,6 @@ body.game-active {
   width: 8.79%;
   height: 13.77%;
   transform: none;
-  -webkit-clip-path: polygon(
-    0% 8.45%,
-    100% 0%,
-    100% 90.14%,
-    0% 98.59%
-  );
-  clip-path: polygon(
-    0% 8.45%,
-    100% 0%,
-    100% 90.14%,
-    0% 98.59%
-  );
 }
 
 #instructionsBtn {
