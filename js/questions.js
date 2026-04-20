@@ -260,6 +260,7 @@ export const QUESTION_BANK = [
     answers: [
       "Stapes",
       "Stapes (in the ear)"
+      "Stirrup"
     ],
     matchType: "contains",
     value: 2913,
