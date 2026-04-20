@@ -847,44 +847,57 @@ export function initGame() {
   );
 
   document.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
+  const k = e.key.toLowerCase();
+  const tag = (e.target?.tagName || '').toLowerCase();
+  const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
 
+  if (!isTypingField) {
     if (k === 'arrowup' || k === 'w') state.keys.up = true;
     if (k === 'arrowdown' || k === 's') state.keys.down = true;
     if (k === 'arrowleft' || k === 'a') state.keys.left = true;
     if (k === 'arrowright' || k === 'd') state.keys.right = true;
+  }
 
-    if (isPortraitBlocked()) return;
+  if (isPortraitBlocked()) return;
 
-    if (k === 'enter') {
-      if (questionModal.classList.contains('hidden') && state.screen === 'game' && !isConfirmPopupOpen()) {
-        e.preventDefault();
-        interact();
-        return;
-      }
-
-      if (!questionModal.classList.contains('hidden')) {
-        e.preventDefault();
-        submitAnswer();
-        return;
-      }
+  if (k === 'enter') {
+    if (!questionModal.classList.contains('hidden')) {
+      e.preventDefault();
+      submitAnswer();
+      return;
     }
 
-    if (k === 'escape') {
-      hideHomeworkPopup();
-      closeConfirmPopup();
-      resetPointerInput(state);
+    if (
+      !isTypingField &&
+      questionModal.classList.contains('hidden') &&
+      state.screen === 'game' &&
+      !isConfirmPopupOpen()
+    ) {
+      e.preventDefault();
+      interact();
+      return;
     }
-  });
+  }
+
+  if (k === 'escape') {
+    hideHomeworkPopup();
+    closeConfirmPopup();
+    resetPointerInput(state);
+  }
+});
 
   document.addEventListener('keyup', (e) => {
-    const k = e.key.toLowerCase();
+  const k = e.key.toLowerCase();
+  const tag = (e.target?.tagName || '').toLowerCase();
+  const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
 
-    if (k === 'arrowup' || k === 'w') state.keys.up = false;
-    if (k === 'arrowdown' || k === 's') state.keys.down = false;
-    if (k === 'arrowleft' || k === 'a') state.keys.left = false;
-    if (k === 'arrowright' || k === 'd') state.keys.right = false;
-  });
+  if (isTypingField) return;
+
+  if (k === 'arrowup' || k === 'w') state.keys.up = false;
+  if (k === 'arrowdown' || k === 's') state.keys.down = false;
+  if (k === 'arrowleft' || k === 'a') state.keys.left = false;
+  if (k === 'arrowright' || k === 'd') state.keys.right = false;
+});
 
   canvas.addEventListener(
     'pointerdown',
