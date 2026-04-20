@@ -6,8 +6,12 @@ import {
   readHistory
 } from './storage.js';
 import { getUnifiedLeaderboardRows } from './leaderboard.js';
-import { getSettings, saveGameSettings, getVolumeScale, sanitizePlayerName } from './settings.js';
-import { createAudio, setAudioVolume, unlockAudioContext } from './audio.js';
+import {
+  getSettings,
+  saveGameSettings,
+  getVolumeScale,
+  sanitizePlayerName
+} from './settings.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 
@@ -106,8 +110,10 @@ function positionHubCells() {
 }
 
 function createHubMusic() {
-  const settings = getSettings();
-  return createAudio(HUB_MUSIC_FILE, getVolumeScale(settings.hubVolume), true);
+  const audio = new Audio(HUB_MUSIC_FILE);
+  audio.preload = 'auto';
+  audio.loop = true;
+  return audio;
 }
 
 function getHubRefs() {
@@ -331,10 +337,10 @@ export function initUI(options = {}) {
 
   function applyHubVolume() {
     const settings = getSettings();
-    setAudioVolume(hubMusic, getVolumeScale(settings.hubVolume));
+    hubMusic.volume = getVolumeScale(settings.hubVolume);
   }
 
-  function stopAllHubAudio() {
+  function pauseHubMusic() {
     try {
       hubMusic.pause();
       hubMusic.currentTime = 0;
@@ -345,7 +351,7 @@ export function initUI(options = {}) {
     const hubActive = refs.hubScreen?.classList.contains('active');
 
     if (!hubActive) {
-      stopAllHubAudio();
+      pauseHubMusic();
       return;
     }
 
@@ -363,7 +369,6 @@ export function initUI(options = {}) {
 
   function unlockHubMusic() {
     musicUnlocked = true;
-    unlockAudioContext();
     syncHubMusic();
   }
 
@@ -407,7 +412,7 @@ export function initUI(options = {}) {
 
   refs.hubVolumeInput.addEventListener('input', () => {
     refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
-    setAudioVolume(hubMusic, getVolumeScale(refs.hubVolumeInput.value));
+    hubMusic.volume = getVolumeScale(refs.hubVolumeInput.value);
   });
 
   refs.gameMusicVolumeInput.addEventListener('input', () => {
@@ -447,7 +452,7 @@ export function initUI(options = {}) {
   refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
 
   refs.confirmResetBtn.addEventListener('click', () => {
-    stopAllHubAudio();
+    pauseHubMusic();
     clearAllProgress();
     location.reload();
   });
@@ -474,7 +479,7 @@ export function initUI(options = {}) {
 
   if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
-      stopAllHubAudio();
+      pauseHubMusic();
       onStartHeist();
     };
 
@@ -528,6 +533,7 @@ export function initUI(options = {}) {
     if (refs.hubScreen?.classList.contains('active')) {
       window.scrollTo(0, 0);
     }
+    positionHubCells();
   });
 
   window.addEventListener('orientationchange', () => {
@@ -535,27 +541,8 @@ export function initUI(options = {}) {
       if (refs.hubScreen?.classList.contains('active')) {
         window.scrollTo(0, 0);
       }
+      positionHubCells();
     }, 100);
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      stopAllHubAudio();
-    } else {
-      syncHubMusic();
-    }
-  });
-
-  window.addEventListener('pagehide', () => {
-    stopAllHubAudio();
-  });
-
-  window.addEventListener('beforeunload', () => {
-    stopAllHubAudio();
-  });
-
-  window.addEventListener('blur', () => {
-    stopAllHubAudio();
   });
 
   applyHubVolume();
@@ -563,7 +550,7 @@ export function initUI(options = {}) {
 
   return {
     refreshHub: () => refreshHub(refs),
-    pauseHubMusic: stopAllHubAudio,
+    pauseHubMusic,
     syncHubMusic
   };
 }
