@@ -7,7 +7,7 @@ import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
 import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
 import { buildScaledRunData, createHeistItems, getItemInteractPoint, getItemInteractRadius, getItemInteractZone, pointHitsFloorBlocker } from './items.js';
 import { askQuestionForItem, endHeist, formatMoney, getNearbyItem, getPlayerInteractPoint, playWithMe, stopAllGameAudio, submitAnswer as submitAnswerFlow, updateFX, updatePullAnimation } from './gameFlow.js';
-import { endPointerControl, getDirectionalInput, getMoveSpeed, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
+import { endPointerControl, getDirectionalInput, getMoveSpeed, isMobileLike, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
 
 export function initGame() {
   const hubScreen = document.getElementById('hubScreen');
@@ -28,6 +28,7 @@ export function initGame() {
   const summaryContinueBtn = document.getElementById('summaryContinueBtn');
 
   const banner = document.getElementById('gameBanner');
+  const rotateDeviceOverlay = document.getElementById('rotateDeviceOverlay');
 
   const confirmChoiceOverlay = document.getElementById('confirmChoiceOverlay');
   const homeworkOverlay = document.getElementById('homeworkOverlay');
@@ -101,6 +102,33 @@ export function initGame() {
 
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
+  }
+
+  function isPortraitBlocked() {
+    return isMobileLike() && window.matchMedia('(orientation: portrait)').matches;
+  }
+
+  async function updateOrientationState() {
+    const blocked = isPortraitBlocked();
+
+    if (rotateDeviceOverlay) {
+      rotateDeviceOverlay.classList.toggle('hidden', !blocked);
+    }
+
+    document.body.classList.toggle('orientation-blocked', blocked);
+
+    if (blocked) {
+      resetPointerInput(state);
+      state.player.moving = false;
+      state.guard.moving = false;
+      return;
+    }
+
+    resizeCanvas();
+
+    if (state.screen === 'game') {
+      await requestGameFullscreen(gameScreen || document.documentElement);
+    }
   }
 
   function vectorToDirection(dx, dy) {
@@ -440,6 +468,10 @@ export function initGame() {
       window.scrollTo(0, 0);
       resizeCanvas();
       applyGameAudioSettings(assets);
+
+      if (!isPortraitBlocked()) {
+        requestGameFullscreen(gameScreen || document.documentElement);
+      }
     } else {
       stopAllGameAudio(assets);
       document.documentElement.style.overflow = '';
@@ -497,10 +529,13 @@ export function initGame() {
     updateRunStats();
     showBanner('Heist started.');
 
-    requestGameFullscreen(gameScreen || document.documentElement);
+    if (!isPortraitBlocked()) {
+      requestGameFullscreen(gameScreen || document.documentElement);
+    }
   }
 
   function interact() {
+    if (isPortraitBlocked()) return;
     if (!state.run || state.run.ended) return;
     if (state.player.controlLocked || state.player.action) return;
     if (isConfirmPopupOpen()) return;
@@ -533,6 +568,8 @@ export function initGame() {
   }
 
   function submitAnswer() {
+    if (isPortraitBlocked()) return;
+
     submitAnswerFlow({
       state,
       input: answerInput.value,
@@ -547,6 +584,7 @@ export function initGame() {
   function update(delta) {
     updateFX(state, delta);
 
+    if (isPortraitBlocked()) return;
     if (state.screen !== 'game' || !state.run || state.run.ended) return;
     if (!questionModal.classList.contains('hidden') && state.run.mode === 'play') return;
     if (isConfirmPopupOpen()) return;
@@ -775,6 +813,8 @@ export function initGame() {
     if (k === 'arrowleft' || k === 'a') state.keys.left = true;
     if (k === 'arrowright' || k === 'd') state.keys.right = true;
 
+    if (isPortraitBlocked()) return;
+
     if (k === 'enter') {
       if (questionModal.classList.contains('hidden') && state.screen === 'game' && !isConfirmPopupOpen()) {
         e.preventDefault();
@@ -809,6 +849,7 @@ export function initGame() {
     'pointerdown',
     (e) => {
       if (state.screen !== 'game') return;
+      if (isPortraitBlocked()) return;
       e.preventDefault();
       startPointerControl({
         state,
@@ -826,6 +867,7 @@ export function initGame() {
   canvas.addEventListener(
     'pointermove',
     (e) => {
+      if (isPortraitBlocked()) return;
       if (!state.pointer.active) return;
       e.preventDefault();
       updatePointerControl({
@@ -914,9 +956,23 @@ export function initGame() {
     if (e.target === homeworkOverlay) hideHomeworkPopup();
   });
 
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', () => {
+    resizeCanvas();
+    updateOrientationState();
+  });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      resizeCanvas();
+      updateOrientationState();
+    }, 100);
+  });
+
   document.addEventListener('fullscreenchange', () => {
-    setTimeout(resizeCanvas, 60);
+    setTimeout(() => {
+      resizeCanvas();
+      updateOrientationState();
+    }, 60);
   });
 
   window.addEventListener('nanaheist:settings-updated', () => {
@@ -925,6 +981,7 @@ export function initGame() {
 
   showScreen('hub');
   resizeCanvas();
+  updateOrientationState();
   requestAnimationFrame(gameLoop);
 
   return {
