@@ -1,13 +1,86 @@
-import { ITEM_INTERACT_ZONES_SOURCE, pointInRect } from './zones.js';
+import {
+  ITEM_INTERACT_ZONES_SOURCE,
+  pointInRect,
+  pointInPolygon
+} from './zones.js';
 
 export function distance(ax, ay, bx, by) {
   return Math.hypot(ax - bx, ay - by);
 }
 
 export function getZoneCenter(zone) {
+  if (!zone) {
+    return { x: 0, y: 0 };
+  }
+
+  if (zone.type === 'poly') {
+    const total = zone.points.reduce(
+      (acc, point) => {
+        acc.x += point.x;
+        acc.y += point.y;
+        return acc;
+      },
+      { x: 0, y: 0 }
+    );
+
+    return {
+      x: total.x / zone.points.length,
+      y: total.y / zone.points.length
+    };
+  }
+
   return {
     x: (zone.x1 + zone.x2) / 2,
     y: (zone.y1 + zone.y2) / 2
+  };
+}
+
+export function pointInZone(px, py, zone) {
+  if (!zone) return false;
+
+  if (zone.type === 'poly') {
+    return pointInPolygon({ x: px, y: py }, zone.points);
+  }
+
+  return pointInRect(px, py, zone);
+}
+
+export function getZoneRadius(zone) {
+  if (!zone) return 0;
+
+  if (zone.type === 'poly') {
+    const center = getZoneCenter(zone);
+    let maxDist = 0;
+
+    for (const point of zone.points) {
+      maxDist = Math.max(maxDist, distance(center.x, center.y, point.x, point.y));
+    }
+
+    return maxDist;
+  }
+
+  return Math.max(zone.x2 - zone.x1, zone.y2 - zone.y1) / 2;
+}
+
+function scaleInteractZone(zone, sx, sy) {
+  if (!zone) return null;
+
+  if (zone.type === 'poly') {
+    return {
+      type: 'poly',
+      points: zone.points.map((point) => ({
+        x: sx(point.x),
+        y: sy(point.y)
+      }))
+    };
+  }
+
+  return {
+    type: 'rect',
+    x1: sx(zone.x1),
+    y1: sy(zone.y1),
+    x2: sx(zone.x2),
+    y2: sy(zone.y2)
   };
 }
 
@@ -299,18 +372,13 @@ export function getItemInteractZone(item, sx, sy) {
     const y2 = item.anchorY + 2;
     const y1 = y2 - zoneHeight;
 
-    return { x1, y1, x2, y2 };
+    return { type: 'rect', x1, y1, x2, y2 };
   }
 
   const zone = ITEM_INTERACT_ZONES_SOURCE[item.id];
   if (!zone) return null;
 
-  return {
-    x1: sx(zone.x1),
-    y1: sy(zone.y1),
-    x2: sx(zone.x2),
-    y2: sy(zone.y2)
-  };
+  return scaleInteractZone(zone, sx, sy);
 }
 
 export function getItemInteractPoint(item, sx, sy) {
@@ -330,7 +398,7 @@ export function getItemInteractRadius(item, sx, sy) {
   const zone = getItemInteractZone(item, sx, sy);
 
   if (zone) {
-    return Math.max(zone.x2 - zone.x1, zone.y2 - zone.y1) / 2;
+    return getZoneRadius(zone);
   }
 
   if (item.type === 'floor') return Math.max(34, sx(44));
