@@ -277,11 +277,23 @@ body.game-active {
 }
 
 #startHeistBtn {
-  left: 27.29%;
-  top: 69.72%;
-  width: 9.18%;
-  height: 11.90%;
+  left: 27.05%;
+  top: 68.69%;
+  width: 8.79%;
+  height: 13.77%;
   transform: none;
+  -webkit-clip-path: polygon(
+    0% 8.45%,
+    100% 0%,
+    100% 90.14%,
+    0% 98.59%
+  );
+  clip-path: polygon(
+    0% 8.45%,
+    100% 0%,
+    100% 90.14%,
+    0% 98.59%
+  );
 }
 
 #instructionsBtn {
@@ -635,6 +647,8 @@ body.game-active {
   background: linear-gradient(180deg, #1f3b2b 0%, #14261c 100%);
   color: #f2f5ef;
   border: 12px solid #6f5437;
+  max-height: min(82vh, 700px);
+  overflow: auto;
 }
 
 .modal-card h2,
