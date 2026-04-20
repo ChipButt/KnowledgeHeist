@@ -1,6 +1,6 @@
 export const DEBUG = {
-  interaction: false,
-  layoutOverlay: false
+  interaction: true,
+  layoutOverlay: true
 };
 
 function getZoneCenter(zone) {
