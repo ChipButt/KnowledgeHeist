@@ -1,7 +1,10 @@
 import { initUI } from './ui.js';
 import { initGame } from './game.js';
+import { initFirebaseLeaderboardBridge } from './firebaseLeaderboard.js';
 
 let gameInstance = null;
+
+initFirebaseLeaderboardBridge();
 
 initUI({
   onStartHeist: () => {
