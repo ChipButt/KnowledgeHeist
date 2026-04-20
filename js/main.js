@@ -4,7 +4,11 @@ import { initFirebaseLeaderboardBridge } from './firebaseLeaderboard.js';
 
 let gameInstance = null;
 
-initFirebaseLeaderboardBridge();
+try {
+  initFirebaseLeaderboardBridge();
+} catch (err) {
+  console.error('Firebase leaderboard init failed:', err);
+}
 
 initUI({
   onStartHeist: () => {
