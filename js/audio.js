@@ -1,7 +1,7 @@
 import { loadSettings } from './storage.js';
 import { getVolumeScale } from './settings.js';
 
-export function createAudio(src, volume = 1, loop = false) {
+export function createAudio(src, volume = 0.5, loop = false) {
   const audio = new Audio(src);
   audio.preload = 'auto';
   audio.volume = volume;
