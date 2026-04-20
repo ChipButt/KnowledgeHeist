@@ -2,7 +2,7 @@ import { clearLastHeistWrong } from './storage.js';
 import { createAssets } from './assets.js';
 import { applyGameAudioSettings, safeRestartAudio } from './audio.js';
 import { createBaseState, createGuardState, createPlayerState, createRunState } from './gameState.js';
-import { drawRoom } from './render.js';
+import { drawRoom, getPromptBounds } from './render.js';
 import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
 import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
 import {
@@ -11,11 +11,31 @@ import {
   getItemInteractPoint,
   getItemInteractRadius,
   getItemInteractZone,
-  pointHitsFloorBlocker,
-  rescaleActiveRun
+  pointHitsFloorBlocker
 } from './items.js';
-import { askQuestionForItem, endHeist, formatMoney, getNearbyItem, getPlayerInteractPoint, playWithMe, stopAllGameAudio, submitAnswer as submitAnswerFlow, updateFX, updatePullAnimation } from './gameFlow.js';
-import { endPointerControl, getDirectionalInput, getMoveSpeed, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
+import {
+  askQuestionForItem,
+  endHeist,
+  formatMoney,
+  getNearbyItem,
+  getPlayerInteractPoint,
+  playWithMe,
+  stopAllGameAudio,
+  submitAnswer as submitAnswerFlow,
+  updateFX,
+  updatePullAnimation
+} from './gameFlow.js';
+import {
+  endPointerControl,
+  getCanvasPointFromEvent,
+  getDirectionalInput,
+  getMoveSpeed,
+  requestGameFullscreen,
+  resetMovementKeys,
+  resetPointerInput,
+  startPointerControl,
+  updatePointerControl
+} from './input.js';
 
 export function initGame() {
   const hubScreen = document.getElementById('hubScreen');
@@ -47,8 +67,6 @@ export function initGame() {
 
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Could not get 2D context');
-
-  const interactBtn = document.getElementById('interactBtn');
 
   const assets = createAssets();
   applyGameAudioSettings(assets);
@@ -99,6 +117,34 @@ export function initGame() {
     return isMobileLike() && window.innerHeight > window.innerWidth;
   }
 
+  function lockPageForGame() {
+    document.body.classList.add('game-active');
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.touchAction = 'none';
+    document.body.style.position = 'fixed';
+    document.body.style.inset = '0';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+  }
+
+  function unlockPageFromGame() {
+    document.body.classList.remove('game-active');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
+    document.body.style.position = '';
+    document.body.style.inset = '';
+    document.body.style.width = '';
+    document.body.style.height = '';
+  }
+
+  function stopAllRuntimeAudio() {
+    stopAllGameAudio(assets);
+  }
+
   async function tryLockLandscape() {
     try {
       if (screen.orientation && typeof screen.orientation.lock === 'function') {
@@ -109,8 +155,22 @@ export function initGame() {
 
   async function tryFullscreenAndLandscape() {
     if (!isMobileLike()) return;
+
+    lockPageForGame();
+    window.scrollTo(0, 0);
+
     await requestGameFullscreen(gameScreen || document.documentElement);
     await tryLockLandscape();
+
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      resizeCanvas();
+    }, 50);
+
+    setTimeout(() => {
+      window.scrollTo(0, 0);
+      resizeCanvas();
+    }, 250);
   }
 
   async function updateOrientationState() {
@@ -168,6 +228,10 @@ export function initGame() {
 
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
+  }
+
+  function pointInSimpleRect(px, py, rect) {
+    return px >= rect.x && px <= rect.x + rect.w && py >= rect.y && py <= rect.y + rect.h;
   }
 
   function vectorToDirection(dx, dy) {
@@ -238,9 +302,6 @@ export function initGame() {
   }
 
   function resizeCanvas() {
-    const prevW = VIEW_W;
-    const prevH = VIEW_H;
-
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
@@ -252,14 +313,6 @@ export function initGame() {
     VIEW_H = height;
 
     if (state.run) {
-      rescaleActiveRun({
-        state,
-        prevW,
-        prevH,
-        nextW: VIEW_W,
-        nextH: VIEW_H
-      });
-
       buildScaledRunData(state.run, sx, sy);
     }
   }
@@ -517,10 +570,7 @@ export function initGame() {
     if (gameScreen) gameScreen.classList.toggle('active', name === 'game');
 
     if (name === 'game') {
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-      document.body.style.overscrollBehavior = 'none';
-      document.body.style.touchAction = 'none';
+      lockPageForGame();
       canvas.style.touchAction = 'none';
       window.scrollTo(0, 0);
       resizeCanvas();
@@ -531,11 +581,9 @@ export function initGame() {
       }
     } else {
       stopAllGameAudio(assets);
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-      document.body.style.overscrollBehavior = '';
-      document.body.style.touchAction = '';
+      unlockPageFromGame();
       canvas.style.touchAction = '';
+      window.scrollTo(0, 0);
     }
   }
 
@@ -553,13 +601,9 @@ export function initGame() {
 
     state.run = createRunState(
       createHeistItems({
-        VIEW_W,
-        VIEW_H,
-        sx,
-        sy,
         assets,
-        isWalkablePoint,
-        getExitZone: getExitZoneNow
+        sx,
+        sy
       }),
       [...assets.failVoiceFiles]
     );
@@ -567,7 +611,7 @@ export function initGame() {
     buildScaledRunData(state.run, sx, sy);
     state.activeItem = null;
 
-    state.player = createPlayerState(sx(1410), sy(1280));
+    state.player = createPlayerState(sx(1320), sy(1320));
 
     const guardDoor = getGuardDoorZoneNow();
     state.guard = createGuardState(
@@ -581,7 +625,7 @@ export function initGame() {
 
     stopAllGameAudio(assets);
     applyGameAudioSettings(assets);
-    safeRestartAudio(assets.backgroundMusic, assets.backgroundMusic.volume);
+    safeRestartAudio(assets.backgroundMusic, 1);
 
     updateRunStats();
     showBanner('Heist started.');
@@ -801,7 +845,8 @@ export function initGame() {
       getPlayerInteractPoint: getPlayerFeetPoint,
       getItemInteractPoint: (item) => getItemInteractPoint(item, sx, sy),
       getItemInteractRadius: (item) => getItemInteractRadius(item, sx, sy),
-      getItemInteractZone: (item) => getItemInteractZone(item, sx, sy)
+      getItemInteractZone: (item) => getItemInteractZone(item, sx, sy),
+      getPromptBounds: () => getPromptBounds(runtime)
     }
   };
 
@@ -852,15 +897,36 @@ export function initGame() {
   document.addEventListener(
     'touchmove',
     (e) => {
-      if (state.screen === 'game') {
-        const tag = (e.target?.tagName || '').toLowerCase();
-        if (tag !== 'input' && tag !== 'textarea') {
-          e.preventDefault();
-        }
+      if (state.screen !== 'game') return;
+
+      const tag = (e.target?.tagName || '').toLowerCase();
+      const allowInput =
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select';
+
+      if (!allowInput) {
+        e.preventDefault();
       }
     },
     { passive: false }
   );
+
+  document.addEventListener(
+    'wheel',
+    (e) => {
+      if (state.screen === 'game') {
+        e.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+
+  window.addEventListener('scroll', () => {
+    if (state.screen === 'game') {
+      window.scrollTo(0, 0);
+    }
+  });
 
   document.addEventListener('keydown', (e) => {
     const k = e.key.toLowerCase();
@@ -920,6 +986,23 @@ export function initGame() {
     (e) => {
       if (state.screen !== 'game') return;
       if (isPortraitBlocked()) return;
+
+      const point = getCanvasPointFromEvent(canvas, e, VIEW_W, VIEW_H);
+      const prompt = getPromptBounds(runtime);
+
+      if (
+        prompt &&
+        !state.player.controlLocked &&
+        !state.player.action &&
+        !isConfirmPopupOpen() &&
+        questionModal.classList.contains('hidden') &&
+        pointInSimpleRect(point.x, point.y, prompt)
+      ) {
+        e.preventDefault();
+        interact();
+        return;
+      }
+
       e.preventDefault();
       startPointerControl({
         state,
@@ -984,7 +1067,6 @@ export function initGame() {
     if (state.screen === 'game') e.preventDefault();
   });
 
-  if (interactBtn) interactBtn.addEventListener('click', interact);
   if (backToHubBtn) backToHubBtn.addEventListener('click', handleReturnToBase);
   if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
 
@@ -1047,6 +1129,24 @@ export function initGame() {
 
   window.addEventListener('nanaheist:settings-updated', () => {
     applyGameAudioSettings(assets);
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      stopAllRuntimeAudio();
+    }
+  });
+
+  window.addEventListener('pagehide', () => {
+    stopAllRuntimeAudio();
+  });
+
+  window.addEventListener('beforeunload', () => {
+    stopAllRuntimeAudio();
+  });
+
+  window.addEventListener('blur', () => {
+    stopAllRuntimeAudio();
   });
 
   showScreen('hub');
