@@ -4,7 +4,14 @@ import { applyGameAudioSettings, safeRestartAudio } from './audio.js';
 import { createBaseState, createGuardState, createPlayerState, createRunState } from './gameState.js';
 import { drawRoom, getPromptBounds } from './render.js';
 import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
-import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
+import {
+  createScaler,
+  getExitZone,
+  getFloorPoly,
+  getGuardDoorZone,
+  pointInPolygon,
+  pointInRect
+} from './zones.js';
 import {
   buildScaledRunData,
   createHeistItems,
@@ -206,6 +213,38 @@ export function initGame() {
 
   function getGuardDoorZoneNow() {
     return getGuardDoorZone(sx, sy);
+  }
+
+  function getGuardDoorCenter() {
+    const zone = getGuardDoorZoneNow();
+    if (zone.type === 'poly') {
+      const total = zone.points.reduce(
+        (acc, point) => {
+          acc.x += point.x;
+          acc.y += point.y;
+          return acc;
+        },
+        { x: 0, y: 0 }
+      );
+
+      return {
+        x: total.x / zone.points.length,
+        y: total.y / zone.points.length
+      };
+    }
+
+    return {
+      x: (zone.x1 + zone.x2) / 2,
+      y: (zone.y1 + zone.y2) / 2
+    };
+  }
+
+  function getGuardDoorBottomY() {
+    const zone = getGuardDoorZoneNow();
+    if (zone.type === 'poly') {
+      return Math.max(...zone.points.map((point) => point.y));
+    }
+    return zone.y2;
   }
 
   function getPlayerFeetPoint() {
@@ -487,7 +526,14 @@ export function initGame() {
 
     const exit = getExitZoneNow();
     const playerPoint = getPlayerFeetPoint();
-    const isInExitZone = pointInRect(playerPoint.x, playerPoint.y, exit);
+    const expandedExit = {
+      x1: exit.x1,
+      y1: exit.y1 - sy(70),
+      x2: exit.x2,
+      y2: exit.y2
+    };
+
+    const isInExitZone = pointInRect(playerPoint.x, playerPoint.y, expandedExit);
 
     if (isInExitZone && !state.run.wasInExitZone) {
       openExitConfirm();
@@ -611,12 +657,15 @@ export function initGame() {
     buildScaledRunData(state.run, sx, sy);
     state.activeItem = null;
 
-    state.player = createPlayerState(sx(1320), sy(1320));
+    state.player = createPlayerState(sx(1286), sy(1409));
+    state.player.direction = 'north';
 
-    const guardDoor = getGuardDoorZoneNow();
+    const guardDoorCenter = getGuardDoorCenter();
+    const guardDoorBottomY = getGuardDoorBottomY();
+
     state.guard = createGuardState(
-      (guardDoor.x1 + guardDoor.x2) / 2,
-      guardDoor.y2
+      guardDoorCenter.x,
+      guardDoorBottomY
     );
 
     state.audio.sirenStarted = false;
