@@ -7,7 +7,7 @@ import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
 import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
 import { buildScaledRunData, createHeistItems, getItemInteractPoint, getItemInteractRadius, getItemInteractZone, pointHitsFloorBlocker } from './items.js';
 import { askQuestionForItem, endHeist, formatMoney, getNearbyItem, getPlayerInteractPoint, playWithMe, stopAllGameAudio, submitAnswer as submitAnswerFlow, updateFX, updatePullAnimation } from './gameFlow.js';
-import { endPointerControl, getDirectionalInput, getMoveSpeed, isMobileLike, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
+import { endPointerControl, getDirectionalInput, getMoveSpeed, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
 
 export function initGame() {
   const hubScreen = document.getElementById('hubScreen');
@@ -47,7 +47,7 @@ export function initGame() {
 
   const constants = {
     MOVE_SPEED_DESKTOP: 2.35,
-    MOVE_SPEED_MOBILE: 3.35,
+    MOVE_SPEED_MOBILE: 2.45,
     CHASE_PLAYER_SPEED: 2.6,
     GUARD_CHASE_SPEED: 3.35,
     GUARD_ESCORT_SPEED: 2.0,
@@ -79,6 +79,55 @@ export function initGame() {
   const sx = scaler.sx;
   const sy = scaler.sy;
 
+  function isMobileLike() {
+    return (
+      window.matchMedia('(pointer: coarse)').matches ||
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      window.innerWidth < 900
+    );
+  }
+
+  function isPortraitBlocked() {
+    return isMobileLike() && window.innerHeight > window.innerWidth;
+  }
+
+  async function tryLockLandscape() {
+    try {
+      if (screen.orientation && typeof screen.orientation.lock === 'function') {
+        await screen.orientation.lock('landscape');
+      }
+    } catch (_) {}
+  }
+
+  async function tryFullscreenAndLandscape() {
+    if (!isMobileLike()) return;
+    await requestGameFullscreen(gameScreen || document.documentElement);
+    await tryLockLandscape();
+  }
+
+  async function updateOrientationState() {
+    const blocked = isPortraitBlocked();
+
+    if (rotateDeviceOverlay) {
+      rotateDeviceOverlay.classList.toggle('hidden', !blocked);
+    }
+
+    document.body.classList.toggle('orientation-blocked', blocked);
+
+    if (blocked) {
+      resetPointerInput(state);
+      state.player.moving = false;
+      state.guard.moving = false;
+      return;
+    }
+
+    resizeCanvas();
+
+    if (state.screen === 'game') {
+      await tryFullscreenAndLandscape();
+    }
+  }
+
   function getFloorPolyNow() {
     return getFloorPoly(sx, sy);
   }
@@ -102,33 +151,6 @@ export function initGame() {
 
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
-  }
-
-  function isPortraitBlocked() {
-    return isMobileLike() && window.matchMedia('(orientation: portrait)').matches;
-  }
-
-  async function updateOrientationState() {
-    const blocked = isPortraitBlocked();
-
-    if (rotateDeviceOverlay) {
-      rotateDeviceOverlay.classList.toggle('hidden', !blocked);
-    }
-
-    document.body.classList.toggle('orientation-blocked', blocked);
-
-    if (blocked) {
-      resetPointerInput(state);
-      state.player.moving = false;
-      state.guard.moving = false;
-      return;
-    }
-
-    resizeCanvas();
-
-    if (state.screen === 'game') {
-      await requestGameFullscreen(gameScreen || document.documentElement);
-    }
   }
 
   function vectorToDirection(dx, dy) {
@@ -470,7 +492,7 @@ export function initGame() {
       applyGameAudioSettings(assets);
 
       if (!isPortraitBlocked()) {
-        requestGameFullscreen(gameScreen || document.documentElement);
+        tryFullscreenAndLandscape();
       }
     } else {
       stopAllGameAudio(assets);
@@ -530,7 +552,7 @@ export function initGame() {
     showBanner('Heist started.');
 
     if (!isPortraitBlocked()) {
-      requestGameFullscreen(gameScreen || document.documentElement);
+      tryFullscreenAndLandscape();
     }
   }
 
@@ -965,7 +987,7 @@ export function initGame() {
     setTimeout(() => {
       resizeCanvas();
       updateOrientationState();
-    }, 100);
+    }, 120);
   });
 
   document.addEventListener('fullscreenchange', () => {
