@@ -4,21 +4,29 @@ import {
   pointInPolygon
 } from './zones.js';
 
+/*
+  IMPORTANT:
+  - sourceBox = where the ART IMAGE is drawn
+  - interact zone = where Nana can trigger GRAB
+  These are NOT the same thing.
+*/
+
 const WALL_ITEM_SOURCE_BOXES = {
-  'item-0': { x: 716, y: 661, w: 164, h: 27 },
-  'item-1': { x: 1196, y: 643, w: 212, h: 46 },
-  'item-2': { x: 1713, y: 643, w: 182, h: 46 },
+  // back wall draw boxes
+  'item-0': { x: 674, y: 357, w: 326, h: 146 },
+  'item-1': { x: 1155, y: 308, w: 326, h: 146 },
+  'item-2': { x: 1632, y: 354, w: 326, h: 146 },
 
-  'item-3': { x: 448, y: 718, w: 138, h: 120 },
-  'item-4': { x: 232, y: 1022, w: 137, h: 132 },
+  // left wall draw boxes
+  'item-3': { x: 394, y: 404, w: 149, h: 311 },
+  'item-4': { x: 197, y: 626, w: 149, h: 311 },
 
-  /* best-effort until exact right wall art boxes are supplied */
-  'item-5': { x: 2188, y: 714, w: 138, h: 134 },
-  'item-6': { x: 2328, y: 930, w: 156, h: 136 }
+  // right wall draw boxes
+  'item-5': { x: 1995, y: 354, w: 149, h: 311 },
+  'item-6': { x: 2168, y: 544, w: 149, h: 311 }
 };
 
 const FLOOR_ITEM_SOURCE_ANCHORS = {
-  /* locked source-space anchors so they stay stable across desktop/mobile */
   pedestal: { x: 1360, y: 1115, drawW: 96, drawH: 150 },
   aboard: { x: 2060, y: 1128, drawW: 104, drawH: 158 }
 };
@@ -104,11 +112,20 @@ function scaleInteractZone(zone, sx, sy) {
 export function getFloorItemBlocker(item) {
   if (!item || item.type !== 'floor' || item.status === 'stolen') return null;
 
+  if (item.floorKind === 'pedestal') {
+    return {
+      x1: item.anchorX - item.drawW * 0.34,
+      y1: item.anchorY - item.drawH * 0.24,
+      x2: item.anchorX + item.drawW * 0.34,
+      y2: item.anchorY + 6
+    };
+  }
+
   return {
-    x1: item.anchorX - item.drawW * 0.46,
-    y1: item.anchorY - item.drawH * 0.18,
-    x2: item.anchorX + item.drawW * 0.46,
-    y2: item.anchorY + 10
+    x1: item.anchorX - item.drawW * 0.22,
+    y1: item.anchorY - item.drawH * 0.16,
+    x2: item.anchorX + item.drawW * 0.22,
+    y2: item.anchorY + 6
   };
 }
 
@@ -254,10 +271,10 @@ export function getItemInteractZone(item, sx, sy) {
   if (!item) return null;
 
   if (item.type === 'floor') {
-    const widthMul = item.floorKind === 'pedestal' ? 0.38 : 0.24;
+    const widthMul = item.floorKind === 'pedestal' ? 0.34 : 0.22;
     const zoneHeight = item.floorKind === 'pedestal'
-      ? Math.max(10, item.drawH * 0.12)
-      : Math.max(12, item.drawH * 0.18);
+      ? Math.max(10, item.drawH * 0.14)
+      : Math.max(12, item.drawH * 0.20);
 
     const x1 = item.anchorX - item.drawW * widthMul;
     const x2 = item.anchorX + item.drawW * widthMul;
