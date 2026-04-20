@@ -9,9 +9,9 @@ import {
   getItemInteractRadius,
   getItemInteractZone,
   distance,
-  getZoneCenter
+  getZoneCenter,
+  pointInZone
 } from './items.js';
-import { pointInRect } from './zones.js';
 import { createFailVoiceAudio, safeRestartAudio, stopAudio } from './audio.js';
 
 export function formatMoney(pence) {
@@ -178,7 +178,7 @@ export function getNearbyItem({ state, run, sx, sy, getPlayerInteractPointFn }) 
     const zone = getItemInteractZone(item, sx, sy);
 
     if (zone) {
-      if (!pointInRect(playerPoint.x, playerPoint.y, zone)) continue;
+      if (!pointInZone(playerPoint.x, playerPoint.y, zone)) continue;
 
       const center = getZoneCenter(zone);
       const d = distance(playerPoint.x, playerPoint.y, center.x, center.y);
