@@ -23,13 +23,75 @@ const WALL_ITEM_SOURCE_BOXES = {
   'item-6': { x: 2168, y: 544, w: 149, h: 311 }
 };
 
-const FLOOR_ITEM_SOURCE_ANCHORS = {
-  pedestal: { x: 1360, y: 1115, drawW: 96, drawH: 150 },
-  aboard: { x: 2060, y: 1128, drawW: 104, drawH: 158 }
+const FLOOR_RANDOM_AREA_SOURCE = [
+  { x: 685, y: 760 },
+  { x: 1943, y: 760 },
+  { x: 2137, y: 1093 },
+  { x: 1844, y: 1092 },
+  { x: 1930, y: 1318 },
+  { x: 1598, y: 1318 },
+  { x: 1576, y: 1179 },
+  { x: 1002, y: 1179 },
+  { x: 892, y: 1322 },
+  { x: 388, y: 1318 }
+];
+
+const FLOOR_ITEM_SOURCE_DEFAULTS = {
+  pedestal: { drawW: 96, drawH: 150 },
+  aboard: { drawW: 104, drawH: 158 }
 };
 
-export function distance(ax, ay, bx, by) {
+function sourcePointInPoly(x, y, poly) {
+  return pointInPolygon({ x, y }, poly);
+}
+
+function distance(ax, ay, bx, by) {
   return Math.hypot(ax - bx, ay - by);
+}
+
+function getPolyBounds(poly) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const p of poly) {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+function randomPointInSourcePoly(poly, options = {}) {
+  const { avoid = [], minDistance = 180, maxAttempts = 800 } = options;
+  const bounds = getPolyBounds(poly);
+
+  for (let i = 0; i < maxAttempts; i += 1) {
+    const x = bounds.minX + Math.random() * (bounds.maxX - bounds.minX);
+    const y = bounds.minY + Math.random() * (bounds.maxY - bounds.minY);
+
+    if (!sourcePointInPoly(x, y, poly)) continue;
+
+    let tooClose = false;
+    for (const other of avoid) {
+      if (distance(x, y, other.x, other.y) < minDistance) {
+        tooClose = true;
+        break;
+      }
+    }
+
+    if (!tooClose) {
+      return { x, y };
+    }
+  }
+
+  return {
+    x: (bounds.minX + bounds.maxX) / 2,
+    y: (bounds.minY + bounds.maxY) / 2
+  };
 }
 
 export function getZoneCenter(zone) {
@@ -223,6 +285,8 @@ export function createHeistItems({ assets, sx, sy }) {
     items.push(item);
   });
 
+  const pedestalPos = randomPointInSourcePoly(FLOOR_RANDOM_AREA_SOURCE);
+
   const pedestal = {
     id: 'item-7',
     type: 'floor',
@@ -230,13 +294,18 @@ export function createHeistItems({ assets, sx, sy }) {
     status: 'available',
     question: null,
     image: assets.artImages.pedestal,
-    sourceAnchorX: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.x,
-    sourceAnchorY: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.y,
-    sourceDrawW: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.drawW,
-    sourceDrawH: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.drawH
+    sourceAnchorX: pedestalPos.x,
+    sourceAnchorY: pedestalPos.y,
+    sourceDrawW: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.drawW,
+    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.drawH
   };
   applyScaledGeometry(pedestal, sx, sy);
   items.push(pedestal);
+
+  const aboardPos = randomPointInSourcePoly(FLOOR_RANDOM_AREA_SOURCE, {
+    avoid: [{ x: pedestalPos.x, y: pedestalPos.y }],
+    minDistance: 220
+  });
 
   const aboard = {
     id: 'item-8',
@@ -245,10 +314,10 @@ export function createHeistItems({ assets, sx, sy }) {
     status: 'available',
     question: null,
     image: assets.artImages.aboard,
-    sourceAnchorX: FLOOR_ITEM_SOURCE_ANCHORS.aboard.x,
-    sourceAnchorY: FLOOR_ITEM_SOURCE_ANCHORS.aboard.y,
-    sourceDrawW: FLOOR_ITEM_SOURCE_ANCHORS.aboard.drawW,
-    sourceDrawH: FLOOR_ITEM_SOURCE_ANCHORS.aboard.drawH
+    sourceAnchorX: aboardPos.x,
+    sourceAnchorY: aboardPos.y,
+    sourceDrawW: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.drawW,
+    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.drawH
   };
   applyScaledGeometry(aboard, sx, sy);
   items.push(aboard);
@@ -268,10 +337,10 @@ export function getItemInteractZone(item, sx, sy) {
   if (!item) return null;
 
   if (item.type === 'floor') {
-    const widthMul = item.floorKind === 'pedestal' ? 0.34 : 0.22;
+    const widthMul = item.floorKind === 'pedestal' ? 0.68 : 0.44;
     const zoneHeight = item.floorKind === 'pedestal'
-      ? Math.max(10, item.drawH * 0.14)
-      : Math.max(12, item.drawH * 0.20);
+      ? Math.max(20, item.drawH * 0.28)
+      : Math.max(24, item.drawH * 0.40);
 
     const x1 = item.anchorX - item.drawW * widthMul;
     const x2 = item.anchorX + item.drawW * widthMul;
