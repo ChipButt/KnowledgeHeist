@@ -253,7 +253,6 @@ body.orientation-blocked {
   border-radius: 6px;
 }
 
-/* Start Heist box reduced ~5% while staying centered */
 #startHeistBtn {
   left: 27.29%;
   top: 69.72%;
@@ -262,7 +261,6 @@ body.orientation-blocked {
   transform: none;
 }
 
-/* Top slot */
 #instructionsBtn {
   left: 49.51%;
   top: 56.35%;
@@ -271,7 +269,6 @@ body.orientation-blocked {
   transform: none;
 }
 
-/* Middle slot */
 #leaderboardBtn {
   left: 52.54%;
   top: 67.62%;
@@ -280,7 +277,6 @@ body.orientation-blocked {
   transform: none;
 }
 
-/* Bottom slot */
 #settingsBtn {
   left: 44.82%;
   top: 94.45%;
@@ -290,22 +286,22 @@ body.orientation-blocked {
 }
 
 #startHeistBtn img {
-  transform: scale(0.95);
+  transform: scale(0.98);
   transform-origin: center;
 }
 
 #instructionsBtn img {
-  transform: scale(0.72);
+  transform: scale(1.05);
   transform-origin: center;
 }
 
 #leaderboardBtn img {
-  transform: scale(0.24);
+  transform: scale(0.48);
   transform-origin: center;
 }
 
 #settingsBtn img {
-  transform: scale(0.28);
+  transform: scale(1.05);
   transform-origin: center;
 }
 
