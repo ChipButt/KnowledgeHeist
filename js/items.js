@@ -12,16 +12,13 @@ import {
 */
 
 const WALL_ITEM_SOURCE_BOXES = {
-  // back wall draw boxes
   'item-0': { x: 674, y: 357, w: 326, h: 146 },
   'item-1': { x: 1155, y: 308, w: 326, h: 146 },
   'item-2': { x: 1632, y: 354, w: 326, h: 146 },
 
-  // left wall draw boxes
   'item-3': { x: 394, y: 404, w: 149, h: 311 },
   'item-4': { x: 197, y: 626, w: 149, h: 311 },
 
-  // right wall draw boxes
   'item-5': { x: 1995, y: 354, w: 149, h: 311 },
   'item-6': { x: 2168, y: 544, w: 149, h: 311 }
 };
