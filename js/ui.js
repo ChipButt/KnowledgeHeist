@@ -1,13 +1,14 @@
 import {
   SAVE_KEY,
   HISTORY_KEY,
+  clearAllProgress,
   loadSave,
-  readHistory,
-  clearAllProgress
+  readHistory
 } from './storage.js';
+import { getLeaderboardRows } from './leaderboard.js';
+import { getSettings, saveGameSettings, getVolumeScale } from './settings.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
-const PLAYER_NAME_KEY = 'nanaHeistPlayerName_v1';
 
 const hubCellPositions = {
   date1: { x: 80.18, y: 23.43 },
@@ -41,74 +42,6 @@ function hide(el) {
   if (el) el.classList.remove('show');
 }
 
-function ensureLeaderboardStyles() {
-  if (document.getElementById('nanaheistLeaderboardStyles')) return;
-
-  const style = document.createElement('style');
-  style.id = 'nanaheistLeaderboardStyles';
-  style.textContent = `
-    #leaderboardStatusText {
-      margin-top: 10px;
-      font-size: 15px;
-      line-height: 1.4;
-    }
-
-    #leaderboardTableWrap {
-      margin-top: 12px;
-      max-height: 44vh;
-      overflow: auto;
-      border: 1px solid rgba(60, 45, 28, 0.18);
-      border-radius: 12px;
-      background: rgba(255,255,255,0.34);
-    }
-
-    #leaderboardTable {
-      width: 100%;
-      border-collapse: collapse;
-      font-family: Arial, Helvetica, sans-serif;
-      font-size: 14px;
-      color: #241c14;
-    }
-
-    #leaderboardTable thead th {
-      position: sticky;
-      top: 0;
-      background: #ddceb1;
-      z-index: 1;
-    }
-
-    #leaderboardTable th,
-    #leaderboardTable td {
-      padding: 10px 12px;
-      border-bottom: 1px solid rgba(60, 45, 28, 0.14);
-      text-align: left;
-      vertical-align: top;
-    }
-
-    #leaderboardTable tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    #leaderboardTable .leaderboard-value {
-      font-weight: 700;
-      white-space: nowrap;
-    }
-
-    #leaderboardTable .leaderboard-rank {
-      font-weight: 700;
-      width: 52px;
-      white-space: nowrap;
-    }
-
-    #leaderboardTable .leaderboard-empty {
-      text-align: center;
-      font-style: italic;
-      color: #4d4337;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 function positionHubCells() {
   Object.entries(hubCellPositions).forEach(([id, pos]) => {
     const el = document.getElementById(id);
@@ -122,54 +55,7 @@ function createHubMusic() {
   const audio = new Audio(HUB_MUSIC_FILE);
   audio.preload = 'auto';
   audio.loop = true;
-  audio.volume = 0.22;
   return audio;
-}
-
-function getSavedPlayerName() {
-  try {
-    return localStorage.getItem(PLAYER_NAME_KEY) || 'Local Player';
-  } catch {
-    return 'Local Player';
-  }
-}
-
-function getFallbackLeaderboardRows(type) {
-  const save = loadSave();
-  const playerName = getSavedPlayerName();
-
-  if (type === 'bestHeist') {
-    if (!save.bestHeist) return [];
-    return [
-      {
-        name: playerName,
-        value: save.bestHeist,
-        extra: `Total Banked ${formatMoney(save.totalBanked)}`
-      }
-    ];
-  }
-
-  if (!save.totalBanked) return [];
-  return [
-    {
-      name: playerName,
-      value: save.totalBanked,
-      extra: `Best Heist ${formatMoney(save.bestHeist)}`
-    }
-  ];
-}
-
-async function getLeaderboardRows(type) {
-  if (typeof window.nanaHeistLeaderboardProvider === 'function') {
-    try {
-      const rows = await window.nanaHeistLeaderboardProvider(type);
-      if (Array.isArray(rows)) return rows;
-    } catch (err) {
-      console.error('Leaderboard provider failed:', err);
-    }
-  }
-
-  return getFallbackLeaderboardRows(type);
 }
 
 function getLeaderboardMeta(type) {
@@ -196,6 +82,19 @@ function getHubRefs() {
     instructionsBtn: document.getElementById('instructionsBtn'),
     instructionsOverlay: document.getElementById('instructionsOverlay'),
     closeInstructionsBtn: document.getElementById('closeInstructionsBtn'),
+
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsOverlay: document.getElementById('settingsOverlay'),
+    playerNameInput: document.getElementById('playerNameInput'),
+    hubVolumeInput: document.getElementById('hubVolumeInput'),
+    hubVolumeValue: document.getElementById('hubVolumeValue'),
+    gameMusicVolumeInput: document.getElementById('gameMusicVolumeInput'),
+    gameMusicVolumeValue: document.getElementById('gameMusicVolumeValue'),
+    voiceVolumeInput: document.getElementById('voiceVolumeInput'),
+    voiceVolumeValue: document.getElementById('voiceVolumeValue'),
+    difficultySelect: document.getElementById('difficultySelect'),
+    saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
 
     resetBtn: document.getElementById('resetProgressBtn'),
     resetConfirmOverlay: document.getElementById('resetConfirmOverlay'),
@@ -252,7 +151,6 @@ function getHubRefs() {
 
 function renderHubStats(refs) {
   const save = loadSave();
-
   refs.totalBankedEl.textContent = formatMoney(save.totalBanked);
   refs.bestHeistEl.textContent = formatMoney(save.bestHeist);
   refs.heistsPlayedEl.textContent = String(save.heistsPlayed || 0);
@@ -277,6 +175,18 @@ function renderHistory(refs) {
 function refreshHub(refs) {
   renderHistory(refs);
   renderHubStats(refs);
+}
+
+function renderSettingsForm(refs) {
+  const settings = getSettings();
+  refs.playerNameInput.value = settings.playerName;
+  refs.hubVolumeInput.value = String(settings.hubVolume);
+  refs.hubVolumeValue.textContent = `${settings.hubVolume}%`;
+  refs.gameMusicVolumeInput.value = String(settings.gameMusicVolume);
+  refs.gameMusicVolumeValue.textContent = `${settings.gameMusicVolume}%`;
+  refs.voiceVolumeInput.value = String(settings.voiceVolume);
+  refs.voiceVolumeValue.textContent = `${settings.voiceVolume}%`;
+  refs.difficultySelect.value = settings.difficulty;
 }
 
 function showLeaderboardMenu(refs) {
@@ -341,9 +251,14 @@ export function initUI(options = {}) {
 
   let musicUnlocked = false;
 
-  ensureLeaderboardStyles();
   positionHubCells();
   refreshHub(refs);
+  renderSettingsForm(refs);
+
+  function applyHubVolume() {
+    const settings = getSettings();
+    hubMusic.volume = getVolumeScale(settings.hubVolume);
+  }
 
   function pauseHubMusic() {
     try {
@@ -361,6 +276,8 @@ export function initUI(options = {}) {
     }
 
     if (!musicUnlocked) return;
+
+    applyHubVolume();
 
     try {
       const playPromise = hubMusic.play();
@@ -400,6 +317,44 @@ export function initUI(options = {}) {
   refs.closeInstructionsBtn.addEventListener('click', () => hide(refs.instructionsOverlay));
   refs.instructionsOverlay.addEventListener('click', (e) => {
     if (e.target === refs.instructionsOverlay) hide(refs.instructionsOverlay);
+  });
+
+  refs.settingsBtn.addEventListener('click', () => {
+    renderSettingsForm(refs);
+    show(refs.settingsOverlay);
+  });
+
+  refs.closeSettingsBtn.addEventListener('click', () => hide(refs.settingsOverlay));
+
+  refs.settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === refs.settingsOverlay) hide(refs.settingsOverlay);
+  });
+
+  refs.hubVolumeInput.addEventListener('input', () => {
+    refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
+    hubMusic.volume = getVolumeScale(refs.hubVolumeInput.value);
+  });
+
+  refs.gameMusicVolumeInput.addEventListener('input', () => {
+    refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
+  });
+
+  refs.voiceVolumeInput.addEventListener('input', () => {
+    refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
+  });
+
+  refs.saveSettingsBtn.addEventListener('click', () => {
+    saveGameSettings({
+      playerName: refs.playerNameInput.value,
+      hubVolume: refs.hubVolumeInput.value,
+      gameMusicVolume: refs.gameMusicVolumeInput.value,
+      voiceVolume: refs.voiceVolumeInput.value,
+      difficulty: refs.difficultySelect.value
+    });
+
+    renderSettingsForm(refs);
+    applyHubVolume();
+    hide(refs.settingsOverlay);
   });
 
   refs.resetBtn.addEventListener(
@@ -477,6 +432,11 @@ export function initUI(options = {}) {
 
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
 
+  window.addEventListener('nanaheist:settings-updated', () => {
+    renderSettingsForm(refs);
+    applyHubVolume();
+  });
+
   window.addEventListener('storage', (e) => {
     if (e.key === SAVE_KEY || e.key === HISTORY_KEY) {
       refreshHub(refs);
@@ -488,10 +448,13 @@ export function initUI(options = {}) {
     syncHubMusic();
   });
 
+  applyHubVolume();
   syncHubMusic();
 
   return {
     refreshHub: () => refreshHub(refs),
+    pauseHubMusic,
+    syncHubMusic,
     showInstructions: () => show(refs.instructionsOverlay),
     hideInstructions: () => hide(refs.instructionsOverlay),
     showLeaderboards: () => showLeaderboardMenu(refs)
