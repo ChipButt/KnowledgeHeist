@@ -18,10 +18,13 @@ html,
 body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  height: 100%;
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
   font-family: var(--ui-font);
+  overflow-x: hidden;
 }
 
 body {
@@ -31,6 +34,16 @@ body {
 body.orientation-blocked {
   overflow: hidden;
   touch-action: none;
+}
+
+body.game-active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 .screen {
@@ -86,9 +99,8 @@ body.orientation-blocked {
   color: #d9dfeb;
 }
 
-/* =========================
-   HUB SCREEN
-========================= */
+/* HUB */
+
 #hubScreen {
   align-items: center;
   justify-content: center;
@@ -329,9 +341,8 @@ body.orientation-blocked {
   font-weight: 700;
 }
 
-/* =========================
-   POPUPS
-========================= */
+/* POPUPS */
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -447,11 +458,11 @@ body.orientation-blocked {
   font-size: 15px;
 }
 
-/* =========================
-   GAME SCREEN
-========================= */
+/* GAME */
+
 #gameScreen {
-  position: relative;
+  position: fixed;
+  inset: 0;
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
@@ -459,8 +470,11 @@ body.orientation-blocked {
   background: #090c12;
   font-family: var(--ui-font);
   overflow: hidden;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 .game-topbar {
@@ -518,10 +532,11 @@ body.orientation-blocked {
 }
 
 .game-shell {
-  position: relative;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
+  overflow: hidden;
 }
 
 .canvas-wrap {
@@ -534,6 +549,7 @@ body.orientation-blocked {
   border: none;
   background: #101722;
   box-shadow: none;
+  touch-action: none;
 }
 
 #gameCanvas {
@@ -541,36 +557,11 @@ body.orientation-blocked {
   width: 100%;
   height: 100%;
   background: #111;
+  touch-action: none;
 }
 
 .game-controls {
-  position: absolute;
-  left: max(14px, env(safe-area-inset-left));
-  bottom: max(14px, env(safe-area-inset-bottom));
-  z-index: 30;
-  display: flex;
-  align-items: flex-end;
-  justify-content: flex-start;
-  pointer-events: none;
-}
-
-#interactBtn {
-  pointer-events: auto;
-  width: 86px;
-  height: 86px;
-  min-width: 86px;
-  border: none;
-  border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #ff7777 0%, #d72f2f 55%, #9f1515 100%);
-  color: #fff6f6;
-  font-weight: 900;
-  font-size: 18px;
-  letter-spacing: 0.4px;
-  cursor: pointer;
-  box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -4px 0 rgba(0, 0, 0, 0.2),
-    0 8px 18px rgba(0, 0, 0, 0.38);
+  display: none;
 }
 
 #gameBanner {
@@ -818,18 +809,6 @@ body.orientation-blocked {
   #backToHubBtn {
     min-width: 116px;
   }
-
-  .game-controls {
-    left: max(10px, env(safe-area-inset-left));
-    bottom: max(10px, env(safe-area-inset-bottom));
-  }
-
-  #interactBtn {
-    width: 78px;
-    height: 78px;
-    min-width: 78px;
-    font-size: 16px;
-  }
 }
 
 @media (max-width: 600px) {
@@ -875,17 +854,5 @@ body.orientation-blocked {
 
   #backToHubBtn {
     min-width: 102px;
-  }
-
-  .game-controls {
-    left: max(8px, env(safe-area-inset-left));
-    bottom: max(8px, env(safe-area-inset-bottom));
-  }
-
-  #interactBtn {
-    width: 72px;
-    height: 72px;
-    min-width: 72px;
-    font-size: 15px;
   }
 }
