@@ -104,16 +104,20 @@ body.game-active {
 #hubScreen {
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   align-items: center;
   justify-content: center;
   padding: 0;
   background: #0e1116;
   overflow: hidden;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
   touch-action: none;
   overscroll-behavior: none;
+}
+
+#hubScreen.active {
+  display: flex;
 }
 
 .hub-wrap {
