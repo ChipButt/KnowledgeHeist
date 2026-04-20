@@ -1,48 +1,29 @@
 import { loadSave, loadSettings } from './storage.js';
+import { sanitizePlayerName } from './settings.js';
 
-function formatMoney(pence) {
-  return `£${((pence || 0) / 100).toFixed(2)}`;
-}
-
-function getPlayerName() {
-  const settings = loadSettings();
-  return settings.playerName || 'Local Player';
-}
-
-function getFallbackLeaderboardRows(type) {
-  const save = loadSave();
-  const playerName = getPlayerName();
-
-  if (type === 'bestHeist') {
-    if (!save.bestHeist) return [];
-    return [
-      {
-        name: playerName,
-        value: save.bestHeist,
-        extra: `Total Banked ${formatMoney(save.totalBanked)}`
-      }
-    ];
-  }
-
-  if (!save.totalBanked) return [];
-  return [
-    {
-      name: playerName,
-      value: save.totalBanked,
-      extra: `Best Heist ${formatMoney(save.bestHeist)}`
-    }
-  ];
-}
-
-export async function getLeaderboardRows(type) {
-  if (typeof window.nanaHeistLeaderboardProvider === 'function') {
+export async function getUnifiedLeaderboardRows() {
+  if (typeof window.nanaHeistUnifiedLeaderboardProvider === 'function') {
     try {
-      const rows = await window.nanaHeistLeaderboardProvider(type);
+      const rows = await window.nanaHeistUnifiedLeaderboardProvider();
       if (Array.isArray(rows)) return rows;
     } catch (err) {
-      console.error('Leaderboard provider failed:', err);
+      console.error('Unified leaderboard provider failed:', err);
     }
   }
 
-  return getFallbackLeaderboardRows(type);
+  const save = loadSave();
+  const settings = loadSettings();
+
+  if (!save.totalBanked && !save.bestHeist) return [];
+
+  return [
+    {
+      rank: 1,
+      name: sanitizePlayerName(settings.playerName) || 'Local Player',
+      totalBanked: Number(save.totalBanked || 0),
+      bestHeist: Number(save.bestHeist || 0),
+      heistsPlayed: Number(save.heistsPlayed || 0),
+      paintingsStolen: Number(save.paintingsStolen || 0)
+    }
+  ];
 }
