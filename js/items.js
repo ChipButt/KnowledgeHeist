@@ -4,10 +4,6 @@ import {
   pointInPolygon
 } from './zones.js';
 
-export function distance(ax, ay, bx, by) {
-  return Math.hypot(ax - bx, ay - by);
-}
-
 /*
   IMPORTANT:
   - sourceBox = where the ART IMAGE is drawn
@@ -49,7 +45,7 @@ function sourcePointInPoly(x, y, poly) {
   return pointInPolygon({ x, y }, poly);
 }
 
-function distance(ax, ay, bx, by) {
+export function distance(ax, ay, bx, by) {
   return Math.hypot(ax - bx, ay - by);
 }
 
