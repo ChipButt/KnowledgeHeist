@@ -186,15 +186,14 @@ function drawGuard(ctx, guard, assets) {
   }
 }
 
-function drawPrompt(ctx, state, helpers) {
+function drawPrompt(ctx, runtime) {
+  const { state, helpers } = runtime;
   if (!state.run || state.run.mode !== 'play' || state.player.controlLocked) return;
 
   const item = helpers.getNearbyItem();
   if (!item) return;
 
-  const itemPoint = helpers.getItemInteractPoint
-    ? helpers.getItemInteractPoint(item)
-    : { x: item.anchorX, y: item.anchorY };
+  const itemPoint = helpers.getItemInteractPoint(item);
 
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.72)';
@@ -259,7 +258,7 @@ export function drawRoom(runtime) {
     drawables.sort((a, b) => a.y - b.y).forEach((entry) => entry.draw());
   }
 
-  drawPrompt(ctx, state, helpers);
+  drawPrompt(ctx, runtime);
   ctx.restore();
 
   if (state.fx.wrongFlashTimer > 0) {
