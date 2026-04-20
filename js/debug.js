@@ -1,57 +1,39 @@
 export const DEBUG = {
-  interaction: true,
-  layoutOverlay: true
+  interaction: false,
+  layoutOverlay: false
 };
 
-function getZoneCenter(zone) {
-  if (!zone) return { x: 0, y: 0 };
-
-  if (zone.type === 'poly') {
-    const total = zone.points.reduce(
-      (acc, point) => {
-        acc.x += point.x;
-        acc.y += point.y;
-        return acc;
-      },
-      { x: 0, y: 0 }
-    );
-
-    return {
-      x: total.x / zone.points.length,
-      y: total.y / zone.points.length
-    };
-  }
-
-  return {
-    x: (zone.x1 + zone.x2) / 2,
-    y: (zone.y1 + zone.y2) / 2
-  };
-}
-
-function drawZone(ctx, zone, strokeStyle, fillStyle) {
+function drawZoneOutline(ctx, zone, strokeStyle, fillStyle = null) {
   if (!zone) return;
 
   ctx.save();
   ctx.strokeStyle = strokeStyle;
   ctx.lineWidth = 2;
-  ctx.fillStyle = fillStyle;
 
   if (zone.type === 'poly') {
     ctx.beginPath();
     ctx.moveTo(zone.points[0].x, zone.points[0].y);
-
     for (let i = 1; i < zone.points.length; i += 1) {
       ctx.lineTo(zone.points[i].x, zone.points[i].y);
     }
-
     ctx.closePath();
-    ctx.fill();
+
+    if (fillStyle) {
+      ctx.fillStyle = fillStyle;
+      ctx.fill();
+    }
+
     ctx.stroke();
-  } else {
-    ctx.fillRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
-    ctx.strokeRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
+    ctx.restore();
+    return;
   }
 
+  if (fillStyle) {
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
+  }
+
+  ctx.strokeRect(zone.x1, zone.y1, zone.x2 - zone.x1, zone.y2 - zone.y1);
   ctx.restore();
 }
 
@@ -73,13 +55,37 @@ export function drawInteractionDebug({ ctx, state, helpers }) {
     const zone = helpers.getItemInteractZone(item);
 
     if (zone) {
-      drawZone(ctx, zone, 'rgba(0,255,0,0.95)', 'rgba(0,255,0,0.18)');
+      drawZoneOutline(
+        ctx,
+        zone,
+        'rgba(0,255,0,0.95)',
+        'rgba(0,255,0,0.18)'
+      );
 
-      const center = getZoneCenter(zone);
+      const center =
+        zone.type === 'poly'
+          ? zone.points.reduce(
+              (acc, point) => {
+                acc.x += point.x;
+                acc.y += point.y;
+                return acc;
+              },
+              { x: 0, y: 0 }
+            )
+          : null;
+
+      const labelX = zone.type === 'poly'
+        ? center.x / zone.points.length
+        : (zone.x1 + zone.x2) / 2;
+
+      const labelY = zone.type === 'poly'
+        ? (center.y / zone.points.length) - 8
+        : zone.y1 - 6;
+
       ctx.fillStyle = '#fff';
       ctx.font = '12px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(item.id, center.x, center.y - 12);
+      ctx.fillText(item.id, labelX, labelY);
       return;
     }
 
@@ -126,13 +132,7 @@ export function drawLayoutOverlay({
   ctx.strokeRect(exit.x1, exit.y1, exit.x2 - exit.x1, exit.y2 - exit.y1);
 
   const guardDoor = getGuardDoorZone();
-  ctx.strokeStyle = 'rgba(255,0,255,0.95)';
-  ctx.strokeRect(
-    guardDoor.x1,
-    guardDoor.y1,
-    guardDoor.x2 - guardDoor.x1,
-    guardDoor.y2 - guardDoor.y1
-  );
+  drawZoneOutline(ctx, guardDoor, 'rgba(255,0,255,0.95)');
 
   ctx.restore();
 }
