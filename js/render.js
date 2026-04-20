@@ -186,23 +186,38 @@ function drawGuard(ctx, guard, assets) {
   }
 }
 
-function drawPrompt(ctx, runtime) {
+function getPromptBounds(runtime) {
   const { state, helpers } = runtime;
-  if (!state.run || state.run.mode !== 'play' || state.player.controlLocked) return;
+  if (!state.run || state.run.mode !== 'play' || state.player.controlLocked) return null;
 
   const item = helpers.getNearbyItem();
-  if (!item) return;
+  if (!item) return null;
 
   const itemPoint = helpers.getItemInteractPoint(item);
 
+  return {
+    item,
+    x: itemPoint.x - 42,
+    y: itemPoint.y - 44,
+    w: 84,
+    h: 20,
+    cx: itemPoint.x,
+    cy: itemPoint.y - 34
+  };
+}
+
+function drawPrompt(ctx, runtime) {
+  const prompt = getPromptBounds(runtime);
+  if (!prompt) return;
+
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.72)';
-  ctx.fillRect(itemPoint.x - 42, itemPoint.y - 44, 84, 20);
+  ctx.fillRect(prompt.x, prompt.y, prompt.w, prompt.h);
   ctx.fillStyle = '#f7e7b0';
   ctx.font = '12px Arial';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('GRAB', itemPoint.x, itemPoint.y - 34);
+  ctx.fillText('GRAB', prompt.cx, prompt.cy);
   ctx.restore();
 }
 
@@ -285,3 +300,5 @@ export function drawRoom(runtime) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
+
+export { getPromptBounds };
