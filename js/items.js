@@ -4,14 +4,31 @@ import {
   pointInPolygon
 } from './zones.js';
 
+const WALL_ITEM_SOURCE_BOXES = {
+  'item-0': { x: 716, y: 661, w: 164, h: 27 },
+  'item-1': { x: 1196, y: 643, w: 212, h: 46 },
+  'item-2': { x: 1713, y: 643, w: 182, h: 46 },
+
+  'item-3': { x: 448, y: 718, w: 138, h: 120 },
+  'item-4': { x: 232, y: 1022, w: 137, h: 132 },
+
+  /* best-effort until exact right wall art boxes are supplied */
+  'item-5': { x: 2188, y: 714, w: 138, h: 134 },
+  'item-6': { x: 2328, y: 930, w: 156, h: 136 }
+};
+
+const FLOOR_ITEM_SOURCE_ANCHORS = {
+  /* locked source-space anchors so they stay stable across desktop/mobile */
+  pedestal: { x: 1360, y: 1115, drawW: 96, drawH: 150 },
+  aboard: { x: 2060, y: 1128, drawW: 104, drawH: 158 }
+};
+
 export function distance(ax, ay, bx, by) {
   return Math.hypot(ax - bx, ay - by);
 }
 
 export function getZoneCenter(zone) {
-  if (!zone) {
-    return { x: 0, y: 0 };
-  }
+  if (!zone) return { x: 0, y: 0 };
 
   if (zone.type === 'poly') {
     const total = zone.points.reduce(
@@ -103,259 +120,134 @@ export function pointHitsFloorBlocker(items, px, py) {
   return false;
 }
 
-export function randomFloorPoint({
-  minX,
-  maxX,
-  minY,
-  maxY,
-  avoid = [],
-  isWalkablePoint,
-  exitZone,
-  sx,
-  sy
-}) {
-  for (let i = 0; i < 500; i += 1) {
-    const x = minX + Math.random() * (maxX - minX);
-    const y = minY + Math.random() * (maxY - minY);
-
-    if (!isWalkablePoint(x, y)) continue;
-    if (pointInRect(x, y, exitZone)) continue;
-    if (distance(x, y, sx(1410), sy(1220)) < 90) continue;
-
-    let tooClose = false;
-    for (const other of avoid) {
-      if (distance(x, y, other.x, other.y) < 150) {
-        tooClose = true;
-        break;
-      }
-    }
-
-    if (!tooClose) return { x, y };
+function applyScaledGeometry(item, sx, sy) {
+  if (item.type === 'wall') {
+    item.x = sx(item.sourceBox.x);
+    item.y = sy(item.sourceBox.y);
+    item.w = sx(item.sourceBox.w);
+    item.h = sy(item.sourceBox.h);
+    item.anchorX = item.x + item.w / 2;
+    item.anchorY = item.y + item.h;
+    return;
   }
 
-  return { x: (minX + maxX) / 2, y: (minY + maxY) / 2 };
+  item.anchorX = sx(item.sourceAnchorX);
+  item.anchorY = sy(item.sourceAnchorY);
+  item.drawW = sx(item.sourceDrawW);
+  item.drawH = sy(item.sourceDrawH);
 }
 
-export function createHeistItems({
-  VIEW_W,
-  VIEW_H,
-  sx,
-  sy,
-  assets,
-  isWalkablePoint,
-  getExitZone
-}) {
+export function createHeistItems({ assets, sx, sy }) {
   const items = [];
-  const cx = (x) => (x / 1024) * VIEW_W;
-  const cy = (y) => (y / 670) * VIEW_H;
 
-  const northSlots = [
+  const wallItems = [
     {
-      x: sx(898 - 175),
-      y: sy(443 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(305),
-      anchorY: cy(289),
+      id: 'item-0',
+      type: 'wall',
       wall: 'north',
+      status: 'available',
+      question: null,
       image: assets.artImages.northA
     },
     {
-      x: sx(1414 - 175),
-      y: sy(393 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(479),
-      anchorY: cy(286),
+      id: 'item-1',
+      type: 'wall',
       wall: 'north',
+      status: 'available',
+      question: null,
       image: assets.artImages.northB
     },
     {
-      x: sx(1925 - 175),
-      y: sy(440 - 75),
-      w: sx(350),
-      h: sy(150),
-      anchorX: cx(655),
-      anchorY: cy(286),
+      id: 'item-2',
+      type: 'wall',
       wall: 'north',
+      status: 'available',
+      question: null,
       image: assets.artImages.northC
-    }
-  ];
-
-  const westSlots = [
+    },
     {
-      x: sx(503 - 80),
-      y: sy(576 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(223),
-      anchorY: cy(342),
+      id: 'item-3',
+      type: 'wall',
       wall: 'west',
+      status: 'available',
+      question: null,
       image: assets.artImages.westA
     },
     {
-      x: sx(291 - 80),
-      y: sy(806 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(149),
-      anchorY: cy(464),
+      id: 'item-4',
+      type: 'wall',
       wall: 'west',
+      status: 'available',
+      question: null,
       image: [
         assets.artImages.westB,
         assets.artImages.westC,
         assets.artImages.westD
       ][Math.floor(Math.random() * 3)]
-    }
-  ];
-
-  const eastSlots = [
+    },
     {
-      x: sx(2219 - 80),
-      y: sy(525 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(732),
-      anchorY: cy(324),
+      id: 'item-5',
+      type: 'wall',
       wall: 'east',
+      status: 'available',
+      question: null,
       image: assets.artImages.eastA
     },
     {
-      x: sx(2405 - 80),
-      y: sy(721 - 160),
-      w: sx(160),
-      h: sy(320),
-      anchorX: cx(779),
-      anchorY: cy(401),
+      id: 'item-6',
+      type: 'wall',
       wall: 'east',
+      status: 'available',
+      question: null,
       image: assets.artImages.eastB
     }
   ];
 
-  let index = 0;
-
-  northSlots.forEach((slot) => {
-    items.push({
-      id: `item-${index++}`,
-      type: 'wall',
-      status: 'available',
-      question: null,
-      ...slot
-    });
+  wallItems.forEach((item) => {
+    item.sourceBox = { ...WALL_ITEM_SOURCE_BOXES[item.id] };
+    applyScaledGeometry(item, sx, sy);
+    items.push(item);
   });
 
-  westSlots.forEach((slot) => {
-    items.push({
-      id: `item-${index++}`,
-      type: 'wall',
-      status: 'available',
-      question: null,
-      ...slot
-    });
-  });
-
-  eastSlots.forEach((slot) => {
-    items.push({
-      id: `item-${index++}`,
-      type: 'wall',
-      status: 'available',
-      question: null,
-      ...slot
-    });
-  });
-
-  const exitZone = getExitZone();
-
-  const pedestalPos = randomFloorPoint({
-    minX: sx(1050),
-    maxX: sx(1700),
-    minY: sy(930),
-    maxY: sy(1190),
-    avoid: [],
-    isWalkablePoint,
-    exitZone,
-    sx,
-    sy
-  });
-
-  items.push({
-    id: `item-${index++}`,
+  const pedestal = {
+    id: 'item-7',
     type: 'floor',
     floorKind: 'pedestal',
     status: 'available',
     question: null,
     image: assets.artImages.pedestal,
-    anchorX: pedestalPos.x,
-    anchorY: pedestalPos.y - cy(10),
-    drawW: 80,
-    drawH: 118
-  });
+    sourceAnchorX: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.x,
+    sourceAnchorY: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.y,
+    sourceDrawW: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.drawW,
+    sourceDrawH: FLOOR_ITEM_SOURCE_ANCHORS.pedestal.drawH
+  };
+  applyScaledGeometry(pedestal, sx, sy);
+  items.push(pedestal);
 
-  const aboardPos = randomFloorPoint({
-    minX: sx(1820),
-    maxX: sx(2230),
-    minY: sy(930),
-    maxY: sy(1220),
-    avoid: [{ x: pedestalPos.x, y: pedestalPos.y - cy(10) }],
-    isWalkablePoint,
-    exitZone,
-    sx,
-    sy
-  });
-
-  items.push({
-    id: `item-${index}`,
+  const aboard = {
+    id: 'item-8',
     type: 'floor',
     floorKind: 'aboard',
     status: 'available',
     question: null,
     image: assets.artImages.aboard,
-    anchorX: aboardPos.x,
-    anchorY: aboardPos.y - cy(10),
-    drawW: 84,
-    drawH: 122
-  });
+    sourceAnchorX: FLOOR_ITEM_SOURCE_ANCHORS.aboard.x,
+    sourceAnchorY: FLOOR_ITEM_SOURCE_ANCHORS.aboard.y,
+    sourceDrawW: FLOOR_ITEM_SOURCE_ANCHORS.aboard.drawW,
+    sourceDrawH: FLOOR_ITEM_SOURCE_ANCHORS.aboard.drawH
+  };
+  applyScaledGeometry(aboard, sx, sy);
+  items.push(aboard);
 
   return items;
 }
 
 export function buildScaledRunData(run, sx, sy) {
+  if (!run) return;
+
   for (const item of run.items) {
-    if (item.type === 'floor') {
-      if (item.floorKind === 'pedestal') {
-        item.drawW = Math.max(74, sx(96));
-        item.drawH = Math.max(108, sy(150));
-      } else {
-        item.drawW = Math.max(78, sx(104));
-        item.drawH = Math.max(112, sy(158));
-      }
-    }
+    applyScaledGeometry(item, sx, sy);
   }
-}
-
-function scaleValue(value, fromSize, toSize) {
-  if (!fromSize) return value;
-  return value * (toSize / fromSize);
-}
-
-export function rescaleActiveRun({ state, prevW, prevH, nextW, nextH }) {
-  if (!state.run || !prevW || !prevH) return;
-
-  for (const item of state.run.items) {
-    if (typeof item.x === 'number') item.x = scaleValue(item.x, prevW, nextW);
-    if (typeof item.y === 'number') item.y = scaleValue(item.y, prevH, nextH);
-    if (typeof item.w === 'number') item.w = scaleValue(item.w, prevW, nextW);
-    if (typeof item.h === 'number') item.h = scaleValue(item.h, prevH, nextH);
-    if (typeof item.anchorX === 'number') item.anchorX = scaleValue(item.anchorX, prevW, nextW);
-    if (typeof item.anchorY === 'number') item.anchorY = scaleValue(item.anchorY, prevH, nextH);
-    if (typeof item.drawW === 'number') item.drawW = scaleValue(item.drawW, prevW, nextW);
-    if (typeof item.drawH === 'number') item.drawH = scaleValue(item.drawH, prevH, nextH);
-  }
-
-  state.player.x = scaleValue(state.player.x, prevW, nextW);
-  state.player.y = scaleValue(state.player.y, prevH, nextH);
-  state.guard.x = scaleValue(state.guard.x, prevW, nextW);
-  state.guard.y = scaleValue(state.guard.y, prevH, nextH);
 }
 
 export function getItemInteractZone(item, sx, sy) {
