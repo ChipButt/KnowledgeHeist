@@ -508,6 +508,36 @@ export function initUI(options = {}) {
     syncHubMusic();
   });
 
+  window.addEventListener('scroll', () => {
+    if (refs.hubScreen?.classList.contains('active')) {
+      window.scrollTo(0, 0);
+    }
+  });
+
+  document.addEventListener(
+    'touchmove',
+    (e) => {
+      if (refs.hubScreen?.classList.contains('active')) {
+        e.preventDefault();
+      }
+    },
+    { passive: false }
+  );
+
+  window.addEventListener('resize', () => {
+    if (refs.hubScreen?.classList.contains('active')) {
+      window.scrollTo(0, 0);
+    }
+  });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      if (refs.hubScreen?.classList.contains('active')) {
+        window.scrollTo(0, 0);
+      }
+    }, 100);
+  });
+
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopAllHubAudio();
