@@ -1,10 +1,10 @@
-import { loadSave, loadLastHeistWrong } from './storage.js';
+import { loadSave } from './storage.js';
 
 export function createBaseState() {
   return {
     save: loadSave(),
     homework: {
-      pending: loadLastHeistWrong()
+      pending: []
     },
     screen: 'hub',
     keys: { up: false, down: false, left: false, right: false },
