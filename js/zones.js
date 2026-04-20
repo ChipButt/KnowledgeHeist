@@ -1,14 +1,35 @@
-const SOURCE_W = 2816;
-const SOURCE_H = 1536;
+const SOURCE_W = 2626;
+const SOURCE_H = 1490;
 
 export const ITEM_INTERACT_ZONES_SOURCE = {
-  'item-0': { x1: 850, y1: 655, x2: 996, y2: 708 },
-  'item-1': { x1: 1332, y1: 654, x2: 1496, y2: 708 },
-  'item-2': { x1: 1862, y1: 655, x2: 2022, y2: 709 },
-  'item-3': { x1: 446, y1: 760, x2: 566, y2: 888 },
-  'item-4': { x1: 286, y1: 1038, x2: 434, y2: 1168 },
-  'item-5': { x1: 2188, y1: 714, x2: 2326, y2: 848 },
-  'item-6': { x1: 2328, y1: 930, x2: 2484, y2: 1066 }
+  // Back wall
+  'item-0': { type: 'rect', x1: 716, y1: 661, x2: 880, y2: 688 },
+  'item-1': { type: 'rect', x1: 1196, y1: 643, x2: 1408, y2: 689 },
+  'item-2': { type: 'rect', x1: 1713, y1: 643, x2: 1895, y2: 689 },
+
+  // Left wall - exact angled polys
+  'item-3': {
+    type: 'poly',
+    points: [
+      { x: 529, y: 734 },
+      { x: 448, y: 836 },
+      { x: 500, y: 838 },
+      { x: 586, y: 718 }
+    ]
+  },
+  'item-4': {
+    type: 'poly',
+    points: [
+      { x: 308, y: 1022 },
+      { x: 369, y: 1022 },
+      { x: 274, y: 1154 },
+      { x: 232, y: 1142 }
+    ]
+  },
+
+  // Right wall - still using temporary rectangles until you give exact angled coords
+  'item-5': { type: 'rect', x1: 2188, y1: 714, x2: 2326, y2: 848 },
+  'item-6': { type: 'rect', x1: 2328, y1: 930, x2: 2484, y2: 1066 }
 };
 
 export function createScaler(getViewSize) {
@@ -20,28 +41,28 @@ export function createScaler(getViewSize) {
 
 export function getFloorPoly(sx, sy) {
   return [
-    { x: sx(738), y: sy(730) },
-    { x: sx(2073), y: sy(730) },
-    { x: sx(2505), y: sy(1360) },
-    { x: sx(281), y: sy(1360) }
+    { x: sx(596), y: sy(684) },
+    { x: sx(2036), y: sy(684) },
+    { x: sx(2584), y: sy(1411) },
+    { x: sx(54), y: sy(1411) }
   ];
 }
 
 export function getExitZone(sx, sy) {
   return {
-    x1: sx(1180),
-    y1: sy(1280),
-    x2: sx(1640),
-    y2: sy(1495)
+    x1: sx(1150),
+    y1: sy(1435),
+    x2: sx(1427),
+    y2: sy(1490)
   };
 }
 
 export function getGuardDoorZone(sx, sy) {
   return {
-    x1: sx(2522),
-    y1: sy(1174),
-    x2: sx(2639),
-    y2: sy(1325)
+    x1: sx(2426),
+    y1: sy(1179),
+    x2: sx(2476),
+    y2: sy(1321)
   };
 }
 
