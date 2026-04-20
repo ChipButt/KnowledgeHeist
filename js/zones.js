@@ -1,13 +1,13 @@
 const SOURCE_W = 2626;
 const SOURCE_H = 1490;
 
+export { SOURCE_W, SOURCE_H };
+
 export const ITEM_INTERACT_ZONES_SOURCE = {
-  // Back wall
   'item-0': { type: 'rect', x1: 716, y1: 661, x2: 880, y2: 688 },
   'item-1': { type: 'rect', x1: 1196, y1: 643, x2: 1408, y2: 689 },
   'item-2': { type: 'rect', x1: 1713, y1: 643, x2: 1895, y2: 689 },
 
-  // Left wall - exact angled polys
   'item-3': {
     type: 'poly',
     points: [
@@ -27,7 +27,7 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
     ]
   },
 
-  // Right wall - still using temporary rectangles until you give exact angled coords
+  /* best-effort until you give exact right wall coords */
   'item-5': { type: 'rect', x1: 2188, y1: 714, x2: 2326, y2: 848 },
   'item-6': { type: 'rect', x1: 2328, y1: 930, x2: 2484, y2: 1066 }
 };
