@@ -14,7 +14,7 @@ let lastBackgroundMusicTrack = '';
 let sharedAudioContext = null;
 let autoUnlockBound = false;
 
-const mediaNodes = new WeakMap();
+const managedAudioMap = new WeakMap();
 
 const nativeVolumeDescriptor =
   typeof HTMLMediaElement !== 'undefined'
@@ -23,6 +23,14 @@ const nativeVolumeDescriptor =
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
+}
+
+function setNativeVolume(audio, value) {
+  if (!nativeVolumeDescriptor?.set) return;
+
+  try {
+    nativeVolumeDescriptor.set.call(audio, clamp01(value));
+  } catch (_) {}
 }
 
 function getAudioContext() {
@@ -61,72 +69,82 @@ export function unlockAudioContext() {
   }
 }
 
-function setNativeVolume(audio, value) {
-  if (!nativeVolumeDescriptor?.set) return;
+function ensureManagedAudio(audio, initialVolume = 1) {
+  const existing = managedAudioMap.get(audio);
+  if (existing) return existing;
+
+  audio.preload = 'auto';
+  audio.muted = false;
+
   try {
-    nativeVolumeDescriptor.set.call(audio, value);
+    audio.playsInline = true;
+    audio.setAttribute('playsinline', '');
+    audio.setAttribute('webkit-playsinline', '');
   } catch (_) {}
-}
 
-function patchAudioForMobileVolume(audio, initialVolume) {
-  const ctx = getAudioContext();
-
-  if (!ctx) {
-    setNativeVolume(audio, clamp01(initialVolume));
-    return audio;
-  }
-
-  if (mediaNodes.has(audio)) {
-    const existing = mediaNodes.get(audio);
-    existing.setVolume(initialVolume);
-    return audio;
-  }
-
-  const sourceNode = ctx.createMediaElementSource(audio);
-  const gainNode = ctx.createGain();
-
-  sourceNode.connect(gainNode);
-  gainNode.connect(ctx.destination);
-
-  let logicalVolume = clamp01(initialVolume);
-
-  const setVolume = (value) => {
-    logicalVolume = clamp01(value);
-    gainNode.gain.value = logicalVolume;
-
-    // Keep the underlying media element fully open so the gain node does the real work.
-    setNativeVolume(audio, 1);
+  const entry = {
+    audio,
+    volume: clamp01(initialVolume),
+    ctx: null,
+    source: null,
+    gain: null,
+    useGain: false
   };
 
-  setVolume(logicalVolume);
+  const ctx = getAudioContext();
 
-  mediaNodes.set(audio, {
-    sourceNode,
-    gainNode,
-    setVolume
-  });
-
-  try {
-    Object.defineProperty(audio, 'volume', {
-      configurable: true,
-      enumerable: true,
-      get() {
-        return logicalVolume;
-      },
-      set(value) {
-        setVolume(value);
-      }
-    });
-  } catch (_) {
-    // Fallback: desktop/native volume still works where supported.
-    setNativeVolume(audio, logicalVolume);
+  if (ctx) {
+    try {
+      entry.ctx = ctx;
+      entry.source = ctx.createMediaElementSource(audio);
+      entry.gain = ctx.createGain();
+      entry.source.connect(entry.gain);
+      entry.gain.connect(ctx.destination);
+      entry.useGain = true;
+    } catch (_) {
+      entry.useGain = false;
+    }
   }
+
+  managedAudioMap.set(audio, entry);
+  applyManagedVolume(audio, entry.volume);
 
   audio.addEventListener('play', () => {
     unlockAudioContext();
   });
 
-  return audio;
+  return entry;
+}
+
+function applyManagedVolume(audio, value) {
+  const entry = ensureManagedAudio(audio, value);
+  entry.volume = clamp01(value);
+
+  if (entry.useGain && entry.gain && entry.ctx) {
+    try {
+      entry.gain.gain.setValueAtTime(entry.volume, entry.ctx.currentTime);
+    } catch (_) {
+      entry.gain.gain.value = entry.volume;
+    }
+
+    setNativeVolume(audio, 1);
+    return;
+  }
+
+  setNativeVolume(audio, entry.volume);
+}
+
+export function setAudioVolume(audio, volume) {
+  if (!audio) return;
+  applyManagedVolume(audio, volume);
+}
+
+function stopManagedAudio(audio) {
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (_) {}
 }
 
 function getNextBackgroundMusicTrack() {
@@ -143,28 +161,22 @@ function getNextBackgroundMusicTrack() {
 
 export function createAudio(src, volume = 0.5, loop = false) {
   const audio = new Audio(src);
-  audio.preload = 'auto';
   audio.loop = loop;
-
-  patchAudioForMobileVolume(audio, volume);
+  ensureManagedAudio(audio, volume);
   return audio;
 }
 
 export function stopAudio(audio) {
+  stopManagedAudio(audio);
+}
+
+export function safeRestartAudio(audio, volume = 1) {
   if (!audio) return;
 
   try {
     audio.pause();
     audio.currentTime = 0;
-  } catch (_) {}
-}
-
-export function safeRestartAudio(audio, volume = 1) {
-  try {
-    audio.pause();
-    audio.currentTime = 0;
-    audio.volume = volume;
-
+    setAudioVolume(audio, volume);
     unlockAudioContext();
 
     const p = audio.play();
@@ -194,11 +206,11 @@ export function applyGameAudioSettings(assets) {
   const gameMusicVolume = getVolumeScale(settings.gameMusicVolume);
   const voiceVolume = getVolumeScale(settings.voiceVolume);
 
-  if (assets.backgroundMusic) assets.backgroundMusic.volume = gameMusicVolume;
-  if (assets.sirenSound) assets.sirenSound.volume = Math.min(1, voiceVolume * 0.62);
-  if (assets.withMeSound) assets.withMeSound.volume = Math.min(1, voiceVolume * 1.0);
-  if (assets.heyStopSound) assets.heyStopSound.volume = Math.min(1, voiceVolume * 1.0);
-  if (assets.chaChingSound) assets.chaChingSound.volume = Math.min(1, voiceVolume * 1.0);
+  if (assets.backgroundMusic) setAudioVolume(assets.backgroundMusic, gameMusicVolume);
+  if (assets.sirenSound) setAudioVolume(assets.sirenSound, Math.min(1, voiceVolume * 0.62));
+  if (assets.withMeSound) setAudioVolume(assets.withMeSound, Math.min(1, voiceVolume * 1.0));
+  if (assets.heyStopSound) setAudioVolume(assets.heyStopSound, Math.min(1, voiceVolume * 1.0));
+  if (assets.chaChingSound) setAudioVolume(assets.chaChingSound, Math.min(1, voiceVolume * 1.0));
 }
 
 export function createFailVoiceAudio(file) {
