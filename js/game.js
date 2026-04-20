@@ -5,7 +5,15 @@ import { createBaseState, createGuardState, createPlayerState, createRunState } 
 import { drawRoom } from './render.js';
 import { drawInteractionDebug, drawLayoutOverlay } from './debug.js';
 import { createScaler, getExitZone, getFloorPoly, getGuardDoorZone, pointInPolygon, pointInRect } from './zones.js';
-import { buildScaledRunData, createHeistItems, getItemInteractPoint, getItemInteractRadius, getItemInteractZone, pointHitsFloorBlocker } from './items.js';
+import {
+  buildScaledRunData,
+  createHeistItems,
+  getItemInteractPoint,
+  getItemInteractRadius,
+  getItemInteractZone,
+  pointHitsFloorBlocker,
+  rescaleActiveRun
+} from './items.js';
 import { askQuestionForItem, endHeist, formatMoney, getNearbyItem, getPlayerInteractPoint, playWithMe, stopAllGameAudio, submitAnswer as submitAnswerFlow, updateFX, updatePullAnimation } from './gameFlow.js';
 import { endPointerControl, getDirectionalInput, getMoveSpeed, requestGameFullscreen, resetMovementKeys, resetPointerInput, startPointerControl, updatePointerControl } from './input.js';
 
@@ -221,20 +229,31 @@ export function initGame() {
   }
 
   function resizeCanvas() {
-    const rect = canvas.getBoundingClientRect();
-    const width = Math.max(1, Math.round(rect.width));
-    const height = Math.max(1, Math.round(rect.height));
+  const prevW = VIEW_W;
+  const prevH = VIEW_H;
 
-    canvas.width = width;
-    canvas.height = height;
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(1, Math.round(rect.width));
+  const height = Math.max(1, Math.round(rect.height));
 
-    VIEW_W = width;
-    VIEW_H = height;
+  canvas.width = width;
+  canvas.height = height;
 
-    if (state.run) {
-      buildScaledRunData(state.run, sx, sy);
-    }
+  VIEW_W = width;
+  VIEW_H = height;
+
+  if (state.run) {
+    rescaleActiveRun({
+      state,
+      prevW,
+      prevH,
+      nextW: VIEW_W,
+      nextH: VIEW_H
+    });
+
+    buildScaledRunData(state.run, sx, sy);
   }
+}
 
   function isConfirmPopupOpen() {
     return state.confirm.open;
