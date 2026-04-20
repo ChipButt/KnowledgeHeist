@@ -139,14 +139,6 @@ export function setAudioVolume(audio, volume) {
   applyManagedVolume(audio, volume);
 }
 
-function stopManagedAudio(audio) {
-  if (!audio) return;
-  try {
-    audio.pause();
-    audio.currentTime = 0;
-  } catch (_) {}
-}
-
 function getNextBackgroundMusicTrack() {
   const availableTracks = backgroundMusicTracks.filter(
     (track) => track !== lastBackgroundMusicTrack
@@ -167,7 +159,11 @@ export function createAudio(src, volume = 0.5, loop = false) {
 }
 
 export function stopAudio(audio) {
-  stopManagedAudio(audio);
+  if (!audio) return;
+  try {
+    audio.pause();
+    audio.currentTime = 0;
+  } catch (_) {}
 }
 
 export function safeRestartAudio(audio, volume = 1) {
