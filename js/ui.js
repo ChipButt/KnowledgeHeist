@@ -5,8 +5,8 @@ import {
   loadSave,
   readHistory
 } from './storage.js';
-import { getLeaderboardRows } from './leaderboard.js';
-import { getSettings, saveGameSettings, getVolumeScale } from './settings.js';
+import { getUnifiedLeaderboardRows } from './leaderboard.js';
+import { getSettings, saveGameSettings, getVolumeScale, sanitizePlayerName } from './settings.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 
@@ -42,6 +42,59 @@ function hide(el) {
   if (el) el.classList.remove('show');
 }
 
+function ensureUnifiedLeaderboardStyles() {
+  if (document.getElementById('nanaheistUnifiedLeaderboardStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'nanaheistUnifiedLeaderboardStyles';
+  style.textContent = `
+    #leaderboardPodium {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 14px 0 10px;
+    }
+
+    .leaderboard-podium-card {
+      border-radius: 14px;
+      background: rgba(255,255,255,0.34);
+      border: 1px solid rgba(60, 45, 28, 0.18);
+      padding: 12px 10px;
+      text-align: center;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .leaderboard-podium-rank {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .leaderboard-podium-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .leaderboard-podium-total,
+    .leaderboard-podium-best {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 700px) {
+      #leaderboardPodium {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
 function positionHubCells() {
   Object.entries(hubCellPositions).forEach(([id, pos]) => {
     const el = document.getElementById(id);
@@ -56,22 +109,6 @@ function createHubMusic() {
   audio.preload = 'auto';
   audio.loop = true;
   return audio;
-}
-
-function getLeaderboardMeta(type) {
-  if (type === 'totalBanked') {
-    return {
-      title: 'Total Banked',
-      subtitle: 'Highest total banked amounts',
-      swapLabel: 'Show Best Heist'
-    };
-  }
-
-  return {
-    title: 'Best Heist',
-    subtitle: 'Highest single-heist values',
-    swapLabel: 'Show Total Banked'
-  };
 }
 
 function getHubRefs() {
@@ -114,6 +151,7 @@ function getHubRefs() {
     leaderboardViewTitle: document.getElementById('leaderboardViewTitle'),
     leaderboardViewSubtitle: document.getElementById('leaderboardViewSubtitle'),
     leaderboardStatusText: document.getElementById('leaderboardStatusText'),
+    leaderboardTable: document.getElementById('leaderboardTable'),
     leaderboardTableBody: document.getElementById('leaderboardTableBody'),
 
     startHeistBtn: document.getElementById('startHeistBtn'),
@@ -189,29 +227,68 @@ function renderSettingsForm(refs) {
   refs.difficultySelect.value = settings.difficulty;
 }
 
-function showLeaderboardMenu(refs) {
-  refs.leaderboardMenuScreen.style.display = 'block';
-  refs.leaderboardBoardScreen.style.display = 'none';
-  refs.leaderboardStatusText.textContent = '';
-  refs.leaderboardTableBody.innerHTML = '';
-  show(refs.leaderboardOverlay);
+function ensurePodiumContainer(refs) {
+  let podium = document.getElementById('leaderboardPodium');
+  if (podium) return podium;
+
+  podium = document.createElement('div');
+  podium.id = 'leaderboardPodium';
+
+  const wrap = document.getElementById('leaderboardTableWrap');
+  refs.leaderboardBoardScreen.insertBefore(podium, wrap);
+
+  return podium;
 }
 
-async function showLeaderboardBoard(refs, type) {
-  const meta = getLeaderboardMeta(type);
+function renderPodium(rows, refs) {
+  const podium = ensurePodiumContainer(refs);
+  const topThree = rows.slice(0, 3);
 
+  if (!topThree.length) {
+    podium.innerHTML = '';
+    return;
+  }
+
+  podium.innerHTML = topThree
+    .map((row) => {
+      return `
+        <div class="leaderboard-podium-card">
+          <div class="leaderboard-podium-rank">#${row.rank}</div>
+          <div class="leaderboard-podium-name">${row.name}</div>
+          <div class="leaderboard-podium-total">Total Bank: <strong>${formatMoney(row.totalBanked)}</strong></div>
+          <div class="leaderboard-podium-best">Best Heist: <strong>${formatMoney(row.bestHeist)}</strong></div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function showUnifiedLeaderboard(refs) {
   refs.leaderboardMenuScreen.style.display = 'none';
   refs.leaderboardBoardScreen.style.display = 'block';
-  refs.leaderboardViewTitle.textContent = meta.title;
-  refs.leaderboardViewSubtitle.textContent = meta.subtitle;
-  refs.swapLeaderboardBtn.textContent = meta.swapLabel;
-  refs.swapLeaderboardBtn.dataset.boardType = type === 'bestHeist' ? 'totalBanked' : 'bestHeist';
+
+  refs.showBestHeistBoardBtn.style.display = 'none';
+  refs.showTotalBankedBoardBtn.style.display = 'none';
+  refs.closeLeaderboardBtn.style.display = 'none';
+  refs.swapLeaderboardBtn.style.display = 'none';
+  refs.backToLeaderboardMenuBtn.style.display = 'none';
+
+  refs.leaderboardViewTitle.textContent = 'Family Leaderboard';
+  refs.leaderboardViewSubtitle.textContent = 'Ranked by Total Bank, with Best Heist shown alongside';
+  refs.closeLeaderboardFromBoardBtn.textContent = 'Return to Main Hub';
+
+  const headCells = refs.leaderboardTable.querySelectorAll('thead th');
+  if (headCells[0]) headCells[0].textContent = '#';
+  if (headCells[1]) headCells[1].textContent = 'Name';
+  if (headCells[2]) headCells[2].textContent = 'Total Bank';
+  if (headCells[3]) headCells[3].textContent = 'Best Heist';
 
   refs.leaderboardStatusText.textContent = 'Loading leaderboard...';
   refs.leaderboardTableBody.innerHTML = '';
+  renderPodium([], refs);
   show(refs.leaderboardOverlay);
 
-  const rows = await getLeaderboardRows(type);
+  const rows = await getUnifiedLeaderboardRows();
 
   if (!rows.length) {
     refs.leaderboardStatusText.textContent = 'No leaderboard data yet.';
@@ -220,24 +297,21 @@ async function showLeaderboardBoard(refs, type) {
         <td class="leaderboard-empty" colspan="4">Nothing has been submitted yet.</td>
       </tr>
     `;
+    renderPodium([], refs);
     return;
   }
 
   refs.leaderboardStatusText.textContent = '';
+  renderPodium(rows, refs);
 
   refs.leaderboardTableBody.innerHTML = rows
-    .map((row, index) => {
-      const name = row.name || 'Unknown';
-      const value = formatMoney(Number(row.value || 0));
-      const extra = row.extra || '';
-      const rank = row.rank || index + 1;
-
+    .map((row) => {
       return `
         <tr>
-          <td class="leaderboard-rank">${rank}</td>
-          <td>${name}</td>
-          <td class="leaderboard-value">${value}</td>
-          <td>${extra}</td>
+          <td class="leaderboard-rank">${row.rank}</td>
+          <td>${row.name}</td>
+          <td class="leaderboard-value">${formatMoney(row.totalBanked)}</td>
+          <td class="leaderboard-value">${formatMoney(row.bestHeist)}</td>
         </tr>
       `;
     })
@@ -251,6 +325,7 @@ export function initUI(options = {}) {
 
   let musicUnlocked = false;
 
+  ensureUnifiedLeaderboardStyles();
   positionHubCells();
   refreshHub(refs);
   renderSettingsForm(refs);
@@ -344,8 +419,10 @@ export function initUI(options = {}) {
   });
 
   refs.saveSettingsBtn.addEventListener('click', () => {
+    const cleanedName = sanitizePlayerName(refs.playerNameInput.value);
+
     saveGameSettings({
-      playerName: refs.playerNameInput.value,
+      playerName: cleanedName,
       hubVolume: refs.hubVolumeInput.value,
       gameMusicVolume: refs.gameMusicVolumeInput.value,
       voiceVolume: refs.voiceVolumeInput.value,
@@ -380,24 +457,7 @@ export function initUI(options = {}) {
   });
 
   refs.leaderboardBtn.addEventListener('click', () => {
-    showLeaderboardMenu(refs);
-  });
-
-  refs.showBestHeistBoardBtn.addEventListener('click', () => {
-    showLeaderboardBoard(refs, 'bestHeist');
-  });
-
-  refs.showTotalBankedBoardBtn.addEventListener('click', () => {
-    showLeaderboardBoard(refs, 'totalBanked');
-  });
-
-  refs.swapLeaderboardBtn.addEventListener('click', () => {
-    const nextType = refs.swapLeaderboardBtn.dataset.boardType || 'bestHeist';
-    showLeaderboardBoard(refs, nextType);
-  });
-
-  refs.backToLeaderboardMenuBtn.addEventListener('click', () => {
-    showLeaderboardMenu(refs);
+    showUnifiedLeaderboard(refs);
   });
 
   refs.closeLeaderboardBtn.addEventListener('click', () => {
@@ -454,9 +514,6 @@ export function initUI(options = {}) {
   return {
     refreshHub: () => refreshHub(refs),
     pauseHubMusic,
-    syncHubMusic,
-    showInstructions: () => show(refs.instructionsOverlay),
-    hideInstructions: () => hide(refs.instructionsOverlay),
-    showLeaderboards: () => showLeaderboardMenu(refs)
+    syncHubMusic
   };
 }
