@@ -259,7 +259,7 @@ export const QUESTION_BANK = [
     question: "What is the name of the smallest bone in the human body?",
     answers: [
       "Stapes",
-      "Stapes (in the ear)"
+      "Stapes (in the ear)",
       "Stirrup"
     ],
     matchType: "contains",
