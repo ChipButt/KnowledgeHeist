@@ -28,7 +28,7 @@ body {
   overflow-x: hidden;
 }
 
-body.rotate-lock {
+body.orientation-blocked {
   overflow: hidden;
   touch-action: none;
 }
@@ -37,60 +37,53 @@ body.rotate-lock {
   display: none;
   width: 100%;
   min-height: 100vh;
-  min-height: 100dvh;
 }
 
 .screen.active {
   display: flex;
 }
 
-/* =========================
-   ROTATE OVERLAY
-========================= */
-#rotateDeviceOverlay {
+.rotate-overlay {
   position: fixed;
   inset: 0;
-  display: none;
+  z-index: 20000;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.04), transparent 40%),
-    linear-gradient(180deg, #0e1116 0%, #151922 100%);
-  z-index: 30000;
+  background: rgba(8, 10, 14, 0.96);
   text-align: center;
 }
 
-#rotateDeviceOverlay.show {
-  display: flex;
+.rotate-overlay.hidden {
+  display: none;
 }
 
-.rotate-device-card {
+.rotate-card {
   width: min(420px, 92vw);
-  background: linear-gradient(180deg, #ece2cd 0%, #ddceb1 100%);
-  color: #2f2519;
-  border: 10px solid #6d5539;
-  border-radius: 22px;
-  padding: 24px 20px;
-  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+  padding: 28px 24px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1b212b 0%, #131821 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
 }
 
-.rotate-device-icon {
-  font-size: 44px;
+.rotate-icon {
+  font-size: 48px;
   line-height: 1;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-.rotate-device-card h2 {
+.rotate-card h2 {
   margin: 0 0 10px;
-  font-size: clamp(24px, 4vw, 34px);
-  font-family: var(--hub-font);
+  font-size: clamp(24px, 5vw, 32px);
 }
 
-.rotate-device-card p {
-  margin: 6px 0;
-  font-size: clamp(15px, 2.8vw, 18px);
+.rotate-card p {
+  margin: 0;
+  font-size: clamp(15px, 3.5vw, 18px);
   line-height: 1.45;
+  color: #d9dfeb;
 }
 
 /* =========================
@@ -260,31 +253,17 @@ body.rotate-lock {
   border-radius: 6px;
 }
 
+/* Start Heist box reduced ~5% while staying centered */
 #startHeistBtn {
-  left: 27.05%;
-  top: 69.41%;
-  width: 9.67%;
-  height: 12.52%;
+  left: 27.29%;
+  top: 69.72%;
+  width: 9.18%;
+  height: 11.90%;
   transform: none;
 }
 
+/* Top slot */
 #instructionsBtn {
-  left: 52.54%;
-  top: 67.62%;
-  width: 6.84%;
-  height: 6.62%;
-  transform: none;
-}
-
-#leaderboardBtn {
-  left: 44.82%;
-  top: 94.45%;
-  width: 10.25%;
-  height: 4.47%;
-  transform: none;
-}
-
-#settingsBtn {
   left: 49.51%;
   top: 56.35%;
   width: 4.59%;
@@ -292,23 +271,41 @@ body.rotate-lock {
   transform: none;
 }
 
+/* Middle slot */
+#leaderboardBtn {
+  left: 52.54%;
+  top: 67.62%;
+  width: 6.84%;
+  height: 6.62%;
+  transform: none;
+}
+
+/* Bottom slot */
+#settingsBtn {
+  left: 44.82%;
+  top: 94.45%;
+  width: 10.25%;
+  height: 4.47%;
+  transform: none;
+}
+
 #startHeistBtn img {
-  transform: scale(1);
+  transform: scale(0.95);
   transform-origin: center;
 }
 
 #instructionsBtn img {
-  transform: scale(1);
+  transform: scale(0.72);
   transform-origin: center;
 }
 
 #leaderboardBtn img {
-  transform: scale(0.16);
+  transform: scale(0.24);
   transform-origin: center;
 }
 
 #settingsBtn img {
-  transform: scale(0.42);
+  transform: scale(0.28);
   transform-origin: center;
 }
 
@@ -799,9 +796,6 @@ body.rotate-lock {
   color: #4d4337;
 }
 
-/* =========================
-   RESPONSIVE
-========================= */
 @media (max-width: 900px) {
   #totalBanked {
     font-size: clamp(11px, 1.8vw, 15px);
