@@ -37,6 +37,16 @@
       </button>
 
       <button
+        class="hub-ui-button"
+        id="settingsBtn"
+        type="button"
+        aria-label="Open settings"
+        title="Settings"
+      >
+        ⚙
+      </button>
+
+      <button
         class="hub-hotspot"
         id="resetProgressBtn"
         type="button"
@@ -111,6 +121,28 @@
     </div>
   </div>
 
+  <!-- GENERIC CONFIRM -->
+  <div id="confirmChoiceOverlay" class="hidden">
+    <div id="confirmChoiceCard" role="dialog" aria-modal="true" aria-labelledby="confirmChoiceTitle">
+      <h2 id="confirmChoiceTitle">Are you sure?</h2>
+      <div id="confirmChoiceText"></div>
+      <div id="confirmChoiceActions">
+        <button id="confirmChoiceYesBtn" type="button">Yes</button>
+        <button id="confirmChoiceNoBtn" type="button">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOMEWORK -->
+  <div id="homeworkOverlay" class="hidden">
+    <div id="homeworkBoard" role="dialog" aria-modal="true" aria-labelledby="homeworkTitle">
+      <h2 id="homeworkTitle">Preparation for Next Heist</h2>
+      <div class="chalk-sub">Best do your homework.</div>
+      <div id="homeworkList"></div>
+      <button class="homework-close" id="homeworkCloseBtn" type="button">Got it</button>
+    </div>
+  </div>
+
   <!-- INSTRUCTIONS OVERLAY -->
   <div id="instructionsOverlay" class="overlay">
     <div class="popup-panel instructions-panel">
@@ -148,6 +180,52 @@ Questions only get used once until you reset your progress.
       <div class="popup-actions">
         <button id="confirmResetBtn" class="danger" type="button">Yes, Reset</button>
         <button id="cancelResetBtn" type="button">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div id="settingsOverlay" class="overlay">
+    <div class="popup-panel settings-panel">
+      <h2>Settings</h2>
+
+      <div class="settings-grid">
+        <label class="settings-field">
+          <span>Player Name</span>
+          <input id="playerNameInput" type="text" maxlength="24" placeholder="Enter name" />
+        </label>
+
+        <label class="settings-field">
+          <span>Hub Volume</span>
+          <input id="hubVolumeInput" type="range" min="0" max="100" step="1" />
+          <strong id="hubVolumeValue">22%</strong>
+        </label>
+
+        <label class="settings-field">
+          <span>Game Music Volume</span>
+          <input id="gameMusicVolumeInput" type="range" min="0" max="100" step="1" />
+          <strong id="gameMusicVolumeValue">22%</strong>
+        </label>
+
+        <label class="settings-field">
+          <span>Voice Clips Volume</span>
+          <input id="voiceVolumeInput" type="range" min="0" max="100" step="1" />
+          <strong id="voiceVolumeValue">90%</strong>
+        </label>
+
+        <label class="settings-field">
+          <span>Difficulty</span>
+          <select id="difficultySelect">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="popup-actions">
+        <button id="saveSettingsBtn" type="button">Save Settings</button>
+        <button id="closeSettingsBtn" type="button">Close</button>
       </div>
     </div>
   </div>
