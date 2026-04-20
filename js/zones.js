@@ -17,6 +17,7 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
       { x: 586, y: 718 }
     ]
   },
+
   'item-4': {
     type: 'poly',
     points: [
@@ -27,8 +28,25 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
     ]
   },
 
-  'item-5': { type: 'rect', x1: 2188, y1: 714, x2: 2326, y2: 848 },
-  'item-6': { type: 'rect', x1: 2328, y1: 930, x2: 2484, y2: 1066 }
+  'item-5': {
+    type: 'poly',
+    points: [
+      { x: 2091, y: 725 },
+      { x: 2170, y: 829 },
+      { x: 2110, y: 833 },
+      { x: 2015, y: 703 }
+    ]
+  },
+
+  'item-6': {
+    type: 'poly',
+    points: [
+      { x: 2228, y: 902 },
+      { x: 2323, y: 1031 },
+      { x: 2237, y: 1031 },
+      { x: 2158, y: 910 }
+    ]
+  }
 };
 
 export function createScaler(getViewSize) {
@@ -40,10 +58,10 @@ export function createScaler(getViewSize) {
 
 export function getFloorPoly(sx, sy) {
   return [
-    { x: sx(596), y: sy(684) },
-    { x: sx(2036), y: sy(684) },
-    { x: sx(2584), y: sy(1411) },
-    { x: sx(54), y: sy(1411) }
+    { x: sx(581), y: sy(662) },
+    { x: sx(2048), y: sy(662) },
+    { x: sx(2616), y: sy(1480) },
+    { x: sx(20), y: sy(1480) }
   ];
 }
 
@@ -58,10 +76,13 @@ export function getExitZone(sx, sy) {
 
 export function getGuardDoorZone(sx, sy) {
   return {
-    x1: sx(2426),
-    y1: sy(1179),
-    x2: sx(2476),
-    y2: sy(1321)
+    type: 'poly',
+    points: [
+      { x: sx(2426), y: sy(1174) },
+      { x: sx(2537), y: sy(1318) },
+      { x: sx(2460), y: sy(1318) },
+      { x: sx(2354), y: sy(1194) }
+    ]
   };
 }
 
@@ -86,4 +107,14 @@ export function pointInPolygon(point, polygon) {
   }
 
   return inside;
+}
+
+export function pointInZone(point, zone) {
+  if (!zone) return false;
+
+  if (zone.type === 'poly') {
+    return pointInPolygon(point, zone.points);
+  }
+
+  return pointInRect(point.x, point.y, zone);
 }
