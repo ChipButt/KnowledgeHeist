@@ -147,12 +147,21 @@ export function getDirectionalInput(state, speed) {
 
 export async function requestGameFullscreen(target) {
   if (!isMobileLike()) return;
-  if (document.fullscreenElement) return;
   if (!target) return;
 
+  const el = target;
+
   try {
-    if (typeof target.requestFullscreen === 'function') {
-      await target.requestFullscreen();
+    if (!document.fullscreenElement && typeof el.requestFullscreen === 'function') {
+      await el.requestFullscreen();
+      return;
+    }
+  } catch (_) {}
+
+  try {
+    if (!document.fullscreenElement && typeof el.webkitRequestFullscreen === 'function') {
+      await el.webkitRequestFullscreen();
+      return;
     }
   } catch (_) {}
 }
