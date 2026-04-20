@@ -1,8 +1,9 @@
 import { initUI } from './ui.js';
+import { initGame } from './game.js';
 
 let gameInstance = null;
 
-const ui = initUI({
+initUI({
   onStartHeist: () => {
     if (gameInstance && typeof gameInstance.startHeist === 'function') {
       gameInstance.startHeist();
@@ -14,11 +15,8 @@ const ui = initUI({
   }
 });
 
-(async () => {
-  try {
-    const gameModule = await import('./game.js');
-    gameInstance = gameModule.initGame();
-  } catch (err) {
-    console.error('Game boot failed:', err);
-  }
-})();
+try {
+  gameInstance = initGame();
+} catch (err) {
+  console.error('Game boot failed:', err);
+}
