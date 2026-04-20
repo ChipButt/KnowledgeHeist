@@ -27,7 +27,6 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
     ]
   },
 
-  /* best-effort until you give exact right wall coords */
   'item-5': { type: 'rect', x1: 2188, y1: 714, x2: 2326, y2: 848 },
   'item-6': { type: 'rect', x1: 2328, y1: 930, x2: 2484, y2: 1066 }
 };
