@@ -232,7 +232,7 @@ body.orientation-blocked {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: fill;
   object-position: center;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
@@ -283,26 +283,6 @@ body.orientation-blocked {
   width: 10.25%;
   height: 4.47%;
   transform: none;
-}
-
-#startHeistBtn img {
-  transform: scale(0.98);
-  transform-origin: center;
-}
-
-#instructionsBtn img {
-  transform: scale(1.05);
-  transform-origin: center;
-}
-
-#leaderboardBtn img {
-  transform: scale(0.48);
-  transform-origin: center;
-}
-
-#settingsBtn img {
-  transform: scale(1.05);
-  transform-origin: center;
 }
 
 #resetProgressBtn {
@@ -485,9 +465,9 @@ body.orientation-blocked {
 
 .game-topbar {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  right: 10px;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
   z-index: 30;
   display: flex;
   justify-content: space-between;
@@ -565,8 +545,8 @@ body.orientation-blocked {
 
 .game-controls {
   position: absolute;
-  left: 14px;
-  bottom: 14px;
+  left: max(14px, env(safe-area-inset-left));
+  bottom: max(14px, env(safe-area-inset-bottom));
   z-index: 30;
   display: flex;
   align-items: flex-end;
@@ -595,7 +575,7 @@ body.orientation-blocked {
 
 #gameBanner {
   position: fixed;
-  top: 18px;
+  top: max(18px, env(safe-area-inset-top));
   left: 50%;
   transform: translateX(-50%);
   background: rgba(18, 22, 29, 0.92);
@@ -818,9 +798,9 @@ body.orientation-blocked {
   }
 
   .game-topbar {
-    top: 8px;
-    left: 8px;
-    right: 8px;
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
     gap: 8px;
   }
 
@@ -840,8 +820,8 @@ body.orientation-blocked {
   }
 
   .game-controls {
-    left: 10px;
-    bottom: 10px;
+    left: max(10px, env(safe-area-inset-left));
+    bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   #interactBtn {
@@ -876,9 +856,9 @@ body.orientation-blocked {
   }
 
   .game-topbar {
-    top: 6px;
-    left: 6px;
-    right: 6px;
+    top: max(6px, env(safe-area-inset-top));
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
     gap: 6px;
   }
 
@@ -898,8 +878,8 @@ body.orientation-blocked {
   }
 
   .game-controls {
-    left: 8px;
-    bottom: 8px;
+    left: max(8px, env(safe-area-inset-left));
+    bottom: max(8px, env(safe-area-inset-bottom));
   }
 
   #interactBtn {
