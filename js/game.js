@@ -157,6 +157,15 @@ export function initGame() {
     );
   }
 
+  function getPlayerFeetPointForPosition(x, y) {
+    const drawTopY = y - constants.PLAYER_DRAW_H - constants.PLAYER_DRAW_Y_OFFSET;
+
+    return {
+      x,
+      y: drawTopY + (constants.PLAYER_DRAW_H * constants.PLAYER_FEET_POINT_Y)
+    };
+  }
+
   function getCatchDistance() {
     return Math.max(18, sx(constants.CATCH_DISTANCE));
   }
@@ -229,31 +238,31 @@ export function initGame() {
   }
 
   function resizeCanvas() {
-  const prevW = VIEW_W;
-  const prevH = VIEW_H;
+    const prevW = VIEW_W;
+    const prevH = VIEW_H;
 
-  const rect = canvas.getBoundingClientRect();
-  const width = Math.max(1, Math.round(rect.width));
-  const height = Math.max(1, Math.round(rect.height));
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.max(1, Math.round(rect.width));
+    const height = Math.max(1, Math.round(rect.height));
 
-  canvas.width = width;
-  canvas.height = height;
+    canvas.width = width;
+    canvas.height = height;
 
-  VIEW_W = width;
-  VIEW_H = height;
+    VIEW_W = width;
+    VIEW_H = height;
 
-  if (state.run) {
-    rescaleActiveRun({
-      state,
-      prevW,
-      prevH,
-      nextW: VIEW_W,
-      nextH: VIEW_H
-    });
+    if (state.run) {
+      rescaleActiveRun({
+        state,
+        prevW,
+        prevH,
+        nextW: VIEW_W,
+        nextH: VIEW_H
+      });
 
-    buildScaledRunData(state.run, sx, sy);
+      buildScaledRunData(state.run, sx, sy);
+    }
   }
-}
 
   function isConfirmPopupOpen() {
     return state.confirm.open;
@@ -345,9 +354,16 @@ export function initGame() {
   function tryMove(dx, dy, options = {}) {
     const nx = state.player.x + dx;
     const ny = state.player.y + dy;
+    const nextFeet = getPlayerFeetPointForPosition(nx, ny);
 
-    if (!pointInPolygon({ x: nx, y: ny }, getFloorPolyNow())) return;
-    if (!options.ignoreBlockers && state.run && pointHitsFloorBlocker(state.run.items, nx, ny)) return;
+    if (!pointInPolygon(nextFeet, getFloorPolyNow())) return;
+    if (
+      !options.ignoreBlockers &&
+      state.run &&
+      pointHitsFloorBlocker(state.run.items, nextFeet.x, nextFeet.y)
+    ) {
+      return;
+    }
 
     state.player.x = nx;
     state.player.y = ny;
@@ -847,57 +863,57 @@ export function initGame() {
   );
 
   document.addEventListener('keydown', (e) => {
-  const k = e.key.toLowerCase();
-  const tag = (e.target?.tagName || '').toLowerCase();
-  const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const k = e.key.toLowerCase();
+    const tag = (e.target?.tagName || '').toLowerCase();
+    const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
 
-  if (!isTypingField) {
-    if (k === 'arrowup' || k === 'w') state.keys.up = true;
-    if (k === 'arrowdown' || k === 's') state.keys.down = true;
-    if (k === 'arrowleft' || k === 'a') state.keys.left = true;
-    if (k === 'arrowright' || k === 'd') state.keys.right = true;
-  }
-
-  if (isPortraitBlocked()) return;
-
-  if (k === 'enter') {
-    if (!questionModal.classList.contains('hidden')) {
-      e.preventDefault();
-      submitAnswer();
-      return;
+    if (!isTypingField) {
+      if (k === 'arrowup' || k === 'w') state.keys.up = true;
+      if (k === 'arrowdown' || k === 's') state.keys.down = true;
+      if (k === 'arrowleft' || k === 'a') state.keys.left = true;
+      if (k === 'arrowright' || k === 'd') state.keys.right = true;
     }
 
-    if (
-      !isTypingField &&
-      questionModal.classList.contains('hidden') &&
-      state.screen === 'game' &&
-      !isConfirmPopupOpen()
-    ) {
-      e.preventDefault();
-      interact();
-      return;
-    }
-  }
+    if (isPortraitBlocked()) return;
 
-  if (k === 'escape') {
-    hideHomeworkPopup();
-    closeConfirmPopup();
-    resetPointerInput(state);
-  }
-});
+    if (k === 'enter') {
+      if (!questionModal.classList.contains('hidden')) {
+        e.preventDefault();
+        submitAnswer();
+        return;
+      }
+
+      if (
+        !isTypingField &&
+        questionModal.classList.contains('hidden') &&
+        state.screen === 'game' &&
+        !isConfirmPopupOpen()
+      ) {
+        e.preventDefault();
+        interact();
+        return;
+      }
+    }
+
+    if (k === 'escape') {
+      hideHomeworkPopup();
+      closeConfirmPopup();
+      resetPointerInput(state);
+    }
+  });
 
   document.addEventListener('keyup', (e) => {
-  const k = e.key.toLowerCase();
-  const tag = (e.target?.tagName || '').toLowerCase();
-  const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const k = e.key.toLowerCase();
+    const tag = (e.target?.tagName || '').toLowerCase();
+    const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
 
-  if (isTypingField) return;
+    if (isTypingField) return;
 
-  if (k === 'arrowup' || k === 'w') state.keys.up = false;
-  if (k === 'arrowdown' || k === 's') state.keys.down = false;
-  if (k === 'arrowleft' || k === 'a') state.keys.left = false;
-  if (k === 'arrowright' || k === 'd') state.keys.right = false;
-});
+    if (k === 'arrowup' || k === 'w') state.keys.up = false;
+    if (k === 'arrowdown' || k === 's') state.keys.down = false;
+    if (k === 'arrowleft' || k === 'a') state.keys.left = false;
+    if (k === 'arrowright' || k === 'd') state.keys.right = false;
+  });
 
   canvas.addEventListener(
     'pointerdown',
