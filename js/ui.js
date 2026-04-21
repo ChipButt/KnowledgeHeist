@@ -182,6 +182,11 @@ function getHubRefs() {
     leaderboardBtn: document.getElementById('leaderboardBtn'),
     reportQueryBtn: document.getElementById('reportQueryBtn'),
     reportQueryBtnImage: document.getElementById('reportQueryBtnImage'),
+
+    reportQueryConfirmOverlay: document.getElementById('reportQueryConfirmOverlay'),
+    reportQueryConfirmYesBtn: document.getElementById('reportQueryConfirmYesBtn'),
+    reportQueryConfirmNoBtn: document.getElementById('reportQueryConfirmNoBtn'),
+
     leaderboardOverlay: document.getElementById('leaderboardOverlay'),
     closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
     closeLeaderboardFromBoardBtn: document.getElementById('closeLeaderboardFromBoardBtn'),
@@ -433,7 +438,15 @@ export function initUI(options = {}) {
     };
   }
 
-  function handleReportQuery() {
+  function closeReportQueryConfirm() {
+    hide(refs.reportQueryConfirmOverlay);
+  }
+
+  function openReportQueryConfirm() {
+    show(refs.reportQueryConfirmOverlay);
+  }
+
+  function continueToContact() {
     if (reportQueryClickSound) {
       setAudioVolume(reportQueryClickSound, getVolumeScale(getSettings().voiceVolume));
       safeRestartAudio(reportQueryClickSound);
@@ -542,15 +555,34 @@ export function initUI(options = {}) {
   });
 
   if (refs.reportQueryBtn) {
-    refs.reportQueryBtn.addEventListener('click', handleReportQuery);
+    refs.reportQueryBtn.addEventListener('click', openReportQueryConfirm);
     refs.reportQueryBtn.addEventListener(
       'touchend',
       (e) => {
         e.preventDefault();
-        handleReportQuery();
+        openReportQueryConfirm();
       },
       { passive: false }
     );
+  }
+
+  if (refs.reportQueryConfirmYesBtn) {
+    refs.reportQueryConfirmYesBtn.addEventListener('click', () => {
+      closeReportQueryConfirm();
+      continueToContact();
+    });
+  }
+
+  if (refs.reportQueryConfirmNoBtn) {
+    refs.reportQueryConfirmNoBtn.addEventListener('click', closeReportQueryConfirm);
+  }
+
+  if (refs.reportQueryConfirmOverlay) {
+    refs.reportQueryConfirmOverlay.addEventListener('click', (e) => {
+      if (e.target === refs.reportQueryConfirmOverlay) {
+        closeReportQueryConfirm();
+      }
+    });
   }
 
   refs.closeLeaderboardBtn.addEventListener('click', () => {
