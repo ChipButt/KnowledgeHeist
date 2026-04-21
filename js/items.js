@@ -19,8 +19,9 @@ const WALL_ITEM_SOURCE_BOXES = {
   'item-3': { x: 394, y: 404, w: 149, h: 311 },
   'item-4': { x: 197, y: 626, w: 149, h: 311 },
 
-  'item-5': { x: 1995, y: 354, w: 149, h: 311 },
-  'item-6': { x: 2168, y: 544, w: 149, h: 311 }
+  /* swapped */
+  'item-5': { x: 2235, y: 601, w: 149, h: 311 },
+  'item-6': { x: 2090, y: 418, w: 149, h: 311 }
 };
 
 const FLOOR_RANDOM_AREA_SOURCE = [
@@ -37,8 +38,23 @@ const FLOOR_RANDOM_AREA_SOURCE = [
 ];
 
 const FLOOR_ITEM_SOURCE_DEFAULTS = {
-  pedestal: { drawW: 96, drawH: 150 },
-  aboard: { drawW: 104, drawH: 158 }
+  pedestal: { drawW: 96, drawH: 150, sourceSpriteW: 121, sourceSpriteH: 234 },
+  aboard: { drawW: 104, drawH: 158, sourceSpriteW: 361, sourceSpriteH: 547 }
+};
+
+const FLOOR_ITEM_LOCAL_BLOCKERS = {
+  pedestal: {
+    x1: 10,
+    y1: 164,
+    x2: 114,
+    y2: 224
+  },
+  aboard: {
+    x1: 58,
+    y1: 434,
+    x2: 329,
+    y2: 525
+  }
 };
 
 function sourcePointInPoly(x, y, poly) {
@@ -168,34 +184,6 @@ function scaleInteractZone(zone, sx, sy) {
   };
 }
 
-export function getFloorItemBlocker(item) {
-  if (!item || item.type !== 'floor' || item.status === 'stolen') return null;
-
-  if (item.floorKind === 'pedestal') {
-    return {
-      x1: item.anchorX - item.drawW * 0.34,
-      y1: item.anchorY - item.drawH * 0.24,
-      x2: item.anchorX + item.drawW * 0.34,
-      y2: item.anchorY + 6
-    };
-  }
-
-  return {
-    x1: item.anchorX - item.drawW * 0.22,
-    y1: item.anchorY - item.drawH * 0.16,
-    x2: item.anchorX + item.drawW * 0.22,
-    y2: item.anchorY + 6
-  };
-}
-
-export function pointHitsFloorBlocker(items, px, py) {
-  for (const item of items) {
-    const blocker = getFloorItemBlocker(item);
-    if (blocker && pointInRect(px, py, blocker)) return true;
-  }
-  return false;
-}
-
 function applyScaledGeometry(item, sx, sy) {
   if (item.type === 'wall') {
     item.x = sx(item.sourceBox.x);
@@ -211,6 +199,59 @@ function applyScaledGeometry(item, sx, sy) {
   item.anchorY = sy(item.sourceAnchorY);
   item.drawW = sx(item.sourceDrawW);
   item.drawH = sy(item.sourceDrawH);
+}
+
+function getFloorItemDrawTopLeft(item) {
+  return {
+    drawX: item.anchorX - item.drawW / 2,
+    drawY: item.anchorY - item.drawH
+  };
+}
+
+function getLocalRectAsWorldRect(item, rect) {
+  const { drawX, drawY } = getFloorItemDrawTopLeft(item);
+  const spriteW = item.sourceSpriteW || item.sourceDrawW || 1;
+  const spriteH = item.sourceSpriteH || item.sourceDrawH || 1;
+
+  return {
+    x1: drawX + (rect.x1 / spriteW) * item.drawW,
+    y1: drawY + (rect.y1 / spriteH) * item.drawH,
+    x2: drawX + (rect.x2 / spriteW) * item.drawW,
+    y2: drawY + (rect.y2 / spriteH) * item.drawH
+  };
+}
+
+function getFloorBlockerRect(item) {
+  const blocker = FLOOR_ITEM_LOCAL_BLOCKERS[item.floorKind];
+  if (!blocker) return null;
+  return getLocalRectAsWorldRect(item, blocker);
+}
+
+function getExpandedFloorGrabRect(item) {
+  const blocker = FLOOR_ITEM_LOCAL_BLOCKERS[item.floorKind];
+  if (!blocker) return null;
+
+  const expand = (item.sourceSpriteW || item.sourceDrawW || 0) / 2;
+
+  return getLocalRectAsWorldRect(item, {
+    x1: blocker.x1 - expand,
+    y1: blocker.y1 - expand,
+    x2: blocker.x2 + expand,
+    y2: blocker.y2 + expand
+  });
+}
+
+export function getFloorItemBlocker(item) {
+  if (!item || item.type !== 'floor' || item.status === 'stolen') return null;
+  return getFloorBlockerRect(item);
+}
+
+export function pointHitsFloorBlocker(items, px, py) {
+  for (const item of items) {
+    const blocker = getFloorItemBlocker(item);
+    if (blocker && pointInRect(px, py, blocker)) return true;
+  }
+  return false;
 }
 
 export function createHeistItems({ assets, sx, sy }) {
@@ -297,7 +338,9 @@ export function createHeistItems({ assets, sx, sy }) {
     sourceAnchorX: pedestalPos.x,
     sourceAnchorY: pedestalPos.y,
     sourceDrawW: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.drawW,
-    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.drawH
+    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.drawH,
+    sourceSpriteW: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.sourceSpriteW,
+    sourceSpriteH: FLOOR_ITEM_SOURCE_DEFAULTS.pedestal.sourceSpriteH
   };
   applyScaledGeometry(pedestal, sx, sy);
   items.push(pedestal);
@@ -317,7 +360,9 @@ export function createHeistItems({ assets, sx, sy }) {
     sourceAnchorX: aboardPos.x,
     sourceAnchorY: aboardPos.y,
     sourceDrawW: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.drawW,
-    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.drawH
+    sourceDrawH: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.drawH,
+    sourceSpriteW: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.sourceSpriteW,
+    sourceSpriteH: FLOOR_ITEM_SOURCE_DEFAULTS.aboard.sourceSpriteH
   };
   applyScaledGeometry(aboard, sx, sy);
   items.push(aboard);
@@ -337,17 +382,7 @@ export function getItemInteractZone(item, sx, sy) {
   if (!item) return null;
 
   if (item.type === 'floor') {
-    const widthMul = item.floorKind === 'pedestal' ? 0.68 : 0.44;
-    const zoneHeight = item.floorKind === 'pedestal'
-      ? Math.max(20, item.drawH * 0.28)
-      : Math.max(24, item.drawH * 0.40);
-
-    const x1 = item.anchorX - item.drawW * widthMul;
-    const x2 = item.anchorX + item.drawW * widthMul;
-    const y2 = item.anchorY + 2;
-    const y1 = y2 - zoneHeight;
-
-    return { type: 'rect', x1, y1, x2, y2 };
+    return getExpandedFloorGrabRect(item);
   }
 
   const zone = ITEM_INTERACT_ZONES_SOURCE[item.id];
