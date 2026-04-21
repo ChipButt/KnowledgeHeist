@@ -7,6 +7,7 @@
   --title-brown-light: #b59662;
   --title-brown-mid: #9a7a4b;
   --title-brown-dark: #4f311a;
+  --app-height: 100vh;
 }
 
 * {
@@ -49,7 +50,7 @@ body.game-active {
 .screen {
   display: none;
   width: 100%;
-  min-height: 100vh;
+  min-height: var(--app-height);
 }
 
 .screen.active {
@@ -105,8 +106,7 @@ body.game-active {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-height);
   align-items: center;
   justify-content: center;
   padding: 0;
@@ -121,8 +121,8 @@ body.game-active {
 }
 
 .hub-wrap {
-  width: min(100vw, calc(100dvh * 1024 / 559));
-  height: min(100dvh, calc(100vw * 559 / 1024));
+  width: min(100vw, calc(var(--app-height) * 1024 / 559));
+  height: min(var(--app-height), calc(100vw * 559 / 1024));
   aspect-ratio: 1024 / 559;
   position: relative;
   background-image: url("../Menu Screen.png");
@@ -484,8 +484,7 @@ body.game-active {
   font-family: var(--ui-font);
   overflow: hidden;
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  height: var(--app-height);
   touch-action: none;
   overscroll-behavior: none;
 }
@@ -657,6 +656,18 @@ body.game-active {
   line-height: 1.45;
 }
 
+#questionTimer {
+  display: none;
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 700;
+  color: #6a231c;
+}
+
+#questionTimer.show {
+  display: block;
+}
+
 #answerInput {
   width: 100%;
   margin-top: 14px;
@@ -665,6 +676,10 @@ body.game-active {
   background: #fffdf7;
   padding: 12px 14px;
   font-size: 16px;
+}
+
+#cancelAnswerBtn {
+  display: none !important;
 }
 
 .modal-actions,
@@ -699,11 +714,13 @@ body.game-active {
   display: flex;
   flex-direction: column;
   gap: 14px;
+  text-align: center;
 }
 
 .homework-item {
   border-top: 1px dashed rgba(240, 255, 240, 0.26);
   padding-top: 12px;
+  text-align: center;
 }
 
 .homework-question {
@@ -711,12 +728,19 @@ body.game-active {
   line-height: 1.35;
   color: #ffffff;
   margin-bottom: 6px;
+  text-align: center;
 }
 
 .homework-answer {
   font-size: 16px;
   line-height: 1.3;
   color: #d6f2d2;
+  text-align: center;
+}
+
+.homework-close {
+  display: block;
+  margin: 18px auto 0;
 }
 
 #leaderboardStatusText {
