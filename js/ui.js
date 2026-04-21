@@ -182,7 +182,6 @@ function getHubRefs() {
     leaderboardBtn: document.getElementById('leaderboardBtn'),
     reportQueryBtn: document.getElementById('reportQueryBtn'),
     reportQueryBtnImage: document.getElementById('reportQueryBtnImage'),
-    reportQueryBtnFallback: document.getElementById('reportQueryBtnFallback'),
     leaderboardOverlay: document.getElementById('leaderboardOverlay'),
     closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
     closeLeaderboardFromBoardBtn: document.getElementById('closeLeaderboardFromBoardBtn'),
@@ -423,23 +422,15 @@ export function initUI(options = {}) {
   function applyReportQueryButtonAsset() {
     if (!refs.reportQueryBtnImage) return;
 
-    if (!REPORT_QUERY_BUTTON_IMAGE) {
-      refs.reportQueryBtnImage.hidden = true;
-      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = false;
-      return;
-    }
-
-    refs.reportQueryBtnImage.onload = () => {
-      refs.reportQueryBtnImage.hidden = false;
-      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = true;
-    };
+    refs.reportQueryBtnImage.src = `./${REPORT_QUERY_BUTTON_IMAGE}`;
 
     refs.reportQueryBtnImage.onerror = () => {
-      refs.reportQueryBtnImage.hidden = true;
-      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = false;
+      refs.reportQueryBtnImage.style.display = 'none';
     };
 
-    refs.reportQueryBtnImage.src = `./${REPORT_QUERY_BUTTON_IMAGE}`;
+    refs.reportQueryBtnImage.onload = () => {
+      refs.reportQueryBtnImage.style.display = 'block';
+    };
   }
 
   function handleReportQuery() {
