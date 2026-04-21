@@ -928,60 +928,75 @@ body.game-active {
 }
 
 #questionModal.native-mobile-input {
-  align-items: flex-start;
-  justify-content: flex-start;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
   padding: 0;
 }
 
 #questionModal.native-mobile-input .modal-card {
   width: 100vw;
   max-width: 100vw;
-  height: var(--question-visible-height, 100vh);
-  max-height: var(--question-visible-height, 100vh);
-  margin: var(--question-offset-top, 0px) 0 0 0;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
   border-radius: 0;
-  border-width: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
   padding:
-    max(10px, env(safe-area-inset-top))
-    10px
-    max(10px, env(safe-area-inset-bottom))
-    10px;
+    max(12px, env(safe-area-inset-top))
+    12px
+    max(12px, env(safe-area-inset-bottom))
+    12px;
+  box-sizing: border-box;
 }
 
 #questionModal.native-mobile-input h2 {
-  margin: 0 0 8px;
-  font-size: 20px;
   flex: 0 0 auto;
+  margin: 0 0 10px;
+}
+
+#questionModal.native-mobile-input .question-body-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 #questionModal.native-mobile-input .question-scroll-area {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   padding-bottom: 12px;
-  scroll-padding-bottom: 140px;
-  overscroll-behavior: contain;
-}
-
-#questionModal.native-mobile-input #questionText {
-  font-size: 15px;
-  line-height: 1.35;
 }
 
 #questionModal.native-mobile-input .question-answer-bar {
+  flex: 0 0 auto;
   position: sticky;
   bottom: 0;
-  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  display: flex;
+  gap: 10px;
+  padding-top: 10px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   background: #f0e6d0;
+  z-index: 5;
 }
 
 #questionModal.native-mobile-input #answerInput {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 18px;
-  padding: 12px 14px;
+  line-height: 1.2;
+  padding: 14px 16px;
 }
 
 #questionModal.native-mobile-input #submitAnswerBtn {
-  min-width: 96px;
+  flex: 0 0 auto;
+  min-width: 110px;
 }
 
 @media (max-width: 900px) {
