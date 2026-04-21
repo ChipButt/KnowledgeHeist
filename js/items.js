@@ -45,7 +45,7 @@ const FLOOR_ITEM_SOURCE_DEFAULTS = {
 const FLOOR_ITEM_RULES = {
   blockerTopRatio: 0.5,
   blockerSidePaddingPx: 50,
-  grabPaddingWidthRatio: 0.5
+  grabPaddingWidthRatio: 0.1
 };
 
 function sourcePointInPoly(x, y, poly) {
