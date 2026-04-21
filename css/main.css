@@ -895,3 +895,85 @@ body.game-active {
     min-width: 102px;
   }
 }
+
+#questionModal {
+  align-items: flex-start;
+  overflow: auto;
+  padding-top: max(18px, env(safe-area-inset-top));
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
+}
+
+#questionModal .modal-card {
+  margin: auto;
+  max-height: min(92vh, 760px);
+  overflow: auto;
+}
+
+#questionModal.with-built-in-keyboard .modal-card {
+  width: min(760px, 96vw);
+}
+
+#questionModal.with-built-in-keyboard #answerInput {
+  letter-spacing: 0.03em;
+}
+
+#questionKeyboard {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+#questionKeyboard.show {
+  display: flex;
+}
+
+.question-keyboard-row {
+  display: grid;
+  gap: 8px;
+}
+
+.question-key {
+  border: none;
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 8px 6px;
+  background: #283545;
+  color: #f3ede2;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.question-key.action {
+  background: #4a2f1b;
+}
+
+.question-key.wide {
+  font-size: 14px;
+}
+
+.question-key:active {
+  transform: translateY(1px);
+}
+
+@media (pointer: coarse) {
+  #questionModal {
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  }
+
+  #questionModal .modal-card {
+    width: min(96vw, 760px);
+    max-height: none;
+  }
+
+  #answerInput {
+    font-size: 18px;
+    padding: 14px 16px;
+  }
+
+  .question-key {
+    min-height: 44px;
+    font-size: 14px;
+  }
+}
