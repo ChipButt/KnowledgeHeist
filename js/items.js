@@ -42,19 +42,9 @@ const FLOOR_ITEM_SOURCE_DEFAULTS = {
   aboard: { drawW: 104, drawH: 158, sourceSpriteW: 361, sourceSpriteH: 547 }
 };
 
-const FLOOR_ITEM_LOCAL_BLOCKERS = {
-  pedestal: {
-    x1: 10,
-    y1: 164,
-    x2: 114,
-    y2: 224
-  },
-  aboard: {
-    x1: 58,
-    y1: 434,
-    x2: 329,
-    y2: 525
-  }
+const FLOOR_ITEM_RULES = {
+  blockerTopRatio: 0.5,
+  grabPaddingWidthRatio: 0.5
 };
 
 function sourcePointInPoly(x, y, poly) {
@@ -201,44 +191,41 @@ function applyScaledGeometry(item, sx, sy) {
   item.drawH = sy(item.sourceDrawH);
 }
 
-function getFloorItemDrawTopLeft(item) {
+export function getFloorItemDrawTopLeft(item) {
   return {
     drawX: item.anchorX - item.drawW / 2,
     drawY: item.anchorY - item.drawH
   };
 }
 
-function getLocalRectAsWorldRect(item, rect) {
-  const { drawX, drawY } = getFloorItemDrawTopLeft(item);
-  const spriteW = item.sourceSpriteW || item.sourceDrawW || 1;
-  const spriteH = item.sourceSpriteH || item.sourceDrawH || 1;
-
-  return {
-    x1: drawX + (rect.x1 / spriteW) * item.drawW,
-    y1: drawY + (rect.y1 / spriteH) * item.drawH,
-    x2: drawX + (rect.x2 / spriteW) * item.drawW,
-    y2: drawY + (rect.y2 / spriteH) * item.drawH
-  };
+export function getFloorItemBlockerTopY(item) {
+  const { drawY } = getFloorItemDrawTopLeft(item);
+  return drawY + (item.drawH * FLOOR_ITEM_RULES.blockerTopRatio);
 }
 
 function getFloorBlockerRect(item) {
-  const blocker = FLOOR_ITEM_LOCAL_BLOCKERS[item.floorKind];
-  if (!blocker) return null;
-  return getLocalRectAsWorldRect(item, blocker);
+  const { drawX } = getFloorItemDrawTopLeft(item);
+  const blockerTopY = getFloorItemBlockerTopY(item);
+
+  return {
+    x1: drawX,
+    y1: blockerTopY,
+    x2: drawX + item.drawW,
+    y2: blockerTopY + (item.drawH * (1 - FLOOR_ITEM_RULES.blockerTopRatio))
+  };
 }
 
 function getExpandedFloorGrabRect(item) {
-  const blocker = FLOOR_ITEM_LOCAL_BLOCKERS[item.floorKind];
-  if (!blocker) return null;
+  const blocker = getFloorBlockerRect(item);
+  const expand = item.drawW * FLOOR_ITEM_RULES.grabPaddingWidthRatio;
 
-  const expand = (item.sourceSpriteW || item.sourceDrawW || 0) / 2;
-
-  return getLocalRectAsWorldRect(item, {
+  return {
+    type: 'rect',
     x1: blocker.x1 - expand,
     y1: blocker.y1 - expand,
     x2: blocker.x2 + expand,
     y2: blocker.y2 + expand
-  });
+  };
 }
 
 export function getFloorItemBlocker(item) {
@@ -246,11 +233,16 @@ export function getFloorItemBlocker(item) {
   return getFloorBlockerRect(item);
 }
 
-export function pointHitsFloorBlocker(items, px, py) {
+export function pointHitsFloorBlocker(items, px, py, options = {}) {
+  const ignoreIds = new Set(options.ignoreIds || []);
+
   for (const item of items) {
+    if (ignoreIds.has(item.id)) continue;
+
     const blocker = getFloorItemBlocker(item);
     if (blocker && pointInRect(px, py, blocker)) return true;
   }
+
   return false;
 }
 
