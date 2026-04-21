@@ -48,6 +48,10 @@ const FLOOR_ITEM_RULES = {
   grabPaddingWidthRatio: 0.5
 };
 
+function getFloorItemScaleBoost() {
+  return window.matchMedia('(pointer: coarse)').matches ? 1.18 : 1;
+}
+
 function sourcePointInPoly(x, y, poly) {
   return pointInPolygon({ x, y }, poly);
 }
@@ -186,10 +190,11 @@ function applyScaledGeometry(item, sx, sy) {
     return;
   }
 
+  const floorScaleBoost = getFloorItemScaleBoost();
   item.anchorX = sx(item.sourceAnchorX);
   item.anchorY = sy(item.sourceAnchorY);
-  item.drawW = sx(item.sourceDrawW);
-  item.drawH = sy(item.sourceDrawH);
+  item.drawW = sx(item.sourceDrawW) * floorScaleBoost;
+  item.drawH = sy(item.sourceDrawH) * floorScaleBoost;
 }
 
 function getFloorItemDrawTopLeft(item) {
