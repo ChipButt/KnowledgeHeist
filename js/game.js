@@ -1,4 +1,4 @@
-import { clearLastHeistWrong } from './storage.js';
+import { clearLastHeistWrong, loadSettings } from './storage.js';
 import { createAssets } from './assets.js';
 import { applyGameAudioSettings, safeRestartAudio } from './audio.js';
 import { createBaseState, createGuardState, createPlayerState, createRunState } from './gameState.js';
@@ -44,6 +44,29 @@ import {
   updatePointerControl
 } from './input.js';
 
+const REVIEW_TAGLINES = [
+  'Every day is a school day.',
+  'Failing is a great way to learn.',
+  'Even master thieves revise their notes.',
+  'That one goes in the notebook.',
+  'Progress beats perfection.',
+  'A rough heist still teaches good lessons.',
+  'Better to learn it here than on the big score.',
+  'Field research complete.',
+  'A wobble now means a cleaner run later.',
+  'Consider this practical training.',
+  'Every mistake is future profit in disguise.',
+  'The review is where the next win begins.',
+  'Not your cleanest run, but still useful.',
+  'Even legends need a debrief.',
+  'Sharp minds are built on retries.',
+  'Experience has been successfully collected.',
+  'Next time Nana walks in wiser.',
+  'A missed answer is still a gained note.',
+  'Good thieves adapt.',
+  'The comeback starts with the review.'
+];
+
 export function initGame() {
   const hubScreen = document.getElementById('hubScreen');
   const gameScreen = document.getElementById('gameScreen');
@@ -68,6 +91,8 @@ export function initGame() {
   const confirmChoiceOverlay = document.getElementById('confirmChoiceOverlay');
   const homeworkOverlay = document.getElementById('homeworkOverlay');
   const homeworkCloseBtn = document.getElementById('homeworkCloseBtn');
+  const homeworkTitle = document.getElementById('homeworkTitle');
+  const homeworkSub = homeworkOverlay?.querySelector('.chalk-sub');
 
   const canvas = document.getElementById('gameCanvas');
   if (!canvas) throw new Error('Missing #gameCanvas');
@@ -100,7 +125,9 @@ export function initGame() {
 
     PLAYER_DRAW_H: 100,
     PLAYER_DRAW_Y_OFFSET: 10,
-    PLAYER_FEET_POINT_Y: 0.63
+    PLAYER_FEET_POINT_Y: 0.63,
+
+    HARD_MODE_ANSWER_MS: 20000
   };
 
   const state = createBaseState();
@@ -111,6 +138,9 @@ export function initGame() {
   const scaler = createScaler(() => ({ width: VIEW_W, height: VIEW_H }));
   const sx = scaler.sx;
   const sy = scaler.sy;
+
+  let questionTimerInterval = null;
+  let questionDeadlineTs = 0;
 
   function isMobileLike() {
     return (
@@ -150,6 +180,67 @@ export function initGame() {
 
   function stopAllRuntimeAudio() {
     stopAllGameAudio(assets);
+  }
+
+  function getQuestionTimerEl() {
+    let el = document.getElementById('questionTimer');
+    if (el) return el;
+
+    el = document.createElement('div');
+    el.id = 'questionTimer';
+    el.className = 'question-timer';
+    questionTextEl.insertAdjacentElement('afterend', el);
+    return el;
+  }
+
+  function stopQuestionTimer() {
+    if (questionTimerInterval) {
+      clearInterval(questionTimerInterval);
+      questionTimerInterval = null;
+    }
+    questionDeadlineTs = 0;
+
+    const el = document.getElementById('questionTimer');
+    if (el) {
+      el.textContent = '';
+      el.classList.remove('show');
+    }
+  }
+
+  function updateQuestionTimerUI() {
+    const el = getQuestionTimerEl();
+    if (!questionDeadlineTs) {
+      el.textContent = '';
+      el.classList.remove('show');
+      return;
+    }
+
+    const remainingMs = Math.max(0, questionDeadlineTs - Date.now());
+    const seconds = Math.ceil(remainingMs / 1000);
+    el.textContent = `Time remaining: ${seconds}s`;
+    el.classList.add('show');
+  }
+
+  function startQuestionTimerIfNeeded() {
+    stopQuestionTimer();
+
+    if (loadSettings().difficulty !== 'hard') return;
+    if (questionModal.classList.contains('hidden')) return;
+
+    questionDeadlineTs = Date.now() + constants.HARD_MODE_ANSWER_MS;
+    updateQuestionTimerUI();
+
+    questionTimerInterval = setInterval(() => {
+      const remainingMs = questionDeadlineTs - Date.now();
+
+      if (remainingMs <= 0) {
+        stopQuestionTimer();
+        submitAnswer();
+        return;
+      }
+
+      updateQuestionTimerUI();
+    }, 250);
   }
 
   async function tryLockLandscape() {
@@ -363,6 +454,7 @@ export function initGame() {
   function closeQuestionModal() {
     questionModal.classList.add('hidden');
     state.activeItem = null;
+    stopQuestionTimer();
     answerInput.blur();
   }
 
@@ -385,6 +477,15 @@ export function initGame() {
 
   function maybeShowHomeworkPopup() {
     if (!state.homework.pending.length || state.screen !== 'hub') return;
+
+    if (homeworkTitle) {
+      homeworkTitle.textContent = 'Heist Review';
+    }
+
+    if (homeworkSub) {
+      homeworkSub.textContent =
+        REVIEW_TAGLINES[Math.floor(Math.random() * REVIEW_TAGLINES.length)];
+    }
 
     const list = document.getElementById('homeworkList');
     list.innerHTML = '';
@@ -630,6 +731,7 @@ export function initGame() {
       unlockPageFromGame();
       canvas.style.touchAction = '';
       window.scrollTo(0, 0);
+      stopQuestionTimer();
     }
   }
 
@@ -674,7 +776,7 @@ export function initGame() {
 
     stopAllGameAudio(assets);
     applyGameAudioSettings(assets);
-    safeRestartAudio(assets.backgroundMusic, 1);
+    safeRestartAudio(assets.backgroundMusic);
 
     updateRunStats();
     showBanner('Heist started.');
@@ -705,7 +807,7 @@ export function initGame() {
     }
 
     state.activeItem = item;
-    askQuestionForItem({
+    const opened = askQuestionForItem({
       state,
       questionTextEl,
       answerInput,
@@ -713,12 +815,17 @@ export function initGame() {
       showBanner
     });
 
+    if (opened) {
+      startQuestionTimerIfNeeded();
+    }
+
     resetPointerInput(state);
     window.scrollTo(0, 0);
   }
 
   function submitAnswer() {
     if (isPortraitBlocked()) return;
+    stopQuestionTimer();
 
     submitAnswerFlow({
       state,
@@ -943,6 +1050,10 @@ export function initGame() {
   answerInput.autocomplete = 'off';
   answerInput.spellcheck = false;
 
+  if (cancelAnswerBtn) {
+    cancelAnswerBtn.style.display = 'none';
+  }
+
   document.addEventListener(
     'touchmove',
     (e) => {
@@ -1011,6 +1122,7 @@ export function initGame() {
     }
 
     if (k === 'escape') {
+      if (!questionModal.classList.contains('hidden')) return;
       hideHomeworkPopup();
       closeConfirmPopup();
       resetPointerInput(state);
@@ -1119,13 +1231,6 @@ export function initGame() {
   if (backToHubBtn) backToHubBtn.addEventListener('click', handleReturnToBase);
   if (submitAnswerBtn) submitAnswerBtn.addEventListener('click', submitAnswer);
 
-  if (cancelAnswerBtn) {
-    cancelAnswerBtn.addEventListener('click', () => {
-      closeQuestionModal();
-      resetPointerInput(state);
-    });
-  }
-
   if (summaryContinueBtn) {
     summaryContinueBtn.addEventListener('click', returnToHub);
   }
@@ -1183,15 +1288,18 @@ export function initGame() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       stopAllRuntimeAudio();
+      stopQuestionTimer();
     }
   });
 
   window.addEventListener('pagehide', () => {
     stopAllRuntimeAudio();
+    stopQuestionTimer();
   });
 
   window.addEventListener('beforeunload', () => {
     stopAllRuntimeAudio();
+    stopQuestionTimer();
   });
 
   window.addEventListener('blur', () => {
