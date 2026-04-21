@@ -225,55 +225,28 @@ export function createGameUI(context) {
     }
   }
 
-  function nudgeQuestionInputIntoView() {
-    if (refs.questionModal.classList.contains('hidden')) return;
-
-    syncQuestionModalLayout();
-
+  function refreshQuestionInputView(delay = 0) {
     setTimeout(() => {
-      try {
-        refs.answerInput.scrollIntoView({
-          block: 'nearest',
-          inline: 'nearest'
-        });
-      } catch (_) {}
-    }, 60);
+      if (refs.questionModal.classList.contains('hidden')) return;
+      syncQuestionModalLayout();
+    }, delay);
   }
 
-    function activateQuestionInput() {
+  function activateQuestionInput() {
     if (refs.questionModal.classList.contains('hidden')) return;
 
     ensureQuestionLayoutStructure();
     syncQuestionModalLayout();
 
-    const focusInput = () => {
+    requestAnimationFrame(() => {
       try {
         refs.answerInput.focus({ preventScroll: true });
       } catch (_) {
         refs.answerInput.focus();
       }
 
-      nudgeQuestionInputIntoView();
-    };
-
-    requestAnimationFrame(() => {
-      syncQuestionModalLayout();
-      focusInput();
-
-      requestAnimationFrame(() => {
-        syncQuestionModalLayout();
-        nudgeQuestionInputIntoView();
-      });
-
-      setTimeout(() => {
-        syncQuestionModalLayout();
-        focusInput();
-      }, 220);
-
-      setTimeout(() => {
-        syncQuestionModalLayout();
-        focusInput();
-      }, 450);
+      refreshQuestionInputView(100);
+      refreshQuestionInputView(300);
     });
   }
 
@@ -346,41 +319,18 @@ export function createGameUI(context) {
   refs.answerInput.setAttribute('spellcheck', 'false');
   refs.answerInput.setAttribute('enterkeyhint', 'done');
 
-    refs.answerInput.addEventListener('focus', () => {
-    syncQuestionModalLayout();
-    nudgeQuestionInputIntoView();
-    setTimeout(nudgeQuestionInputIntoView, 250);
-    setTimeout(nudgeQuestionInputIntoView, 500);
-  });
-
-  refs.answerInput.addEventListener('click', () => {
-    syncQuestionModalLayout();
-    setTimeout(nudgeQuestionInputIntoView, 50);
-  });
-
-  window.addEventListener('resize', () => {
-    if (!refs.questionModal.classList.contains('hidden')) {
-      syncQuestionModalLayout();
-    }
+  refs.answerInput.addEventListener('focus', () => {
+    refreshQuestionInputView();
+    refreshQuestionInputView(250);
   });
 
   window.addEventListener('orientationchange', () => {
-    if (!refs.questionModal.classList.contains('hidden')) {
-      setTimeout(syncQuestionModalLayout, 120);
-    }
+    refreshQuestionInputView(120);
   });
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
-      if (!refs.questionModal.classList.contains('hidden')) {
-        syncQuestionModalLayout();
-      }
-    });
-
-    window.visualViewport.addEventListener('scroll', () => {
-      if (!refs.questionModal.classList.contains('hidden')) {
-        syncQuestionModalLayout();
-      }
+      refreshQuestionInputView();
     });
   }
 
