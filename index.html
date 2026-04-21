@@ -36,7 +36,7 @@
       <div class="hub-label" id="heistsPlayedLabel">Heists Played</div>
       <div class="hub-value hub-number" id="heistsPlayed">0</div>
 
-      <div class="hub-label" id="paintingsStolenLabel">Paintings Stolen</div>
+      <div class="hub-label" id="paintingsStolenLabel">Report a query</div>
       <div class="hub-value hub-number" id="paintingsStolen">0</div>
 
       <button class="hub-ui-button image-button" id="startHeistBtn" type="button" aria-label="Start Heist">
@@ -53,6 +53,11 @@
 
       <button class="hub-ui-button image-button" id="settingsBtn" type="button" aria-label="Settings" title="Settings">
         <img src="./Settings Button.png" alt="" />
+      </button>
+
+      <button class="hub-ui-button image-button report-query-button" id="reportQueryBtn" type="button" aria-label="Report a query">
+        <span class="report-query-btn-fallback" id="reportQueryBtnFallback">Contact</span>
+        <img id="reportQueryBtnImage" alt="" hidden />
       </button>
 
       <button
@@ -85,23 +90,23 @@
 
   <section id="gameScreen" class="screen">
     <div class="game-topbar">
-  <div class="game-topbar-left">
-    <div class="game-chip current-haul-chip" id="currentHaulChip">
-      Current Haul: <span id="haulValue">£0.00</span>
-    </div>
+      <div class="game-topbar-left">
+        <div class="game-chip current-haul-chip" id="currentHaulChip">
+          Current Haul: <span id="haulValue">£0.00</span>
+        </div>
 
-    <!-- kept in DOM so existing JS refs still work, but hidden by CSS -->
-    <div class="game-chip" id="paintingsLeftChip" aria-hidden="true">
-      Paintings left: <span id="paintingsLeftValue">0</span>
-    </div>
+        <!-- kept in DOM so existing JS refs still work, but hidden by CSS -->
+        <div class="game-chip" id="paintingsLeftChip" aria-hidden="true">
+          Paintings left: <span id="paintingsLeftValue">0</span>
+        </div>
 
-    <div class="game-chip" id="strikesLeftChip" aria-hidden="true">
-      Strikes left: <span id="strikesValue">0 / 3</span>
-    </div>
-  </div>
+        <div class="game-chip" id="strikesLeftChip" aria-hidden="true">
+          Strikes left: <span id="strikesValue">0 / 3</span>
+        </div>
+      </div>
 
-  <button id="backToHubBtn" type="button">Back to Base</button>
-</div>
+      <button id="backToHubBtn" type="button">Back to Base</button>
+    </div>
 
     <div class="game-shell">
       <div class="canvas-wrap">
