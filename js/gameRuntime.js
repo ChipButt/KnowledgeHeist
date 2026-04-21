@@ -9,6 +9,7 @@ import {
 } from './zones.js';
 import {
   buildScaledRunData,
+  getFloorItemBlocker,
   getItemInteractPoint,
   getItemInteractRadius,
   getItemInteractZone,
@@ -90,7 +91,10 @@ export function createGameRuntime(context, deps) {
   }
 
   function getPlayerFeetPointForPosition(x, y) {
-    const drawTopY = y - sy(constants.PLAYER_DRAW_H_SOURCE) - sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE);
+    const drawTopY =
+      y -
+      sy(constants.PLAYER_DRAW_H_SOURCE) -
+      sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE);
 
     return {
       x,
@@ -418,7 +422,10 @@ export function createGameRuntime(context, deps) {
         vectorToDirection
       );
 
-      if (Math.hypot(state.guard.x - state.player.x, state.guard.y - state.player.y) < getCatchDistance()) {
+      if (
+        Math.hypot(state.guard.x - state.player.x, state.guard.y - state.player.y) <
+        getCatchDistance()
+      ) {
         state.run.mode = 'escort';
         state.player.controlLocked = true;
         ui.showBanner('Caught! Escorted out.');
@@ -511,6 +518,7 @@ export function createGameRuntime(context, deps) {
       getItemInteractPoint: (item) => getItemInteractPoint(item, sx, sy),
       getItemInteractRadius: (item) => getItemInteractRadius(item, sx, sy),
       getItemInteractZone: (item) => getItemInteractZone(item, sx, sy),
+      getFloorItemBlocker: (item) => getFloorItemBlocker(item),
       getPromptBounds: () => getPromptBounds(runtime)
     }
   };
