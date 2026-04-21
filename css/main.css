@@ -1161,8 +1161,19 @@ body.game-active {
   margin-bottom: 8px;
 }
 
+.profile-section {
+  text-align: left;
+}
+
+.profile-section h3 {
+  margin: 0 0 10px;
+  font-size: 18px;
+  text-align: center;
+  color: #2f2519;
+}
+
 .profile-panel hr {
   border: 0;
   border-top: 1px solid rgba(79, 58, 27, 0.2);
-  margin: 18px 0 8px;
+  margin: 18px 0;
 }
