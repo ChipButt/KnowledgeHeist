@@ -12,6 +12,14 @@ import {
   getVolumeScale,
   sanitizePlayerName
 } from './settings.js';
+import {
+  createAudio,
+  pauseAudio,
+  safePlayAudio,
+  setAudioVolume,
+  stopAudio,
+  unlockAudioContext
+} from './audio.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 
@@ -115,10 +123,7 @@ function updateAppHeightVar() {
 }
 
 function createHubMusic() {
-  const audio = new Audio(HUB_MUSIC_FILE);
-  audio.preload = 'auto';
-  audio.loop = true;
-  return audio;
+  return createAudio(HUB_MUSIC_FILE, getVolumeScale(getSettings().hubVolume), true);
 }
 
 function getHubRefs() {
@@ -341,45 +346,52 @@ export function initUI(options = {}) {
   refreshHub(refs);
   renderSettingsForm(refs);
 
+  function isHubActive() {
+    return !!refs.hubScreen?.classList.contains('active');
+  }
+
   function applyHubVolume() {
-    const settings = getSettings();
-    hubMusic.volume = getVolumeScale(settings.hubVolume);
+    setAudioVolume(hubMusic, getVolumeScale(getSettings().hubVolume));
+  }
+
+  function saveLiveAudioSettings() {
+    saveGameSettings({
+      hubVolume: refs.hubVolumeInput.value,
+      gameMusicVolume: refs.gameMusicVolumeInput.value,
+      voiceVolume: refs.voiceVolumeInput.value
+    });
   }
 
   function pauseHubMusic() {
-    try {
-      hubMusic.pause();
-      hubMusic.currentTime = 0;
-    } catch (_) {}
+    pauseAudio(hubMusic);
+  }
+
+  function stopHubMusic() {
+    stopAudio(hubMusic);
   }
 
   function syncHubMusic() {
-    const hubActive = refs.hubScreen?.classList.contains('active');
-
-    if (!hubActive) {
+    if (!isHubActive()) {
       pauseHubMusic();
       return;
     }
 
     if (!musicUnlocked) return;
+    if (document.hidden) return;
 
     applyHubVolume();
-
-    try {
-      const playPromise = hubMusic.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {});
-      }
-    } catch (_) {}
+    safePlayAudio(hubMusic);
   }
 
   function unlockHubMusic() {
     musicUnlocked = true;
+    unlockAudioContext();
     syncHubMusic();
   }
 
   document.addEventListener('pointerdown', unlockHubMusic, { once: true });
   document.addEventListener('keydown', unlockHubMusic, { once: true });
+  document.addEventListener('touchend', unlockHubMusic, { once: true, passive: true });
 
   const screenObserver = new MutationObserver(() => {
     syncHubMusic();
@@ -418,15 +430,18 @@ export function initUI(options = {}) {
 
   refs.hubVolumeInput.addEventListener('input', () => {
     refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
-    hubMusic.volume = getVolumeScale(refs.hubVolumeInput.value);
+    setAudioVolume(hubMusic, getVolumeScale(refs.hubVolumeInput.value));
+    saveLiveAudioSettings();
   });
 
   refs.gameMusicVolumeInput.addEventListener('input', () => {
     refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
+    saveLiveAudioSettings();
   });
 
   refs.voiceVolumeInput.addEventListener('input', () => {
     refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
+    saveLiveAudioSettings();
   });
 
   refs.saveSettingsBtn.addEventListener('click', () => {
@@ -458,7 +473,7 @@ export function initUI(options = {}) {
   refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
 
   refs.confirmResetBtn.addEventListener('click', () => {
-    pauseHubMusic();
+    stopHubMusic();
     clearAllProgress();
     location.reload();
   });
@@ -485,7 +500,7 @@ export function initUI(options = {}) {
 
   if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
-      pauseHubMusic();
+      stopHubMusic();
       onStartHeist();
     };
 
@@ -504,14 +519,38 @@ export function initUI(options = {}) {
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
 
   window.addEventListener('nanaheist:settings-updated', () => {
-    renderSettingsForm(refs);
+    if (!refs.settingsOverlay?.classList.contains('show')) {
+      renderSettingsForm(refs);
+    }
     applyHubVolume();
+    syncHubMusic();
   });
 
   window.addEventListener('storage', (e) => {
     if (e.key === SAVE_KEY || e.key === HISTORY_KEY) {
       refreshHub(refs);
     }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      pauseHubMusic();
+      return;
+    }
+
+    syncHubMusic();
+  });
+
+  window.addEventListener('pagehide', () => {
+    pauseHubMusic();
+  });
+
+  window.addEventListener('pageshow', () => {
+    syncHubMusic();
+  });
+
+  window.addEventListener('blur', () => {
+    pauseHubMusic();
   });
 
   window.addEventListener('focus', () => {
