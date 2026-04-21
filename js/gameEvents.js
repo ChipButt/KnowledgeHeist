@@ -6,6 +6,15 @@ import {
   updatePointerControl
 } from './input.js';
 
+function safeLower(value) {
+  return String(value ?? '').toLowerCase();
+}
+
+function isTypingTag(tagName) {
+  const tag = safeLower(tagName);
+  return tag === 'input' || tag === 'textarea' || tag === 'select';
+}
+
 export function registerGameEvents(context, deps) {
   const { state, refs, sx, constants } = context;
   const { ui, runtime, session } = deps;
@@ -26,11 +35,7 @@ export function registerGameEvents(context, deps) {
     (e) => {
       if (state.screen !== 'game') return;
 
-      const tag = (e.target?.tagName || '').toLowerCase();
-      const allowInput =
-        tag === 'input' ||
-        tag === 'textarea' ||
-        tag === 'select';
+      const allowInput = isTypingTag(e.target?.tagName);
 
       if (!allowInput) {
         e.preventDefault();
@@ -56,9 +61,10 @@ export function registerGameEvents(context, deps) {
   });
 
   document.addEventListener('keydown', (e) => {
-    const k = e.key.toLowerCase();
-    const tag = (e.target?.tagName || '').toLowerCase();
-    const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const k = safeLower(e?.key);
+    if (!k) return;
+
+    const isTypingField = isTypingTag(e.target?.tagName);
 
     if (!isTypingField) {
       if (k === 'arrowup' || k === 'w') state.keys.up = true;
@@ -98,10 +104,10 @@ export function registerGameEvents(context, deps) {
   });
 
   document.addEventListener('keyup', (e) => {
-    const k = e.key.toLowerCase();
-    const tag = (e.target?.tagName || '').toLowerCase();
-    const isTypingField = tag === 'input' || tag === 'textarea' || tag === 'select';
+    const k = safeLower(e?.key);
+    if (!k) return;
 
+    const isTypingField = isTypingTag(e.target?.tagName);
     if (isTypingField) return;
 
     if (k === 'arrowup' || k === 'w') state.keys.up = false;
