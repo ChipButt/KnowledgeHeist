@@ -83,18 +83,18 @@ export function createGameRuntime(context, deps) {
   function getPlayerFeetPoint() {
     return getPlayerInteractPoint(
       state,
-      constants.PLAYER_DRAW_H,
-      constants.PLAYER_DRAW_Y_OFFSET,
+      sy(constants.PLAYER_DRAW_H_SOURCE),
+      sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE),
       constants.PLAYER_FEET_POINT_Y
     );
   }
 
   function getPlayerFeetPointForPosition(x, y) {
-    const drawTopY = y - constants.PLAYER_DRAW_H - constants.PLAYER_DRAW_Y_OFFSET;
+    const drawTopY = y - sy(constants.PLAYER_DRAW_H_SOURCE) - sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE);
 
     return {
       x,
-      y: drawTopY + (constants.PLAYER_DRAW_H * constants.PLAYER_FEET_POINT_Y)
+      y: drawTopY + (sy(constants.PLAYER_DRAW_H_SOURCE) * constants.PLAYER_FEET_POINT_Y)
     };
   }
 
@@ -305,6 +305,7 @@ export function createGameRuntime(context, deps) {
     });
 
     if (opened) {
+      ui.activateQuestionInput();
       ui.startQuestionTimerIfNeeded(submitAnswer);
     }
 
@@ -368,6 +369,39 @@ export function createGameRuntime(context, deps) {
       return;
     }
 
+    if (state.run.mode === 'guard_intro') {
+      state.player.controlLocked = true;
+      state.player.moving = false;
+      state.guard.active = false;
+      state.guard.visible = false;
+      state.guard.moving = false;
+
+      state.run.guardIntroRemainingMs = Math.max(
+        0,
+        (state.run.guardIntroRemainingMs || 0) - delta
+      );
+
+      updateWalkAnimation(delta);
+      updateGuardAnimation(delta);
+
+      if (state.run.guardIntroRemainingMs <= 0) {
+        state.guard.active = true;
+        state.guard.visible = true;
+        state.guard.mode = 'run';
+        state.guard.frameIndex = 0;
+        state.guard.frameTimer = 0;
+        state.guard.moving = true;
+
+        state.player.controlLocked = false;
+        state.run.mode = 'chase';
+
+        playWithMe(state, assets);
+        ui.showBanner('Run!');
+      }
+
+      return;
+    }
+
     if (state.run.mode === 'chase') {
       const move = getDirectionalInput(state, constants.CHASE_PLAYER_SPEED);
 
@@ -387,11 +421,6 @@ export function createGameRuntime(context, deps) {
       if (Math.hypot(state.guard.x - state.player.x, state.guard.y - state.player.y) < getCatchDistance()) {
         state.run.mode = 'escort';
         state.player.controlLocked = true;
-
-        if (!state.audio.withMePlayed) {
-          playWithMe(state, assets);
-        }
-
         ui.showBanner('Caught! Escorted out.');
       }
 
@@ -465,6 +494,8 @@ export function createGameRuntime(context, deps) {
     state,
     assets,
     constants,
+    sx,
+    sy,
     helpers: {
       getNearbyItem: () =>
         getNearbyItem({
