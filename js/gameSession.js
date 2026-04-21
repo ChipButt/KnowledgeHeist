@@ -58,12 +58,8 @@ export function createGameSession(context, deps) {
     stopAllGameAudio(assets);
   }
 
-  function resumeIfMidPlayback(audio) {
-    if (!audio) return;
-    if (audio.ended) return;
-    if (!audio.paused) return;
-    if (audio.currentTime <= 0) return;
-    safePlayAudio(audio);
+  function canResumeMidClip(audio) {
+    return !!audio && !audio.ended && audio.paused && audio.currentTime > 0;
   }
 
   function resumeRuntimeAudio() {
@@ -75,12 +71,27 @@ export function createGameSession(context, deps) {
     applyGameAudioSettings(assets);
     unlockAudioContext();
 
-    resumeIfMidPlayback(assets.withMeSound);
-    resumeIfMidPlayback(assets.heyStopSound);
-    resumeIfMidPlayback(assets.chaChingSound);
+    if (canResumeMidClip(assets.withMeSound)) {
+      safePlayAudio(assets.withMeSound);
+      return;
+    }
+
+    if (canResumeMidClip(assets.heyStopSound)) {
+      safePlayAudio(assets.heyStopSound);
+      return;
+    }
+
+    if (canResumeMidClip(assets.chaChingSound)) {
+      safePlayAudio(assets.chaChingSound);
+    }
 
     if (['chase', 'escort', 'escort_wait'].includes(state.run.mode)) {
       safePlayAudio(assets.sirenSound);
+      return;
+    }
+
+    if (canResumeMidClip(assets.backgroundMusic)) {
+      safePlayAudio(assets.backgroundMusic);
       return;
     }
 
@@ -128,6 +139,7 @@ export function createGameSession(context, deps) {
       resetPointerInput(state);
       state.player.moving = false;
       state.guard.moving = false;
+      pauseRuntimeAudio();
       return;
     }
 
@@ -135,6 +147,7 @@ export function createGameSession(context, deps) {
 
     if (state.screen === 'game') {
       await tryFullscreenAndLandscape();
+      resumeRuntimeAudio();
     }
   }
 
