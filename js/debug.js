@@ -1,6 +1,6 @@
 export const DEBUG = {
-  interaction: true,
-  layoutOverlay: true
+  interaction: false,
+  layoutOverlay: false
 };
 
 function drawZoneOutline(ctx, zone, strokeStyle, fillStyle = null) {
