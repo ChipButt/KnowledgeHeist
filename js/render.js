@@ -1,13 +1,43 @@
+const failedImageCache = new WeakMap();
+
+function getDrawableWidth(img) {
+  return img?.naturalWidth || img?.videoWidth || img?.width || 0;
+}
+
+function getDrawableHeight(img) {
+  return img?.naturalHeight || img?.videoHeight || img?.height || 0;
+}
+
 function imageReady(img) {
-  return !!img && img.complete && img.naturalWidth > 0;
+  return !!img && getDrawableWidth(img) > 0 && getDrawableHeight(img) > 0 && (img.complete !== false);
+}
+
+function getPlayerDrawMetrics(runtime) {
+  const { constants, sx, sy } = runtime;
+  return {
+    drawW: sx(constants.PLAYER_DRAW_W_SOURCE),
+    drawH: sy(constants.PLAYER_DRAW_H_SOURCE),
+    yOffset: sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE)
+  };
+}
+
+function getGuardDrawMetrics(runtime) {
+  const { constants, sx, sy } = runtime;
+  return {
+    drawW: sx(constants.GUARD_DRAW_W_SOURCE),
+    drawH: sy(constants.GUARD_DRAW_H_SOURCE),
+    yOffset: sy(constants.GUARD_DRAW_Y_OFFSET_SOURCE)
+  };
 }
 
 function drawImageFit(ctx, img, x, y, w, h) {
   if (!imageReady(img)) return;
 
-  const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
-  const dw = img.naturalWidth * scale;
-  const dh = img.naturalHeight * scale;
+  const sourceW = getDrawableWidth(img);
+  const sourceH = getDrawableHeight(img);
+  const scale = Math.min(w / sourceW, h / sourceH);
+  const dw = sourceW * scale;
+  const dh = sourceH * scale;
   const dx = x + (w - dw) / 2;
   const dy = y + (h - dh) / 2;
 
@@ -59,17 +89,54 @@ function resolveItemImage(item) {
   return item.image || null;
 }
 
-function drawWallItem(ctx, item) {
-  const img = resolveItemImage(item);
-  if (!img) return;
+function createFailedVariant(img) {
+  if (!imageReady(img)) return img;
 
-  if (item.status === 'failed') {
-    ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.65)';
-    drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
-    ctx.restore();
-    return;
+  const cached = failedImageCache.get(img);
+  if (cached) return cached;
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = getDrawableWidth(img);
+    canvas.height = getDrawableHeight(img);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return img;
+
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      if (a === 0) continue;
+
+      const gray = Math.round((r * 0.299 + g * 0.587 + b * 0.114) * 0.65);
+      data[i] = gray;
+      data[i + 1] = gray;
+      data[i + 2] = gray;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+    failedImageCache.set(img, canvas);
+    return canvas;
+  } catch (_) {
+    return img;
   }
+}
+
+function getDrawableItemImage(item) {
+  const img = resolveItemImage(item);
+  if (!img) return null;
+  if (item.status !== 'failed') return img;
+  return createFailedVariant(img);
+}
+
+function drawWallItem(ctx, item) {
+  const img = getDrawableItemImage(item);
+  if (!img) return;
 
   drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
 }
@@ -112,54 +179,22 @@ function drawFloorShadow(ctx, item) {
 }
 
 function drawFloorItemSlice(ctx, item, slice) {
-  const img = resolveItemImage(item);
+  const img = getDrawableItemImage(item);
   if (!imageReady(img)) return;
 
   const { drawX, drawY, topH, bottomH } = getFloorItemSplit(item);
 
-  const sourceTopH = img.naturalHeight * 0.5;
-  const sourceBottomH = img.naturalHeight - sourceTopH;
-
-  if (item.status === 'failed') {
-    ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.65)';
-
-    if (slice === 'bottom') {
-      ctx.drawImage(
-        img,
-        0,
-        sourceTopH,
-        img.naturalWidth,
-        sourceBottomH,
-        drawX,
-        drawY + topH,
-        item.drawW,
-        bottomH
-      );
-    } else {
-      ctx.drawImage(
-        img,
-        0,
-        0,
-        img.naturalWidth,
-        sourceTopH,
-        drawX,
-        drawY,
-        item.drawW,
-        topH
-      );
-    }
-
-    ctx.restore();
-    return;
-  }
+  const sourceW = getDrawableWidth(img);
+  const sourceH = getDrawableHeight(img);
+  const sourceTopH = sourceH * 0.5;
+  const sourceBottomH = sourceH - sourceTopH;
 
   if (slice === 'bottom') {
     ctx.drawImage(
       img,
       0,
       sourceTopH,
-      img.naturalWidth,
+      sourceW,
       sourceBottomH,
       drawX,
       drawY + topH,
@@ -201,30 +236,29 @@ function getCurrentPlayerImage(player, assets) {
   return set[player.walkFrameIndex] || set[0];
 }
 
-function drawFallbackPlayer(ctx, player) {
-  const drawX = player.x - 50;
-  const drawY = player.y - 110;
+function drawFallbackPlayer(ctx, player, metrics) {
+  const drawX = player.x - metrics.drawW / 2;
+  const drawY = player.y - metrics.drawH - metrics.yOffset;
 
   ctx.fillStyle = '#f3d082';
-  ctx.fillRect(drawX + 34, drawY + 14, 32, 72);
+  ctx.fillRect(drawX + metrics.drawW * 0.34, drawY + metrics.drawH * 0.14, metrics.drawW * 0.32, metrics.drawH * 0.72);
   ctx.fillStyle = '#222';
-  ctx.fillRect(drawX + 44, drawY + 28, 6, 6);
-  ctx.fillRect(drawX + 56, drawY + 28, 6, 6);
+  ctx.fillRect(drawX + metrics.drawW * 0.44, drawY + metrics.drawH * 0.28, metrics.drawW * 0.06, metrics.drawH * 0.06);
+  ctx.fillRect(drawX + metrics.drawW * 0.56, drawY + metrics.drawH * 0.28, metrics.drawW * 0.06, metrics.drawH * 0.06);
 }
 
-function drawPlayer(ctx, player, assets) {
+function drawPlayer(ctx, player, assets, runtime) {
   if (!player.visible) return;
 
-  const drawW = 100;
-  const drawH = 100;
-  const drawX = player.x - drawW / 2;
-  const drawY = player.y - drawH - 10;
+  const metrics = getPlayerDrawMetrics(runtime);
+  const drawX = player.x - metrics.drawW / 2;
+  const drawY = player.y - metrics.drawH - metrics.yOffset;
   const img = getCurrentPlayerImage(player, assets);
 
   if (imageReady(img)) {
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.drawImage(img, drawX, drawY, metrics.drawW, metrics.drawH);
   } else {
-    drawFallbackPlayer(ctx, player);
+    drawFallbackPlayer(ctx, player, metrics);
   }
 }
 
@@ -243,30 +277,29 @@ function getCurrentGuardImage(guard, assets) {
   }
 
   const runSet = assets.guardRunAnimations[guard.direction] || assets.guardRunAnimations.south;
-  const runFrame = runSet[guard.frameIndex % runSet.length];
+  const runFrame = runSet[guard.frameIndex % set.length];
   return imageReady(runFrame) ? runFrame : null;
 }
 
-function drawFallbackGuard(ctx, guard) {
-  const drawX = guard.x - 50;
-  const drawY = guard.y - 100;
+function drawFallbackGuard(ctx, guard, metrics) {
+  const drawX = guard.x - metrics.drawW / 2;
+  const drawY = guard.y - metrics.drawH - metrics.yOffset;
   ctx.fillStyle = '#6b8cff';
-  ctx.fillRect(drawX + 32, drawY + 12, 34, 76);
+  ctx.fillRect(drawX + metrics.drawW * 0.32, drawY + metrics.drawH * 0.12, metrics.drawW * 0.34, metrics.drawH * 0.76);
 }
 
-function drawGuard(ctx, guard, assets) {
+function drawGuard(ctx, guard, assets, runtime) {
   if (!guard.active || !guard.visible) return;
 
-  const drawW = 100;
-  const drawH = 100;
-  const drawX = guard.x - drawW / 2;
-  const drawY = guard.y - drawH - 10;
+  const metrics = getGuardDrawMetrics(runtime);
+  const drawX = guard.x - metrics.drawW / 2;
+  const drawY = guard.y - metrics.drawH - metrics.yOffset;
   const img = getCurrentGuardImage(guard, assets);
 
   if (img) {
-    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+    ctx.drawImage(img, drawX, drawY, metrics.drawW, metrics.drawH);
   } else {
-    drawFallbackGuard(ctx, guard);
+    drawFallbackGuard(ctx, guard, metrics);
   }
 }
 
@@ -349,14 +382,14 @@ export function drawRoom(runtime) {
     if (state.player.visible) {
       drawables.push({
         y: state.player.y,
-        draw: () => drawPlayer(ctx, state.player, assets)
+        draw: () => drawPlayer(ctx, state.player, assets, runtime)
       });
     }
 
     if (state.guard.active && state.guard.visible) {
       drawables.push({
         y: state.guard.y,
-        draw: () => drawGuard(ctx, state.guard, assets)
+        draw: () => drawGuard(ctx, state.guard, assets, runtime)
       });
     }
 
@@ -380,7 +413,8 @@ export function drawRoom(runtime) {
       (
         state.run.mode === 'chase' ||
         state.run.mode === 'escort' ||
-        state.run.mode === 'escort_wait'
+        state.run.mode === 'escort_wait' ||
+        state.run.mode === 'guard_intro'
       )
     );
 
