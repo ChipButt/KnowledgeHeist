@@ -66,9 +66,12 @@ async function ensureAnonymousAuth() {
 function buildNameKey(displayName) {
   return sanitizePlayerName(displayName)
     .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\-_]/g, '')
-    .slice(0, 40);
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 24);
 }
 
 function normaliseRow(data, docId = '') {
@@ -89,6 +92,8 @@ export async function isUsernameAvailable(displayName) {
 
   await ensureAnonymousAuth();
   const key = buildNameKey(cleanName);
+  if (!key || key.length < 3) return false;
+
   const usernameRef = doc(db, 'usernames', key);
   const snap = await getDoc(usernameRef);
   return !snap.exists();
@@ -102,25 +107,64 @@ export async function reserveUsername(displayName) {
   if (!user?.uid) return { ok: false, reason: 'auth_failed' };
 
   const key = buildNameKey(cleanName);
+  if (!key || key.length < 3) return { ok: false, reason: 'invalid_name' };
+
   const usernameRef = doc(db, 'usernames', key);
+  const profileRef = doc(db, 'profiles', key);
 
   try {
     await runTransaction(db, async (transaction) => {
-      const snap = await transaction.get(usernameRef);
-      if (snap.exists()) throw new Error('username_taken');
-      transaction.set(usernameRef, {
-        uid: user.uid,
-        displayName: cleanName,
-        nameKey: key,
-        createdAt: serverTimestamp(),
-        updatedAtMs: Date.now()
-      });
+      const usernameSnap = await transaction.get(usernameRef);
+
+      if (usernameSnap.exists()) {
+        const existing = usernameSnap.data();
+
+        if (existing?.uid !== user.uid) {
+          throw new Error('username_taken');
+        }
+      } else {
+        transaction.set(usernameRef, {
+          uid: user.uid,
+          displayName: cleanName,
+          nameKey: key,
+          createdAt: serverTimestamp(),
+          updatedAtMs: Date.now()
+        });
+      }
+
+      const profileSnap = await transaction.get(profileRef);
+      const prev = profileSnap.exists() ? profileSnap.data() : {};
+
+      transaction.set(
+        profileRef,
+        {
+          uid: user.uid,
+          profileId: key,
+          displayName: cleanName,
+          nameKey: key,
+          createdAt: prev.createdAt || serverTimestamp(),
+          lastPlayedAt: serverTimestamp(),
+          bestHeist: Number(prev.bestHeist || 0),
+          totalBanked: Number(prev.totalBanked || 0),
+          heistsPlayed: Number(prev.heistsPlayed || 0),
+          paintingsStolen: Number(prev.paintingsStolen || 0),
+          updatedAtMs: Date.now()
+        },
+        { merge: true }
+      );
     });
+
     return { ok: true, nameKey: key, displayName: cleanName };
   } catch (err) {
-    if (err?.message === 'username_taken') return { ok: false, reason: 'username_taken' };
+    if (err?.message === 'username_taken') {
+      return { ok: false, reason: 'username_taken' };
+    }
+
     console.error('Username reservation failed:', err);
-    return { ok: false, reason: 'reservation_failed' };
+    return {
+      ok: false,
+      reason: err?.code === 'permission-denied' ? 'permission_denied' : 'reservation_failed'
+    };
   }
 }
 
@@ -161,20 +205,35 @@ export async function submitCurrentPlayerLeaderboard() {
   }
 
   const nameKey = buildNameKey(displayName);
-  const playerRef = doc(db, 'leaderboard', nameKey);
-  const usernameRef = doc(db, 'usernames', nameKey);
+  if (!nameKey || nameKey.length < 3) return;
 
-  await setDoc(usernameRef, {
-    uid: user.uid,
-    displayName,
-    nameKey,
-    updatedAt: serverTimestamp(),
-    updatedAtMs: Date.now()
-  }, { merge: true });
+  const profileRef = doc(db, 'profiles', nameKey);
+  const playerRef = doc(db, 'leaderboard', nameKey);
 
   await runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(playerRef);
-    const prev = snap.exists() ? snap.data() : {};
+    const profileSnap = await transaction.get(profileRef);
+    const leaderboardSnap = await transaction.get(playerRef);
+
+    const prevProfile = profileSnap.exists() ? profileSnap.data() : {};
+    const prevLeaderboard = leaderboardSnap.exists() ? leaderboardSnap.data() : {};
+
+    transaction.set(
+      profileRef,
+      {
+        uid: user.uid,
+        profileId: nameKey,
+        displayName,
+        nameKey,
+        createdAt: prevProfile.createdAt || serverTimestamp(),
+        lastPlayedAt: serverTimestamp(),
+        bestHeist: Math.max(Number(prevProfile.bestHeist || 0), Number(save.bestHeist || 0)),
+        totalBanked: Math.max(Number(prevProfile.totalBanked || 0), Number(save.totalBanked || 0)),
+        heistsPlayed: Math.max(Number(prevProfile.heistsPlayed || 0), Number(save.heistsPlayed || 0)),
+        paintingsStolen: Math.max(Number(prevProfile.paintingsStolen || 0), Number(save.paintingsStolen || 0)),
+        updatedAtMs: Date.now()
+      },
+      { merge: true }
+    );
 
     transaction.set(
       playerRef,
@@ -182,10 +241,10 @@ export async function submitCurrentPlayerLeaderboard() {
         uid: user.uid,
         nameKey,
         displayName,
-        totalBanked: Math.max(Number(prev.totalBanked || 0), Number(save.totalBanked || 0)),
-        bestHeist: Math.max(Number(prev.bestHeist || 0), Number(save.bestHeist || 0)),
-        heistsPlayed: Math.max(Number(prev.heistsPlayed || 0), Number(save.heistsPlayed || 0)),
-        paintingsStolen: Math.max(Number(prev.paintingsStolen || 0), Number(save.paintingsStolen || 0)),
+        totalBanked: Math.max(Number(prevLeaderboard.totalBanked || 0), Number(save.totalBanked || 0)),
+        bestHeist: Math.max(Number(prevLeaderboard.bestHeist || 0), Number(save.bestHeist || 0)),
+        heistsPlayed: Math.max(Number(prevLeaderboard.heistsPlayed || 0), Number(save.heistsPlayed || 0)),
+        paintingsStolen: Math.max(Number(prevLeaderboard.paintingsStolen || 0), Number(save.paintingsStolen || 0)),
         updatedAt: serverTimestamp(),
         updatedAtMs: Date.now()
       },
