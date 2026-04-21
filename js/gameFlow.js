@@ -368,7 +368,7 @@ export function askQuestionForItem({
 
   const q = chooseQuestionForItem(item, state.save.usedQuestionIds, shuffle);
   if (!q) {
-    showBanner('No unused questions left for this difficulty.');
+    showBanner('No items worth your time, you need a harder challenge.');
     state.activeItem = null;
     return false;
   }
