@@ -377,14 +377,6 @@ export function askQuestionForItem({
   answerInput.value = '';
   questionModal.classList.remove('hidden');
 
-  setTimeout(() => {
-    try {
-      answerInput.focus({ preventScroll: true });
-    } catch (_) {
-      answerInput.focus();
-    }
-  }, 0);
-
   return true;
 }
 
