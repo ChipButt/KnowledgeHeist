@@ -681,6 +681,11 @@ body.game-active {
   font-size: 16px;
 }
 
+#answerInput::placeholder {
+  color: #8d8473;
+  opacity: 1;
+}
+
 #leaderboardStatusText {
   margin-top: 10px;
   font-size: 15px;
