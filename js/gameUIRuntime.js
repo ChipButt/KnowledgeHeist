@@ -7,7 +7,7 @@ const QUESTION_KEY_ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '.', ':'],
-  ['SPACE', '%', 'BACK', 'CLEAR']
+  ['SPACE', '%', 'BACK', 'CLEAR', 'SUBMIT']
 ];
 
 function shouldUseBuiltInKeyboard() {
@@ -26,6 +26,7 @@ export function createGameUI(context) {
   let questionRemainingMs = 0;
   let bannerTimer = null;
   let questionKeyboardEl = null;
+  let questionBodyWrapEl = null;
 
   function getQuestionTimerEl() {
     let el = document.getElementById('questionTimer');
@@ -36,6 +37,45 @@ export function createGameUI(context) {
     el.className = 'question-timer';
     refs.questionTextEl.insertAdjacentElement('afterend', el);
     return el;
+  }
+
+  function ensureQuestionLayoutWrap() {
+    if (questionBodyWrapEl) return questionBodyWrapEl;
+
+    const modalCard = refs.questionModal?.querySelector('.modal-card');
+    if (!modalCard) return null;
+
+    let bodyWrap = modalCard.querySelector('.question-body-wrap');
+    if (bodyWrap) {
+      questionBodyWrapEl = bodyWrap;
+      return bodyWrap;
+    }
+
+    bodyWrap = document.createElement('div');
+    bodyWrap.className = 'question-body-wrap';
+
+    const title = modalCard.querySelector('h2');
+    const questionText = refs.questionTextEl;
+    const questionTimer = getQuestionTimerEl();
+    const answerInput = refs.answerInput;
+    const actions = modalCard.querySelector('.modal-actions');
+
+    if (title && title.nextSibling) {
+      modalCard.insertBefore(bodyWrap, title.nextSibling);
+    } else {
+      modalCard.appendChild(bodyWrap);
+    }
+
+    if (questionText) bodyWrap.appendChild(questionText);
+    if (questionTimer) bodyWrap.appendChild(questionTimer);
+    if (answerInput) bodyWrap.appendChild(answerInput);
+
+    if (actions) {
+      modalCard.appendChild(actions);
+    }
+
+    questionBodyWrapEl = bodyWrap;
+    return bodyWrap;
   }
 
   function clearQuestionTimerInterval() {
@@ -148,13 +188,49 @@ export function createGameUI(context) {
     return state.confirm.open;
   }
 
+  function triggerSubmit() {
+    refs.submitAnswerBtn?.click();
+  }
+
+  function applyKeyboardKey(key) {
+    if (key === 'BACK') {
+      refs.answerInput.value = refs.answerInput.value.slice(0, -1);
+      return;
+    }
+
+    if (key === 'CLEAR') {
+      refs.answerInput.value = '';
+      return;
+    }
+
+    if (key === 'SPACE') {
+      refs.answerInput.value += ' ';
+      return;
+    }
+
+    if (key === 'SUBMIT') {
+      triggerSubmit();
+      return;
+    }
+
+    refs.answerInput.value += key;
+  }
+
   function ensureQuestionKeyboard() {
     if (questionKeyboardEl) return questionKeyboardEl;
+
+    ensureQuestionLayoutWrap();
 
     const modalCard = refs.questionModal?.querySelector('.modal-card');
     if (!modalCard) return null;
 
-    const keyboard = document.createElement('div');
+    let keyboard = document.getElementById('questionKeyboard');
+    if (keyboard) {
+      questionKeyboardEl = keyboard;
+      return keyboard;
+    }
+
+    keyboard = document.createElement('div');
     keyboard.id = 'questionKeyboard';
     keyboard.className = 'question-keyboard';
 
@@ -172,10 +248,12 @@ export function createGameUI(context) {
           key === 'SPACE' ? 'Space' :
           key === 'BACK' ? '⌫' :
           key === 'CLEAR' ? 'Clear' :
+          key === 'SUBMIT' ? 'Submit' :
           key;
 
         if (key === 'SPACE') btn.classList.add('wide');
-        if (key === 'BACK' || key === 'CLEAR') btn.classList.add('action');
+        if (key === 'BACK' || key === 'CLEAR' || key === 'SUBMIT') btn.classList.add('action');
+        if (key === 'SUBMIT') btn.classList.add('submit');
 
         row.appendChild(btn);
       });
@@ -183,30 +261,20 @@ export function createGameUI(context) {
       keyboard.appendChild(row);
     });
 
-    keyboard.addEventListener('click', (e) => {
+    const handleKeyPress = (e) => {
       const button = e.target.closest('.question-key');
       if (!button) return;
+
+      e.preventDefault();
 
       const key = button.dataset.key;
       if (!key) return;
 
-      if (key === 'BACK') {
-        refs.answerInput.value = refs.answerInput.value.slice(0, -1);
-        return;
-      }
+      applyKeyboardKey(key);
+    };
 
-      if (key === 'CLEAR') {
-        refs.answerInput.value = '';
-        return;
-      }
-
-      if (key === 'SPACE') {
-        refs.answerInput.value += ' ';
-        return;
-      }
-
-      refs.answerInput.value += key;
-    });
+    keyboard.addEventListener('pointerdown', handleKeyPress, { passive: false });
+    keyboard.addEventListener('touchstart', handleKeyPress, { passive: false });
 
     const actions = modalCard.querySelector('.modal-actions');
     if (actions) {
@@ -229,6 +297,7 @@ export function createGameUI(context) {
 
   function configureQuestionInputMode() {
     const builtIn = shouldUseBuiltInKeyboard();
+    ensureQuestionLayoutWrap();
 
     if (builtIn) {
       refs.answerInput.readOnly = true;
@@ -236,6 +305,11 @@ export function createGameUI(context) {
       refs.answerInput.setAttribute('inputmode', 'none');
       refs.answerInput.blur();
       setQuestionKeyboardVisible(true);
+
+      if (refs.submitAnswerBtn) {
+        refs.submitAnswerBtn.textContent = 'Submit';
+      }
+
       return true;
     }
 
