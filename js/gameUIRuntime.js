@@ -7,7 +7,7 @@ const QUESTION_KEY_ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
   ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
   ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '.', ':'],
-  ['SPACE', '%', 'BACK', 'CLEAR', 'SUBMIT']
+  ['SPACE', 'BACK', 'CLEAR', 'SUBMIT']
 ];
 
 function shouldUseBuiltInKeyboard() {
@@ -27,6 +27,22 @@ export function createGameUI(context) {
   let bannerTimer = null;
   let questionKeyboardEl = null;
   let questionBodyWrapEl = null;
+
+  function hideFallbackSubmitButton() {
+    if (refs.submitAnswerBtn) {
+      refs.submitAnswerBtn.hidden = true;
+      refs.submitAnswerBtn.style.display = 'none';
+      refs.submitAnswerBtn.setAttribute('aria-hidden', 'true');
+      refs.submitAnswerBtn.tabIndex = -1;
+    }
+
+    if (refs.cancelAnswerBtn) {
+      refs.cancelAnswerBtn.hidden = true;
+      refs.cancelAnswerBtn.style.display = 'none';
+      refs.cancelAnswerBtn.setAttribute('aria-hidden', 'true');
+      refs.cancelAnswerBtn.tabIndex = -1;
+    }
+  }
 
   function getQuestionTimerEl() {
     let el = document.getElementById('questionTimer');
@@ -58,7 +74,6 @@ export function createGameUI(context) {
     const questionText = refs.questionTextEl;
     const questionTimer = getQuestionTimerEl();
     const answerInput = refs.answerInput;
-    const actions = modalCard.querySelector('.modal-actions');
 
     if (title && title.nextSibling) {
       modalCard.insertBefore(bodyWrap, title.nextSibling);
@@ -69,10 +84,6 @@ export function createGameUI(context) {
     if (questionText) bodyWrap.appendChild(questionText);
     if (questionTimer) bodyWrap.appendChild(questionTimer);
     if (answerInput) bodyWrap.appendChild(answerInput);
-
-    if (actions) {
-      modalCard.appendChild(actions);
-    }
 
     questionBodyWrapEl = bodyWrap;
     return bodyWrap;
@@ -220,6 +231,7 @@ export function createGameUI(context) {
     if (questionKeyboardEl) return questionKeyboardEl;
 
     ensureQuestionLayoutWrap();
+    hideFallbackSubmitButton();
 
     const modalCard = refs.questionModal?.querySelector('.modal-card');
     if (!modalCard) return null;
@@ -234,10 +246,16 @@ export function createGameUI(context) {
     keyboard.id = 'questionKeyboard';
     keyboard.className = 'question-keyboard';
 
-    QUESTION_KEY_ROWS.forEach((rowKeys) => {
+    QUESTION_KEY_ROWS.forEach((rowKeys, rowIndex) => {
       const row = document.createElement('div');
       row.className = 'question-keyboard-row';
-      row.style.gridTemplateColumns = `repeat(${rowKeys.length}, minmax(0, 1fr))`;
+
+      if (rowIndex === QUESTION_KEY_ROWS.length - 1) {
+        row.classList.add('question-keyboard-row-bottom');
+        row.style.gridTemplateColumns = '2fr 1fr 1fr 1fr';
+      } else {
+        row.style.gridTemplateColumns = `repeat(${rowKeys.length}, minmax(0, 1fr))`;
+      }
 
       rowKeys.forEach((key) => {
         const btn = document.createElement('button');
@@ -274,14 +292,8 @@ export function createGameUI(context) {
     };
 
     keyboard.addEventListener('pointerdown', handleKeyPress, { passive: false });
-    keyboard.addEventListener('touchstart', handleKeyPress, { passive: false });
 
-    const actions = modalCard.querySelector('.modal-actions');
-    if (actions) {
-      modalCard.insertBefore(keyboard, actions);
-    } else {
-      modalCard.appendChild(keyboard);
-    }
+    modalCard.appendChild(keyboard);
 
     questionKeyboardEl = keyboard;
     return keyboard;
@@ -297,7 +309,9 @@ export function createGameUI(context) {
 
   function configureQuestionInputMode() {
     const builtIn = shouldUseBuiltInKeyboard();
+
     ensureQuestionLayoutWrap();
+    hideFallbackSubmitButton();
 
     if (builtIn) {
       refs.answerInput.readOnly = true;
@@ -305,11 +319,6 @@ export function createGameUI(context) {
       refs.answerInput.setAttribute('inputmode', 'none');
       refs.answerInput.blur();
       setQuestionKeyboardVisible(true);
-
-      if (refs.submitAnswerBtn) {
-        refs.submitAnswerBtn.textContent = 'Submit';
-      }
-
       return true;
     }
 
