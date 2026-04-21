@@ -27,7 +27,11 @@ import { getDirectionalInput, getMoveSpeed } from './input.js';
 
 export function createGameRuntime(context, deps) {
   const { canvas, ctx, state, assets, constants, refs, sx, sy, view } = context;
-  const { ui, session } = deps;
+  const { ui } = deps;
+
+  function getSession() {
+    return deps.session || null;
+  }
 
   function getFloorPolyNow() {
     return getFloorPoly(sx, sy);
@@ -265,14 +269,14 @@ export function createGameRuntime(context, deps) {
     const isInExitZone = pointInRect(playerPoint.x, playerPoint.y, expandedExit);
 
     if (isInExitZone && !state.run.wasInExitZone) {
-      session.handleEscapeRequest();
+      getSession()?.handleEscapeRequest?.();
     }
 
     state.run.wasInExitZone = isInExitZone;
   }
 
   function interact() {
-    if (session.isPortraitBlocked()) return;
+    if (getSession()?.isPortraitBlocked()) return;
     if (!state.run || state.run.ended) return;
     if (state.player.controlLocked || state.player.action) return;
     if (ui.isConfirmPopupOpen()) return;
@@ -317,7 +321,7 @@ export function createGameRuntime(context, deps) {
   }
 
   function submitAnswer() {
-    if (session.isPortraitBlocked()) return;
+    if (getSession()?.isPortraitBlocked()) return;
 
     ui.stopQuestionTimer();
 
@@ -335,7 +339,7 @@ export function createGameRuntime(context, deps) {
   function update(delta) {
     updateFX(state, delta);
 
-    if (session.isPortraitBlocked()) return;
+    if (getSession()?.isPortraitBlocked()) return;
     if (state.screen !== 'game' || !state.run || state.run.ended) return;
     if (!refs.questionModal.classList.contains('hidden') && state.run.mode === 'play') return;
     if (ui.isConfirmPopupOpen()) return;
@@ -450,7 +454,7 @@ export function createGameRuntime(context, deps) {
       if (state.audio.withMeFinished) {
         state.player.visible = false;
         state.guard.visible = false;
-        session.handleCaughtEscortComplete();
+        getSession()?.handleCaughtEscortComplete?.();
       }
     }
   }
