@@ -17,6 +17,7 @@ import {
   safePlayAudio,
   safeRestartAudio,
   setAudioVolume,
+  pauseAudio,
   stopAudio,
   unlockAudioContext
 } from './audio.js';
@@ -390,8 +391,13 @@ export function initUI(options = {}) {
     setAudioVolume(hubMusic, getVolumeScale(settings.hubVolume));
   }
 
-  function pauseHubMusic() {
-    stopAudio(hubMusic);
+  function pauseHubMusic(reset = false) {
+    if (reset) {
+      stopAudio(hubMusic);
+      return;
+    }
+
+    pauseAudio(hubMusic);
   }
 
   function syncHubMusic() {
@@ -415,7 +421,10 @@ export function initUI(options = {}) {
 
     applyHubVolume();
     unlockAudioContext();
-    safePlayAudio(hubMusic);
+
+    if (hubMusic.paused || hubMusic.ended) {
+      safePlayAudio(hubMusic);
+    }
   }
 
   function unlockHubMusic() {
@@ -541,7 +550,7 @@ export function initUI(options = {}) {
   refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
 
   refs.confirmResetBtn.addEventListener('click', () => {
-    pauseHubMusic();
+    pauseHubMusic(true);
     clearAllProgress();
     location.reload();
   });
@@ -602,7 +611,7 @@ export function initUI(options = {}) {
       if (startHeistPending) return;
       startHeistPending = true;
       hubMusicSuppressed = true;
-      pauseHubMusic();
+      pauseHubMusic(true);
 
       try {
         onStartHeist();
