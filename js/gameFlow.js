@@ -145,6 +145,24 @@ export function getPlayerInteractPoint(
   };
 }
 
+function isFacingWallForGrab(direction, wall) {
+  if (!direction || !wall) return false;
+
+  if (wall === 'west') {
+    return direction === 'west' || direction === 'north-west' || direction === 'south-west';
+  }
+
+  if (wall === 'north') {
+    return direction === 'north' || direction === 'north-west' || direction === 'north-east';
+  }
+
+  if (wall === 'east') {
+    return direction === 'east' || direction === 'north-east' || direction === 'south-east';
+  }
+
+  return true;
+}
+
 export function getNearbyItem({ state, run, sx, sy, getPlayerInteractPointFn }) {
   if (!run || run.mode !== 'play') return null;
 
@@ -154,6 +172,10 @@ export function getNearbyItem({ state, run, sx, sy, getPlayerInteractPointFn }) 
 
   for (const item of run.items) {
     if (item.status !== 'available') continue;
+
+    if (item.type === 'wall' && !isFacingWallForGrab(state.player.direction, item.wall)) {
+      continue;
+    }
 
     const zone = getItemInteractZone(item, sx, sy);
 
