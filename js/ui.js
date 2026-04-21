@@ -443,14 +443,18 @@ export function initUI(options = {}) {
     }
   }
 
-  function unlockOnly() {
+  function unlockOnly(event) {
     if (musicUnlocked) return;
+
     musicUnlocked = true;
     unlockAudioContext();
 
-    setTimeout(() => {
+    const target = event?.target;
+    const tappedStartHeist = !!target?.closest?.('#startHeistBtn');
+
+    if (!tappedStartHeist) {
       syncHubMusic();
-    }, 0);
+    }
   }
 
   function applyReportQueryButtonAsset() {
@@ -763,7 +767,6 @@ export function initUI(options = {}) {
 
       startHeistPending = true;
       hubMusicSuppressed = true;
-
       pauseHubMusic(true);
 
       requestAnimationFrame(() => {
