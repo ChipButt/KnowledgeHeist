@@ -12,7 +12,6 @@ function drawImageFit(ctx, img, x, y, w, h) {
   const dy = y + (h - dh) / 2;
 
   ctx.drawImage(img, dx, dy, dw, dh);
-
   return { dx, dy, dw, dh };
 }
 
@@ -69,17 +68,16 @@ function drawWallItem(ctx, item) {
 
   if (item.status === 'failed') {
     ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.65)';
+    ctx.filter = 'grayscale(100%) brightness(0.6)';
     const drawn = drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
     ctx.restore();
 
     if (drawn) {
       ctx.save();
-      ctx.fillStyle = 'rgba(32, 32, 32, 0.28)';
+      ctx.fillStyle = 'rgba(24,24,24,0.32)';
       ctx.fillRect(drawn.dx, drawn.dy, drawn.dw, drawn.dh);
       ctx.restore();
     }
-
     return;
   }
 
@@ -110,12 +108,12 @@ function drawFloorItem(ctx, item) {
 
   if (item.status === 'failed') {
     ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.65)';
+    ctx.filter = 'grayscale(100%) brightness(0.6)';
     ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
     ctx.restore();
 
     ctx.save();
-    ctx.fillStyle = 'rgba(32, 32, 32, 0.28)';
+    ctx.fillStyle = 'rgba(24,24,24,0.32)';
     ctx.fillRect(drawX, drawY, item.drawW, item.drawH);
     ctx.restore();
     return;
@@ -178,7 +176,7 @@ function getCurrentGuardImage(guard, assets) {
   }
 
   const runSet = assets.guardRunAnimations[guard.direction] || assets.guardRunAnimations.south;
-  const runFrame = runSet[guard.frameIndex % set.length];
+  const runFrame = runSet[guard.frameIndex % runSet.length];
   return imageReady(runFrame) ? runFrame : null;
 }
 
