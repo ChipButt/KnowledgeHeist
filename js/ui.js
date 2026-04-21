@@ -109,6 +109,11 @@ function positionHubCells() {
   });
 }
 
+function updateAppHeightVar() {
+  const appHeight = window.innerHeight;
+  document.documentElement.style.setProperty('--app-height', `${appHeight}px`);
+}
+
 function createHubMusic() {
   const audio = new Audio(HUB_MUSIC_FILE);
   audio.preload = 'auto';
@@ -240,17 +245,13 @@ function ensurePodiumContainer(refs) {
   podium.id = 'leaderboardPodium';
 
   const wrap = document.getElementById('leaderboardTableWrap');
-  if (wrap && refs.leaderboardBoardScreen) {
-    refs.leaderboardBoardScreen.insertBefore(podium, wrap);
-  }
+  refs.leaderboardBoardScreen.insertBefore(podium, wrap);
 
   return podium;
 }
 
 function renderPodium(rows, refs) {
   const podium = ensurePodiumContainer(refs);
-  if (!podium) return;
-
   const topThree = rows.slice(0, 3);
 
   if (!topThree.length) {
@@ -283,8 +284,7 @@ async function showUnifiedLeaderboard(refs) {
   refs.backToLeaderboardMenuBtn.style.display = 'none';
 
   refs.leaderboardViewTitle.textContent = 'Family Leaderboard';
-  refs.leaderboardViewSubtitle.textContent =
-    'Ranked by Total Bank, with Best Heist shown alongside';
+  refs.leaderboardViewSubtitle.textContent = 'Ranked by Total Bank, with Best Heist shown alongside';
   refs.closeLeaderboardFromBoardBtn.textContent = 'Return to Main Hub';
 
   const headCells = refs.leaderboardTable.querySelectorAll('thead th');
@@ -298,45 +298,34 @@ async function showUnifiedLeaderboard(refs) {
   renderPodium([], refs);
   show(refs.leaderboardOverlay);
 
-  try {
-    const rows = await getUnifiedLeaderboardRows();
+  const rows = await getUnifiedLeaderboardRows();
 
-    if (!rows.length) {
-      refs.leaderboardStatusText.textContent = 'No leaderboard data yet.';
-      refs.leaderboardTableBody.innerHTML = `
-        <tr>
-          <td class="leaderboard-empty" colspan="4">Nothing has been submitted yet.</td>
-        </tr>
-      `;
-      renderPodium([], refs);
-      return;
-    }
-
-    refs.leaderboardStatusText.textContent = '';
-    renderPodium(rows, refs);
-
-    refs.leaderboardTableBody.innerHTML = rows
-      .map((row) => {
-        return `
-          <tr>
-            <td class="leaderboard-rank">${row.rank}</td>
-            <td>${row.name}</td>
-            <td class="leaderboard-value">${formatMoney(row.totalBanked)}</td>
-            <td class="leaderboard-value">${formatMoney(row.bestHeist)}</td>
-          </tr>
-        `;
-      })
-      .join('');
-  } catch (err) {
-    console.error('Leaderboard load failed:', err);
-    refs.leaderboardStatusText.textContent = 'Could not load leaderboard.';
+  if (!rows.length) {
+    refs.leaderboardStatusText.textContent = 'No leaderboard data yet.';
     refs.leaderboardTableBody.innerHTML = `
       <tr>
-        <td class="leaderboard-empty" colspan="4">Could not load leaderboard.</td>
+        <td class="leaderboard-empty" colspan="4">Nothing has been submitted yet.</td>
       </tr>
     `;
     renderPodium([], refs);
+    return;
   }
+
+  refs.leaderboardStatusText.textContent = '';
+  renderPodium(rows, refs);
+
+  refs.leaderboardTableBody.innerHTML = rows
+    .map((row) => {
+      return `
+        <tr>
+          <td class="leaderboard-rank">${row.rank}</td>
+          <td>${row.name}</td>
+          <td class="leaderboard-value">${formatMoney(row.totalBanked)}</td>
+          <td class="leaderboard-value">${formatMoney(row.bestHeist)}</td>
+        </tr>
+      `;
+    })
+    .join('');
 }
 
 export function initUI(options = {}) {
@@ -347,6 +336,7 @@ export function initUI(options = {}) {
   let musicUnlocked = false;
 
   ensureUnifiedLeaderboardStyles();
+  updateAppHeightVar();
   positionHubCells();
   refreshHub(refs);
   renderSettingsForm(refs);
@@ -409,131 +399,106 @@ export function initUI(options = {}) {
     });
   }
 
-  if (refs.instructionsBtn) {
-    refs.instructionsBtn.addEventListener('click', () => show(refs.instructionsOverlay));
-  }
+  refs.instructionsBtn.addEventListener('click', () => show(refs.instructionsOverlay));
+  refs.closeInstructionsBtn.addEventListener('click', () => hide(refs.instructionsOverlay));
+  refs.instructionsOverlay.addEventListener('click', (e) => {
+    if (e.target === refs.instructionsOverlay) hide(refs.instructionsOverlay);
+  });
 
-  if (refs.closeInstructionsBtn) {
-    refs.closeInstructionsBtn.addEventListener('click', () => hide(refs.instructionsOverlay));
-  }
+  refs.settingsBtn.addEventListener('click', () => {
+    renderSettingsForm(refs);
+    show(refs.settingsOverlay);
+  });
 
-  if (refs.instructionsOverlay) {
-    refs.instructionsOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.instructionsOverlay) hide(refs.instructionsOverlay);
+  refs.closeSettingsBtn.addEventListener('click', () => hide(refs.settingsOverlay));
+
+  refs.settingsOverlay.addEventListener('click', (e) => {
+    if (e.target === refs.settingsOverlay) hide(refs.settingsOverlay);
+  });
+
+  refs.hubVolumeInput.addEventListener('input', () => {
+    refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
+    hubMusic.volume = getVolumeScale(refs.hubVolumeInput.value);
+  });
+
+  refs.gameMusicVolumeInput.addEventListener('input', () => {
+    refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
+  });
+
+  refs.voiceVolumeInput.addEventListener('input', () => {
+    refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
+  });
+
+  refs.saveSettingsBtn.addEventListener('click', () => {
+    const cleanedName = sanitizePlayerName(refs.playerNameInput.value);
+
+    saveGameSettings({
+      playerName: cleanedName,
+      hubVolume: refs.hubVolumeInput.value,
+      gameMusicVolume: refs.gameMusicVolumeInput.value,
+      voiceVolume: refs.voiceVolumeInput.value,
+      difficulty: refs.difficultySelect.value
     });
-  }
 
-  if (refs.settingsBtn) {
-    refs.settingsBtn.addEventListener('click', () => {
-      renderSettingsForm(refs);
-      show(refs.settingsOverlay);
-    });
-  }
+    renderSettingsForm(refs);
+    applyHubVolume();
+    hide(refs.settingsOverlay);
+  });
 
-  if (refs.closeSettingsBtn) {
-    refs.closeSettingsBtn.addEventListener('click', () => hide(refs.settingsOverlay));
-  }
-
-  if (refs.settingsOverlay) {
-    refs.settingsOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.settingsOverlay) hide(refs.settingsOverlay);
-    });
-  }
-
-  if (refs.hubVolumeInput) {
-    refs.hubVolumeInput.addEventListener('input', () => {
-      refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
-      hubMusic.volume = getVolumeScale(refs.hubVolumeInput.value);
-    });
-  }
-
-  if (refs.gameMusicVolumeInput) {
-    refs.gameMusicVolumeInput.addEventListener('input', () => {
-      refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
-    });
-  }
-
-  if (refs.voiceVolumeInput) {
-    refs.voiceVolumeInput.addEventListener('input', () => {
-      refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
-    });
-  }
-
-  if (refs.saveSettingsBtn) {
-    refs.saveSettingsBtn.addEventListener('click', () => {
-      const cleanedName = sanitizePlayerName(refs.playerNameInput.value);
-
-      saveGameSettings({
-        playerName: cleanedName,
-        hubVolume: refs.hubVolumeInput.value,
-        gameMusicVolume: refs.gameMusicVolumeInput.value,
-        voiceVolume: refs.voiceVolumeInput.value,
-        difficulty: refs.difficultySelect.value
-      });
-
-      renderSettingsForm(refs);
-      applyHubVolume();
-      hide(refs.settingsOverlay);
-    });
-  }
-
-  if (refs.resetBtn) {
-    refs.resetBtn.addEventListener('click', (e) => {
+  refs.resetBtn.addEventListener(
+    'click',
+    (e) => {
       e.preventDefault();
-      e.stopPropagation();
+      e.stopImmediatePropagation();
       show(refs.resetConfirmOverlay);
-    });
-  }
+    },
+    true
+  );
 
-  if (refs.cancelResetBtn) {
-    refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
-  }
+  refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
 
-  if (refs.confirmResetBtn) {
-    refs.confirmResetBtn.addEventListener('click', () => {
-      pauseHubMusic();
-      clearAllProgress();
-      location.reload();
-    });
-  }
+  refs.confirmResetBtn.addEventListener('click', () => {
+    pauseHubMusic();
+    clearAllProgress();
+    location.reload();
+  });
 
-  if (refs.resetConfirmOverlay) {
-    refs.resetConfirmOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.resetConfirmOverlay) hide(refs.resetConfirmOverlay);
-    });
-  }
+  refs.resetConfirmOverlay.addEventListener('click', (e) => {
+    if (e.target === refs.resetConfirmOverlay) hide(refs.resetConfirmOverlay);
+  });
 
-  if (refs.leaderboardBtn) {
-    refs.leaderboardBtn.addEventListener('click', () => {
-      showUnifiedLeaderboard(refs);
-    });
-  }
+  refs.leaderboardBtn.addEventListener('click', () => {
+    showUnifiedLeaderboard(refs);
+  });
 
-  if (refs.closeLeaderboardBtn) {
-    refs.closeLeaderboardBtn.addEventListener('click', () => {
-      hide(refs.leaderboardOverlay);
-    });
-  }
+  refs.closeLeaderboardBtn.addEventListener('click', () => {
+    hide(refs.leaderboardOverlay);
+  });
 
-  if (refs.closeLeaderboardFromBoardBtn) {
-    refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => {
-      hide(refs.leaderboardOverlay);
-    });
-  }
+  refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => {
+    hide(refs.leaderboardOverlay);
+  });
 
-  if (refs.leaderboardOverlay) {
-    refs.leaderboardOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.leaderboardOverlay) hide(refs.leaderboardOverlay);
-    });
-  }
+  refs.leaderboardOverlay.addEventListener('click', (e) => {
+    if (e.target === refs.leaderboardOverlay) hide(refs.leaderboardOverlay);
+  });
 
-  if (typeof onStartHeist === 'function' && refs.startHeistBtn) {
+  if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
       pauseHubMusic();
       onStartHeist();
     };
 
     refs.startHeistBtn.addEventListener('click', handleStartHeist);
+
+    refs.startHeistBtn.addEventListener(
+      'touchend',
+      (e) => {
+        e.preventDefault();
+        handleStartHeist();
+      },
+      { passive: false }
+    );
   }
 
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
@@ -550,13 +515,27 @@ export function initUI(options = {}) {
   });
 
   window.addEventListener('focus', () => {
+    updateAppHeightVar();
     refreshHub(refs);
     syncHubMusic();
   });
 
   window.addEventListener('resize', () => {
+    updateAppHeightVar();
     positionHubCells();
   });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      updateAppHeightVar();
+      positionHubCells();
+    }, 100);
+  });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', updateAppHeightVar);
+    window.visualViewport.addEventListener('scroll', updateAppHeightVar);
+  }
 
   applyHubVolume();
   syncHubMusic();
