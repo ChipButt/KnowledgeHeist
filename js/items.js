@@ -38,8 +38,8 @@ const FLOOR_RANDOM_AREA_SOURCE = [
 ];
 
 const FLOOR_ITEM_SOURCE_DEFAULTS = {
-  pedestal: { drawW: 96, drawH: 150, sourceSpriteW: 121, sourceSpriteH: 234 },
-  aboard: { drawW: 104, drawH: 158, sourceSpriteW: 361, sourceSpriteH: 547 }
+  pedestal: { drawW: 192, drawH: 300, sourceSpriteW: 121, sourceSpriteH: 234 },
+  aboard: { drawW: 208, drawH: 316, sourceSpriteW: 361, sourceSpriteH: 547 }
 };
 
 const FLOOR_ITEM_RULES = {
@@ -198,14 +198,14 @@ export function getFloorItemDrawTopLeft(item) {
   };
 }
 
-export function getFloorItemBlockerTopY(item) {
+export function getFloorItemSplitY(item) {
   const { drawY } = getFloorItemDrawTopLeft(item);
   return drawY + (item.drawH * FLOOR_ITEM_RULES.blockerTopRatio);
 }
 
 function getFloorBlockerRect(item) {
   const { drawX } = getFloorItemDrawTopLeft(item);
-  const blockerTopY = getFloorItemBlockerTopY(item);
+  const blockerTopY = getFloorItemSplitY(item);
 
   return {
     x1: drawX,
@@ -339,7 +339,7 @@ export function createHeistItems({ assets, sx, sy }) {
 
   const aboardPos = randomPointInSourcePoly(FLOOR_RANDOM_AREA_SOURCE, {
     avoid: [{ x: pedestalPos.x, y: pedestalPos.y }],
-    minDistance: 220
+    minDistance: 360
   });
 
   const aboard = {
