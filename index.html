@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
   <title>Knowledge Heist</title>
 
@@ -107,8 +107,15 @@
     <div class="modal-card">
       <h2>Security Check</h2>
       <div id="questionText"></div>
-      <input id="answerInput" type="text" inputmode="text" />
-      <button id="submitAnswerBtn" type="button" hidden style="display:none;">Submit</button>
+      <input
+        id="answerInput"
+        type="text"
+        inputmode="text"
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
+      <button id="submitAnswerBtn" type="button">Submit</button>
       <button id="cancelAnswerBtn" type="button" hidden style="display:none;">Cancel</button>
     </div>
   </div>
