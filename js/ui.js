@@ -1,20 +1,15 @@
 import {
-  SAVE_KEY,
-  HISTORY_KEY,
   clearAllProgress,
-  loadSave,
-  readHistory,
-  listProfiles,
   hasActiveProfile,
-  createProfile,
-  loginToProfile,
-  logoutActiveProfile,
-  getActiveProfileName
+  getActiveProfileName,
+  loadSave,
+  loadSettings,
+  readHistory,
+  saveSettings
 } from './storage.js';
 import { getUnifiedLeaderboardRows } from './leaderboard.js';
 import {
   getSettings,
-  saveGameSettings,
   getVolumeScale,
   sanitizePlayerName
 } from './settings.js';
@@ -27,6 +22,11 @@ import {
   stopAudio,
   unlockAudioContext
 } from './audio.js';
+import {
+  createAccountWithEmail,
+  loginWithEmail,
+  logoutUser
+} from './firebaseLeaderboard.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 const REPORT_QUERY_BUTTON_IMAGE = 'Complaints Button.png';
@@ -70,59 +70,6 @@ function hide(el) {
   if (el) el.classList.remove('show');
 }
 
-function ensureUnifiedLeaderboardStyles() {
-  if (document.getElementById('nanaheistUnifiedLeaderboardStyles')) return;
-
-  const style = document.createElement('style');
-  style.id = 'nanaheistUnifiedLeaderboardStyles';
-  style.textContent = `
-    #leaderboardPodium {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin: 14px 0 10px;
-    }
-
-    .leaderboard-podium-card {
-      border-radius: 14px;
-      background: rgba(255,255,255,0.34);
-      border: 1px solid rgba(60, 45, 28, 0.18);
-      padding: 12px 10px;
-      text-align: center;
-      min-height: 112px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .leaderboard-podium-rank {
-      font-size: 22px;
-      font-weight: 700;
-      margin-bottom: 6px;
-    }
-
-    .leaderboard-podium-name {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      word-break: break-word;
-    }
-
-    .leaderboard-podium-total,
-    .leaderboard-podium-best {
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    @media (max-width: 700px) {
-      #leaderboardPodium {
-        grid-template-columns: 1fr;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
 function positionHubCells() {
   Object.entries(hubCellPositions).forEach(([id, pos]) => {
     const el = document.getElementById(id);
@@ -163,7 +110,6 @@ function getHubRefs() {
   return {
     hubScreen: document.getElementById('hubScreen'),
     gameScreen: document.getElementById('gameScreen'),
-    activeProfileBadge: document.getElementById('activeProfileBadge'),
 
     instructionsBtn: document.getElementById('instructionsBtn'),
     instructionsOverlay: document.getElementById('instructionsOverlay'),
@@ -182,13 +128,6 @@ function getHubRefs() {
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
     closeSettingsBtn: document.getElementById('closeSettingsBtn'),
     logoutProfileBtn: document.getElementById('logoutProfileBtn'),
-
-    profileOverlay: document.getElementById('profileOverlay'),
-    profileNameInput: document.getElementById('profileNameInput'),
-    createProfileBtn: document.getElementById('createProfileBtn'),
-    profileErrorText: document.getElementById('profileErrorText'),
-    profileList: document.getElementById('profileList'),
-    profileLoadingText: document.getElementById('profileLoadingText'),
 
     resetBtn: document.getElementById('resetProgressBtn'),
     resetConfirmOverlay: document.getElementById('resetConfirmOverlay'),
@@ -219,6 +158,7 @@ function getHubRefs() {
     leaderboardTableBody: document.getElementById('leaderboardTableBody'),
 
     startHeistBtn: document.getElementById('startHeistBtn'),
+    activeProfileBadge: document.getElementById('activeProfileBadge'),
 
     totalBankedEl: document.getElementById('totalBanked'),
     bestHeistEl: document.getElementById('bestHeist'),
@@ -247,7 +187,18 @@ function getHubRefs() {
       document.getElementById('result3'),
       document.getElementById('result4'),
       document.getElementById('result5')
-    ]
+    ],
+
+    profileOverlay: document.getElementById('profileOverlay'),
+    profileNameInput: document.getElementById('profileNameInput'),
+    signupEmailInput: document.getElementById('signupEmailInput'),
+    signupPasswordInput: document.getElementById('signupPasswordInput'),
+    loginEmailInput: document.getElementById('loginEmailInput'),
+    loginPasswordInput: document.getElementById('loginPasswordInput'),
+    createProfileBtn: document.getElementById('createProfileBtn'),
+    loginProfileBtn: document.getElementById('loginProfileBtn'),
+    profileErrorText: document.getElementById('profileErrorText'),
+    profileLoadingText: document.getElementById('profileLoadingText')
   };
 }
 
@@ -257,11 +208,6 @@ function renderHubStats(refs) {
   refs.bestHeistEl.textContent = formatMoney(save.bestHeist);
   refs.heistsPlayedEl.textContent = String(save.heistsPlayed || 0);
   refs.paintingsStolenEl.textContent = String(save.paintingsStolen || 0);
-
-  if (refs.activeProfileBadge) {
-    const profileName = getActiveProfileName();
-    refs.activeProfileBadge.textContent = profileName ? `Profile: ${profileName}` : 'Not logged in';
-  }
 }
 
 function renderHistory(refs) {
@@ -285,16 +231,76 @@ function refreshHub(refs) {
 }
 
 function renderSettingsForm(refs) {
-  const settings = getSettings();
-  refs.playerNameInput.value = settings.playerName;
+  const settings = loadSettings();
+  const activeName = getActiveProfileName();
+
+  refs.playerNameInput.value = activeName || settings.playerName || '';
   refs.playerNameInput.disabled = true;
+  refs.playerNameInput.title = 'Username is managed by your account login.';
+
   refs.hubVolumeInput.value = String(settings.hubVolume);
   refs.hubVolumeValue.textContent = `${settings.hubVolume}%`;
+
   refs.gameMusicVolumeInput.value = String(settings.gameMusicVolume);
   refs.gameMusicVolumeValue.textContent = `${settings.gameMusicVolume}%`;
+
   refs.voiceVolumeInput.value = String(settings.voiceVolume);
   refs.voiceVolumeValue.textContent = `${settings.voiceVolume}%`;
+
   refs.difficultySelect.value = settings.difficulty;
+}
+
+function ensureUnifiedLeaderboardStyles() {
+  if (document.getElementById('nanaheistUnifiedLeaderboardStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'nanaheistUnifiedLeaderboardStyles';
+  style.textContent = `
+    #leaderboardPodium {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 14px 0 10px;
+    }
+
+    .leaderboard-podium-card {
+      border-radius: 14px;
+      background: rgba(255,255,255,0.34);
+      border: 1px solid rgba(60,45,28,0.18);
+      padding: 12px 10px;
+      text-align: center;
+      min-height: 112px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .leaderboard-podium-rank {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .leaderboard-podium-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      word-break: break-word;
+    }
+
+    .leaderboard-podium-total,
+    .leaderboard-podium-best {
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 700px) {
+      #leaderboardPodium {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 function ensurePodiumContainer(refs) {
@@ -320,16 +326,14 @@ function renderPodium(rows, refs) {
   }
 
   podium.innerHTML = topThree
-    .map((row) => {
-      return `
-        <div class="leaderboard-podium-card">
-          <div class="leaderboard-podium-rank">#${row.rank}</div>
-          <div class="leaderboard-podium-name">${row.name}</div>
-          <div class="leaderboard-podium-total">Total Bank: <strong>${formatMoney(row.totalBanked)}</strong></div>
-          <div class="leaderboard-podium-best">Best Heist: <strong>${formatMoney(row.bestHeist)}</strong></div>
-        </div>
-      `;
-    })
+    .map((row) => `
+      <div class="leaderboard-podium-card">
+        <div class="leaderboard-podium-rank">#${row.rank}</div>
+        <div class="leaderboard-podium-name">${row.name}</div>
+        <div class="leaderboard-podium-total">Total Bank: <strong>${formatMoney(row.totalBanked)}</strong></div>
+        <div class="leaderboard-podium-best">Best Heist: <strong>${formatMoney(row.bestHeist)}</strong></div>
+      </div>
+    `)
     .join('');
 }
 
@@ -358,34 +362,43 @@ async function showUnifiedLeaderboard(refs) {
   renderPodium([], refs);
   show(refs.leaderboardOverlay);
 
-  const rows = await getUnifiedLeaderboardRows();
+  try {
+    const rows = await getUnifiedLeaderboardRows();
 
-  if (!rows.length) {
-    refs.leaderboardStatusText.textContent = 'No leaderboard data yet.';
-    refs.leaderboardTableBody.innerHTML = `
-      <tr>
-        <td class="leaderboard-empty" colspan="4">Nothing has been submitted yet.</td>
-      </tr>
-    `;
-    renderPodium([], refs);
-    return;
-  }
+    if (!rows.length) {
+      refs.leaderboardStatusText.textContent = 'No leaderboard data yet.';
+      refs.leaderboardTableBody.innerHTML = `
+        <tr>
+          <td class="leaderboard-empty" colspan="4">Nothing has been submitted yet.</td>
+        </tr>
+      `;
+      renderPodium([], refs);
+      return;
+    }
 
-  refs.leaderboardStatusText.textContent = '';
-  renderPodium(rows, refs);
+    refs.leaderboardStatusText.textContent = '';
+    renderPodium(rows, refs);
 
-  refs.leaderboardTableBody.innerHTML = rows
-    .map((row) => {
-      return `
+    refs.leaderboardTableBody.innerHTML = rows
+      .map((row) => `
         <tr>
           <td class="leaderboard-rank">${row.rank}</td>
           <td>${row.name}</td>
           <td class="leaderboard-value">${formatMoney(row.totalBanked)}</td>
           <td class="leaderboard-value">${formatMoney(row.bestHeist)}</td>
         </tr>
-      `;
-    })
-    .join('');
+      `)
+      .join('');
+  } catch (err) {
+    console.error('Unified leaderboard failed:', err);
+    refs.leaderboardStatusText.textContent = 'Could not load leaderboard right now.';
+    refs.leaderboardTableBody.innerHTML = `
+      <tr>
+        <td class="leaderboard-empty" colspan="4">Try again in a moment.</td>
+      </tr>
+    `;
+    renderPodium([], refs);
+  }
 }
 
 export function initUI(options = {}) {
@@ -399,6 +412,7 @@ export function initUI(options = {}) {
   let musicUnlocked = false;
   let hubMusicSuppressed = false;
   let startHeistPending = false;
+  let authLoggedIn = false;
   let creatingProfile = false;
 
   ensureUnifiedLeaderboardStyles();
@@ -408,8 +422,14 @@ export function initUI(options = {}) {
   renderSettingsForm(refs);
   applyReportQueryButtonAsset();
 
+  function setProfileError(message = '') {
+    if (!refs.profileErrorText) return;
+    refs.profileErrorText.textContent = message;
+    refs.profileErrorText.style.display = message ? 'block' : 'none';
+  }
+
   function applyHubVolume() {
-    const settings = getSettings();
+    const settings = loadSettings();
     setAudioVolume(hubMusic, getVolumeScale(settings.hubVolume));
   }
 
@@ -426,10 +446,7 @@ export function initUI(options = {}) {
     const hubActive = refs.hubScreen?.classList.contains('active');
     const gameActive = refs.gameScreen?.classList.contains('active');
 
-    if (!musicUnlocked) {
-      pauseHubMusic(true);
-      return;
-    }
+    if (!musicUnlocked) return;
 
     if (!hubActive || gameActive || hubMusicSuppressed || startHeistPending) {
       pauseHubMusic(true);
@@ -437,23 +454,10 @@ export function initUI(options = {}) {
     }
 
     applyHubVolume();
+    unlockAudioContext();
 
     if (hubMusic.paused || hubMusic.ended) {
       safePlayAudio(hubMusic);
-    }
-  }
-
-  function unlockOnly(event) {
-    if (musicUnlocked) return;
-
-    musicUnlocked = true;
-    unlockAudioContext();
-
-    const target = event?.target;
-    const tappedStartHeist = !!target?.closest?.('#startHeistBtn');
-
-    if (!tappedStartHeist) {
-      syncHubMusic();
     }
   }
 
@@ -461,9 +465,11 @@ export function initUI(options = {}) {
     if (!refs.reportQueryBtnImage) return;
 
     refs.reportQueryBtnImage.src = `./${REPORT_QUERY_BUTTON_IMAGE}`;
+
     refs.reportQueryBtnImage.onerror = () => {
       refs.reportQueryBtnImage.style.display = 'none';
     };
+
     refs.reportQueryBtnImage.onload = () => {
       refs.reportQueryBtnImage.style.display = 'block';
     };
@@ -479,7 +485,7 @@ export function initUI(options = {}) {
 
   function continueToContact() {
     if (reportQueryClickSound) {
-      setAudioVolume(reportQueryClickSound, getVolumeScale(getSettings().voiceVolume));
+      setAudioVolume(reportQueryClickSound, getVolumeScale(loadSettings().voiceVolume));
       safeRestartAudio(reportQueryClickSound);
     }
 
@@ -492,89 +498,34 @@ export function initUI(options = {}) {
     }, reportQueryClickSound ? 120 : 0);
   }
 
-  function setProfileError(message = '') {
-    if (refs.profileErrorText) refs.profileErrorText.textContent = message;
-  }
-
-  function renderProfileList() {
-    if (!refs.profileList) return;
-
-    const profiles = listProfiles();
-    refs.profileList.innerHTML = '';
-
-    if (!profiles.length) {
-      refs.profileList.innerHTML = '<div class="profile-empty">No saved profiles on this device yet.</div>';
-      return;
-    }
-
-    profiles.forEach((profile) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'profile-select-btn';
-      btn.innerHTML = `
-        <span class="profile-name">${profile.name}</span>
-        <span class="profile-meta">${formatMoney(profile.totalBanked)} banked · ${profile.heistsPlayed} heists</span>
-      `;
-
-      btn.addEventListener('click', () => {
-        loginToProfile(profile.name);
-        renderSettingsForm(refs);
-        refreshHub(refs);
-        hide(refs.profileOverlay);
-        setProfileError('');
-        syncHubMusic();
-      });
-
-      refs.profileList.appendChild(btn);
-    });
+  function ensureProfileBeforePlay() {
+    if (authLoggedIn && hasActiveProfile()) return true;
+    show(refs.profileOverlay);
+    setProfileError('Log in before starting a heist.');
+    return false;
   }
 
   async function createProfileFromInput() {
     if (creatingProfile) return;
-
     creatingProfile = true;
     setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Creating account...';
 
-    if (refs.profileLoadingText) {
-      refs.profileLoadingText.textContent = 'Checking username...';
-    }
+    const displayName = sanitizePlayerName(refs.profileNameInput.value);
+    const email = String(refs.signupEmailInput?.value || '').trim();
+    const password = String(refs.signupPasswordInput?.value || '');
 
-    const cleanedName = sanitizePlayerName(refs.profileNameInput.value);
+    const result = await createAccountWithEmail({ displayName, email, password });
 
-    if (!cleanedName) {
-      setProfileError('Enter a valid username.');
-      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-      creatingProfile = false;
-      return;
-    }
-
-    if (typeof window.nanaHeistReserveUsername !== 'function') {
-      setProfileError('Username service is not ready. Reload and try again.');
-      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-      creatingProfile = false;
-      return;
-    }
-
-    const reservation = await window.nanaHeistReserveUsername(cleanedName);
-
-    if (!reservation?.ok) {
+    if (!result?.ok) {
       setProfileError(
-        reservation?.reason === 'username_taken'
+        result?.reason === 'username_taken'
           ? 'That username is already taken.'
-          : 'Could not create that profile right now.'
-      );
-      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-      creatingProfile = false;
-      return;
-    }
-
-    const created = createProfile(reservation.displayName);
-
-    if (!created.ok) {
-      setProfileError(
-        created.reason === 'name_taken_local'
-          ? 'That profile already exists on this device.'
-          : 'Could not create that profile.'
+          : result?.reason === 'missing_credentials'
+            ? 'Enter email and password.'
+            : result?.reason === 'invalid_name'
+              ? 'Enter a valid username.'
+              : 'Could not create that account right now.'
       );
       if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
       creatingProfile = false;
@@ -582,28 +533,53 @@ export function initUI(options = {}) {
     }
 
     refs.profileNameInput.value = '';
-    renderProfileList();
-    renderSettingsForm(refs);
-    refreshHub(refs);
-    hide(refs.profileOverlay);
-
+    refs.signupEmailInput.value = '';
+    refs.signupPasswordInput.value = '';
     if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-
     creatingProfile = false;
-    syncHubMusic();
   }
 
-  function ensureProfileBeforePlay() {
-    if (hasActiveProfile()) return true;
+  async function loginFromInput() {
+    if (creatingProfile) return;
+    creatingProfile = true;
+    setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Logging in...';
 
-    renderProfileList();
-    show(refs.profileOverlay);
-    setProfileError('Log in or create a profile before starting a heist.');
-    return false;
+    const email = String(refs.loginEmailInput?.value || '').trim();
+    const password = String(refs.loginPasswordInput?.value || '');
+
+    const result = await loginWithEmail({ email, password });
+
+    if (!result?.ok) {
+      setProfileError('Could not log in with those details.');
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
+
+    refs.loginEmailInput.value = '';
+    refs.loginPasswordInput.value = '';
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+    creatingProfile = false;
   }
 
-  document.addEventListener('pointerdown', unlockOnly, { once: true, capture: true });
-  document.addEventListener('keydown', unlockOnly, { once: true, capture: true });
+  document.addEventListener(
+    'pointerdown',
+    () => {
+      musicUnlocked = true;
+      unlockAudioContext();
+    },
+    { once: true }
+  );
+
+  document.addEventListener(
+    'keydown',
+    () => {
+      musicUnlocked = true;
+      unlockAudioContext();
+    },
+    { once: true }
+  );
 
   const screenObserver = new MutationObserver(() => {
     syncHubMusic();
@@ -630,7 +606,6 @@ export function initUI(options = {}) {
   });
 
   refs.settingsBtn.addEventListener('click', () => {
-    if (!ensureProfileBeforePlay()) return;
     renderSettingsForm(refs);
     show(refs.settingsOverlay);
   });
@@ -654,16 +629,10 @@ export function initUI(options = {}) {
   });
 
   refs.saveSettingsBtn.addEventListener('click', () => {
-    if (!hasActiveProfile()) {
-      hide(refs.settingsOverlay);
-      ensureProfileBeforePlay();
-      return;
-    }
-
-    saveGameSettings({
-      hubVolume: refs.hubVolumeInput.value,
-      gameMusicVolume: refs.gameMusicVolumeInput.value,
-      voiceVolume: refs.voiceVolumeInput.value,
+    saveSettings({
+      hubVolume: Number(refs.hubVolumeInput.value),
+      gameMusicVolume: Number(refs.gameMusicVolumeInput.value),
+      voiceVolume: Number(refs.voiceVolumeInput.value),
       difficulty: refs.difficultySelect.value
     });
 
@@ -673,26 +642,12 @@ export function initUI(options = {}) {
   });
 
   if (refs.logoutProfileBtn) {
-    refs.logoutProfileBtn.addEventListener('click', () => {
+    refs.logoutProfileBtn.addEventListener('click', async () => {
       hide(refs.settingsOverlay);
       pauseHubMusic(true);
-      logoutActiveProfile();
-      renderProfileList();
+      await logoutUser();
       show(refs.profileOverlay);
-      setProfileError('Choose a profile to continue.');
-    });
-  }
-
-  if (refs.createProfileBtn) {
-    refs.createProfileBtn.addEventListener('click', createProfileFromInput);
-  }
-
-  if (refs.profileNameInput) {
-    refs.profileNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        createProfileFromInput();
-      }
+      setProfileError('Logged out.');
     });
   }
 
@@ -718,7 +673,9 @@ export function initUI(options = {}) {
     if (e.target === refs.resetConfirmOverlay) hide(refs.resetConfirmOverlay);
   });
 
-  refs.leaderboardBtn.addEventListener('click', () => showUnifiedLeaderboard(refs));
+  refs.leaderboardBtn.addEventListener('click', () => {
+    showUnifiedLeaderboard(refs);
+  });
 
   if (refs.reportQueryBtn) {
     refs.reportQueryBtn.addEventListener('click', openReportQueryConfirm);
@@ -745,43 +702,59 @@ export function initUI(options = {}) {
 
   if (refs.reportQueryConfirmOverlay) {
     refs.reportQueryConfirmOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.reportQueryConfirmOverlay) closeReportQueryConfirm();
+      if (e.target === refs.reportQueryConfirmOverlay) {
+        closeReportQueryConfirm();
+      }
     });
   }
 
-  refs.closeLeaderboardBtn.addEventListener('click', () => hide(refs.leaderboardOverlay));
-  refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => hide(refs.leaderboardOverlay));
+  refs.closeLeaderboardBtn.addEventListener('click', () => {
+    hide(refs.leaderboardOverlay);
+  });
+
+  refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => {
+    hide(refs.leaderboardOverlay);
+  });
+
   refs.leaderboardOverlay.addEventListener('click', (e) => {
     if (e.target === refs.leaderboardOverlay) hide(refs.leaderboardOverlay);
   });
 
-  if (typeof onStartHeist === 'function') {
-    const handleStartHeist = (e) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+  if (refs.createProfileBtn) {
+    refs.createProfileBtn.addEventListener('click', createProfileFromInput);
+  }
 
-      if (startHeistPending) return;
+  if (refs.loginProfileBtn) {
+    refs.loginProfileBtn.addEventListener('click', loginFromInput);
+  }
+
+  if (typeof onStartHeist === 'function') {
+    const handleStartHeist = () => {
       if (!ensureProfileBeforePlay()) return;
+      if (startHeistPending) return;
 
       startHeistPending = true;
       hubMusicSuppressed = true;
       pauseHubMusic(true);
 
-      requestAnimationFrame(() => {
-        try {
-          onStartHeist();
-        } finally {
-          setTimeout(() => {
-            startHeistPending = false;
-            syncHubMusic();
-          }, 300);
-        }
-      });
+      try {
+        onStartHeist();
+      } finally {
+        setTimeout(() => {
+          startHeistPending = false;
+        }, 300);
+      }
     };
 
-    refs.startHeistBtn.addEventListener('pointerup', handleStartHeist, { passive: false });
+    refs.startHeistBtn.addEventListener('click', handleStartHeist);
+    refs.startHeistBtn.addEventListener(
+      'touchend',
+      (e) => {
+        e.preventDefault();
+        handleStartHeist();
+      },
+      { passive: false }
+    );
   }
 
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
@@ -791,8 +764,32 @@ export function initUI(options = {}) {
     applyHubVolume();
   });
 
-  window.addEventListener('storage', (e) => {
-    if (e.key === SAVE_KEY || e.key === HISTORY_KEY) {
+  window.addEventListener('nanaheist:auth-state', (event) => {
+    const detail = event.detail || {};
+    authLoggedIn = !!detail.loggedIn;
+    const profileName = String(detail.profileName || '');
+
+    if (refs.activeProfileBadge) {
+      refs.activeProfileBadge.textContent = authLoggedIn
+        ? `Profile: ${profileName}`
+        : 'Not logged in';
+    }
+
+    if (refs.profileLoadingText) {
+      refs.profileLoadingText.textContent = detail.loading ? 'Loading account...' : '';
+    }
+
+    if (detail.error) {
+      setProfileError(detail.error);
+    } else if (authLoggedIn) {
+      setProfileError('');
+      hide(refs.profileOverlay);
+      renderSettingsForm(refs);
+      refreshHub(refs);
+      syncHubMusic();
+    } else {
+      show(refs.profileOverlay);
+      renderSettingsForm(refs);
       refreshHub(refs);
     }
   });
@@ -820,15 +817,14 @@ export function initUI(options = {}) {
     window.visualViewport.addEventListener('scroll', updateAppHeightVar);
   }
 
-  renderProfileList();
+  applyHubVolume();
+  renderSettingsForm(refs);
+  refreshHub(refs);
 
   if (!hasActiveProfile()) {
     show(refs.profileOverlay);
-    setProfileError('Create a unique username or choose a saved profile.');
+    setProfileError('Log in or create an account to continue.');
   }
-
-  applyHubVolume();
-  syncHubMusic();
 
   return {
     refreshHub: () => refreshHub(refs),
