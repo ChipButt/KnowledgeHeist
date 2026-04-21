@@ -30,8 +30,8 @@ export function createGameSession(context, deps) {
     document.body.style.touchAction = 'none';
     document.body.style.position = 'fixed';
     document.body.style.inset = '0';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
+    document.body.style.width = '100vw';
+    document.body.style.height = 'var(--app-height)';
   }
 
   function unlockPageFromGame() {
