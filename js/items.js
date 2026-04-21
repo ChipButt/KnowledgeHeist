@@ -43,7 +43,7 @@ const FLOOR_ITEM_SOURCE_DEFAULTS = {
 };
 
 const FLOOR_ITEM_RULES = {
-  blockerTopRatio: 0.5,
+  blockerTopRatio: 0.25,
   grabPaddingWidthRatio: 0.5
 };
 
