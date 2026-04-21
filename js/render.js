@@ -208,7 +208,7 @@ function drawFloorItemSlice(ctx, item, slice) {
     img,
     0,
     0,
-    img.naturalWidth,
+    sourceW,
     sourceTopH,
     drawX,
     drawY,
@@ -277,7 +277,7 @@ function getCurrentGuardImage(guard, assets) {
   }
 
   const runSet = assets.guardRunAnimations[guard.direction] || assets.guardRunAnimations.south;
-  const runFrame = runSet[guard.frameIndex % set.length];
+  const runFrame = runSet[guard.frameIndex % runSet.length];
   return imageReady(runFrame) ? runFrame : null;
 }
 
