@@ -52,24 +52,6 @@ export function recordWrongQuestion(state, questionObj) {
   });
 }
 
-function safePlayOneShot(audio, onFail = null) {
-  if (!audio) {
-    if (typeof onFail === 'function') onFail();
-    return;
-  }
-
-  try {
-    const p = audio.play();
-    if (p && typeof p.catch === 'function') {
-      p.catch(() => {
-        if (typeof onFail === 'function') onFail();
-      });
-    }
-  } catch (_) {
-    if (typeof onFail === 'function') onFail();
-  }
-}
-
 export function playRandomFailVoice(state, assets) {
   if (!state.run) return;
 
@@ -79,7 +61,8 @@ export function playRandomFailVoice(state, assets) {
 
   const file = state.run.failVoicePool.shift();
   const audio = createFailVoiceAudio(file);
-  safePlayOneShot(audio);
+  const p = audio.play();
+  if (p && typeof p.catch === 'function') p.catch(() => {});
 }
 
 export function stopAllGameAudio(assets) {
@@ -90,16 +73,16 @@ export function stopAllGameAudio(assets) {
   stopAudio(assets.chaChingSound);
 }
 
-export function playHeyStopThenSiren(state, assets) {
-  state.audio.sirenStarted = true;
-
+export function playHeyStop(state, assets) {
   try {
     assets.heyStopSound.pause();
     assets.heyStopSound.currentTime = 0;
-  } catch (_) {}
 
-  safePlayOneShot(assets.heyStopSound);
-  safeRestartAudio(assets.sirenSound);
+    const p = assets.heyStopSound.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {});
+    }
+  } catch (_) {}
 }
 
 export function playWithMe(state, assets) {
@@ -280,6 +263,11 @@ export function updatePullAnimation(
 }
 
 export function triggerGuardChase(state, assets, constants, showBanner) {
+  const introMs = Math.max(
+    constants.GUARD_HEY_STOP_MIN_MS || 1500,
+    Math.round((assets.heyStopSound?.duration || 0) * 1000)
+  );
+
   state.guard.active = false;
   state.guard.visible = false;
   state.guard.mode = 'run';
@@ -289,13 +277,14 @@ export function triggerGuardChase(state, assets, constants, showBanner) {
 
   state.player.controlLocked = true;
   state.run.mode = 'guard_intro';
-  state.run.guardIntroRemainingMs = constants.GUARD_TRIGGER_DELAY_MS;
-  state.fx.guardFlashTimer = Math.max(constants.GUARD_FLASH_MS, constants.GUARD_TRIGGER_DELAY_MS + 1200);
+  state.run.guardIntroRemainingMs = introMs;
+  state.fx.guardFlashTimer = 0;
+  state.audio.sirenStarted = false;
   state.audio.withMePlayed = false;
   state.audio.withMeFinished = true;
 
-  playHeyStopThenSiren(state, assets);
-  showBanner('Security triggered!');
+  playHeyStop(state, assets);
+  showBanner('Hey! Stop right there!');
 }
 
 export function triggerHeistEndHomework(state) {
@@ -335,7 +324,6 @@ export function submitAnswer({
     flashWrong(state, constants);
 
     if (state.run.strikes >= 3) {
-      showBanner('Third strike!');
       triggerGuardChase(state, assets, constants, showBanner);
     } else {
       playRandomFailVoice(state, assets);
@@ -366,6 +354,14 @@ export function askQuestionForItem({
   questionTextEl.textContent = `${q.question} (${formatMoney(Number(q.value || 0))})`;
   answerInput.value = '';
   questionModal.classList.remove('hidden');
+
+  setTimeout(() => {
+    try {
+      answerInput.focus({ preventScroll: true });
+    } catch (_) {
+      answerInput.focus();
+    }
+  }, 0);
 
   return true;
 }
