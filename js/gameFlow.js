@@ -79,7 +79,7 @@ export function playHeyStopThenSiren(state, assets) {
   const startSiren = () => {
     if (state.audio.sirenStarted) return;
     state.audio.sirenStarted = true;
-    safeRestartAudio(assets.sirenSound, assets.sirenSound.volume);
+    safeRestartAudio(assets.sirenSound);
   };
 
   try {
@@ -248,7 +248,7 @@ export function finishSuccessfulPull(
 
   updateRunStats();
   showBanner(`Stolen! +${formatMoney(Number(q.value || 0))}`);
-  safeRestartAudio(assets.chaChingSound, assets.chaChingSound.volume);
+  safeRestartAudio(assets.chaChingSound);
 
   state.player.action = null;
   state.player.controlLocked = false;
