@@ -1,6 +1,6 @@
 export const DEBUG = {
-  interaction: true,
-  layoutOverlay: true
+  interaction: false,
+  layoutOverlay: false
 };
 
 function drawRect(ctx, rect, strokeStyle = '#00ff88', lineWidth = 2) {
