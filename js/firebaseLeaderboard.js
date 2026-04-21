@@ -107,11 +107,36 @@ async function loadProfileForUser(user) {
 
 export async function createAccountWithEmail({ displayName, email, password }) {
   const cleanName = sanitizePlayerName(displayName);
-  if (!cleanName) return { ok: false, reason: 'invalid_name' };
-  if (!email || !password) return { ok: false, reason: 'missing_credentials' };
+  const cleanEmail = String(email || '').trim();
+  const cleanPassword = String(password || '');
 
-  const cred = await createUserWithEmailAndPassword(auth, email, password);
-  const user = cred.user;
+  if (!cleanName) return { ok: false, reason: 'invalid_name' };
+  if (!cleanEmail || !cleanPassword) return { ok: false, reason: 'missing_credentials' };
+
+  let user = null;
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPassword);
+    user = cred.user;
+  } catch (err) {
+    console.error('Auth signup failed:', err);
+
+    if (err?.code === 'auth/email-already-in-use') {
+      return { ok: false, reason: 'email_in_use' };
+    }
+    if (err?.code === 'auth/invalid-email') {
+      return { ok: false, reason: 'invalid_email' };
+    }
+    if (err?.code === 'auth/weak-password') {
+      return { ok: false, reason: 'weak_password' };
+    }
+    if (err?.code === 'auth/operation-not-allowed') {
+      return { ok: false, reason: 'email_password_disabled' };
+    }
+
+    return { ok: false, reason: 'create_failed' };
+  }
+
   const nameKey = buildNameKey(cleanName);
 
   try {
@@ -175,21 +200,42 @@ export async function createAccountWithEmail({ displayName, email, password }) {
       await signOut(auth);
       return { ok: false, reason: 'username_taken' };
     }
-    console.error('Account creation failed:', err);
+
+    console.error('Account setup failed:', err);
     await signOut(auth);
-    return { ok: false, reason: 'create_failed' };
+    return { ok: false, reason: 'profile_create_failed' };
   }
 }
 
 export async function loginWithEmail({ email, password }) {
-  if (!email || !password) return { ok: false, reason: 'missing_credentials' };
+  const cleanEmail = String(email || '').trim();
+  const cleanPassword = String(password || '');
+
+  if (!cleanEmail || !cleanPassword) {
+    return { ok: false, reason: 'missing_credentials' };
+  }
 
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
     await loadProfileForUser(cred.user);
     return { ok: true };
   } catch (err) {
     console.error('Login failed:', err);
+
+    if (err?.code === 'auth/invalid-email') {
+      return { ok: false, reason: 'invalid_email' };
+    }
+    if (
+      err?.code === 'auth/invalid-credential' ||
+      err?.code === 'auth/user-not-found' ||
+      err?.code === 'auth/wrong-password'
+    ) {
+      return { ok: false, reason: 'invalid_login' };
+    }
+    if (err?.code === 'auth/operation-not-allowed') {
+      return { ok: false, reason: 'email_password_disabled' };
+    }
+
     return { ok: false, reason: 'login_failed' };
   }
 }
