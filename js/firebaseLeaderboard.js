@@ -1,5 +1,10 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js';
 import {
+  getAuth,
+  onAuthStateChanged,
+  signInAnonymously
+} from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js';
+import {
   getFirestore,
   collection,
   doc,
@@ -25,9 +30,40 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-function buildPlayerKey(displayName) {
+let currentUid = null;
+let anonAuthPromise = null;
+
+onAuthStateChanged(auth, (user) => {
+  if (user?.uid) {
+    currentUid = user.uid;
+  }
+});
+
+async function ensureAnonymousAuth() {
+  if (auth.currentUser?.uid) {
+    currentUid = auth.currentUser.uid;
+    return auth.currentUser;
+  }
+
+  if (!anonAuthPromise) {
+    anonAuthPromise = signInAnonymously(auth)
+      .then((cred) => {
+        currentUid = cred.user.uid;
+        return cred.user;
+      })
+      .catch((err) => {
+        console.error('Anonymous auth failed:', err);
+        return null;
+      });
+  }
+
+  return anonAuthPromise;
+}
+
+function buildNameKey(displayName) {
   return sanitizePlayerName(displayName)
     .toLowerCase()
     .replace(/\s+/g, '-')
@@ -35,8 +71,9 @@ function buildPlayerKey(displayName) {
     .slice(0, 40);
 }
 
-function normaliseRow(data) {
+function normaliseRow(data, docId = '') {
   return {
+    uid: String(data.uid || docId || ''),
     name: sanitizePlayerName(data.displayName || 'Player') || 'Player',
     totalBanked: Number(data.totalBanked || 0),
     bestHeist: Number(data.bestHeist || 0),
@@ -52,7 +89,7 @@ export async function fetchUnifiedLeaderboardRows() {
   const snap = await getDocs(q);
 
   const rows = snap.docs
-    .map((docSnap) => normaliseRow(docSnap.data()))
+    .map((docSnap) => normaliseRow(docSnap.data(), docSnap.id))
     .filter((row) => row.totalBanked > 0 || row.bestHeist > 0);
 
   rows.sort((a, b) => {
@@ -69,23 +106,25 @@ export async function fetchUnifiedLeaderboardRows() {
 }
 
 export async function submitCurrentPlayerLeaderboard() {
+  const user = await ensureAnonymousAuth();
+  if (!user?.uid) return;
+
   const save = loadSave();
   const settings = loadSettings();
 
   const displayName = sanitizePlayerName(settings.playerName);
   if (!displayName) return;
+
   if (
     Number(save.totalBanked || 0) <= 0 &&
     Number(save.bestHeist || 0) <= 0 &&
-    Number(save.heistsPlayed || 0) <= 0
+    Number(save.heistsPlayed || 0) <= 0 &&
+    Number(save.paintingsStolen || 0) <= 0
   ) {
     return;
   }
 
-  const playerKey = buildPlayerKey(displayName);
-  if (!playerKey) return;
-
-  const playerRef = doc(db, 'leaderboard', playerKey);
+  const playerRef = doc(db, 'leaderboard', user.uid);
 
   await runTransaction(db, async (transaction) => {
     const snap = await transaction.get(playerRef);
@@ -94,7 +133,8 @@ export async function submitCurrentPlayerLeaderboard() {
     transaction.set(
       playerRef,
       {
-        playerKey,
+        uid: user.uid,
+        nameKey: buildNameKey(displayName),
         displayName,
         totalBanked: Math.max(Number(prev.totalBanked || 0), Number(save.totalBanked || 0)),
         bestHeist: Math.max(Number(prev.bestHeist || 0), Number(save.bestHeist || 0)),
@@ -121,6 +161,10 @@ export function initFirebaseLeaderboardBridge() {
       });
     }, 350);
   };
+
+  ensureAnonymousAuth().catch((err) => {
+    console.error('Anonymous auth bootstrap failed:', err);
+  });
 
   window.addEventListener('nanaheist:data-updated', scheduleSubmit);
   window.addEventListener('nanaheist:settings-updated', scheduleSubmit);
