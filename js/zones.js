@@ -21,30 +21,31 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
   'item-4': {
     type: 'poly',
     points: [
-      { x: 308, y: 1022 },
-      { x: 369, y: 1022 },
-      { x: 355, y: 1100 },
-      { x: 345, y: 977 }
+      { x: 240, y: 1100 },
+      { x: 450, y: 1100 },
+      { x: 552, y: 926 },
+      { x: 395, y: 908 }
     ]
   },
 
+  /* item-5 and item-6 hitboxes swapped to match the correct images */
   'item-5': {
-    type: 'poly',
-    points: [
-      { x: 2091, y: 725 },
-      { x: 2170, y: 829 },
-      { x: 2110, y: 833 },
-      { x: 2015, y: 703 }
-    ]
-  },
-
-  'item-6': {
     type: 'poly',
     points: [
       { x: 2228, y: 902 },
       { x: 2323, y: 1031 },
       { x: 2237, y: 1031 },
       { x: 2158, y: 910 }
+    ]
+  },
+
+  'item-6': {
+    type: 'poly',
+    points: [
+      { x: 2091, y: 725 },
+      { x: 2170, y: 829 },
+      { x: 2110, y: 833 },
+      { x: 2015, y: 703 }
     ]
   }
 };
