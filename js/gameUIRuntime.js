@@ -2,15 +2,7 @@ import { clearLastHeistWrong, loadSettings } from './storage.js';
 import { formatMoney } from './gameFlow.js';
 import { REVIEW_TAGLINES } from './gameConfig.js';
 
-const QUESTION_KEY_ROWS = [
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '.', ':'],
-  ['SPACE', 'BACK', 'CLEAR', 'SUBMIT']
-];
-
-function shouldUseBuiltInKeyboard() {
+function shouldUseMobileQuestionLayout() {
   return (
     window.matchMedia('(pointer: coarse)').matches ||
     /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -25,24 +17,7 @@ export function createGameUI(context) {
   let questionDeadlineTs = 0;
   let questionRemainingMs = 0;
   let bannerTimer = null;
-  let questionKeyboardEl = null;
-  let questionBodyWrapEl = null;
-
-  function hideFallbackSubmitButton() {
-    if (refs.submitAnswerBtn) {
-      refs.submitAnswerBtn.hidden = true;
-      refs.submitAnswerBtn.style.display = 'none';
-      refs.submitAnswerBtn.setAttribute('aria-hidden', 'true');
-      refs.submitAnswerBtn.tabIndex = -1;
-    }
-
-    if (refs.cancelAnswerBtn) {
-      refs.cancelAnswerBtn.hidden = true;
-      refs.cancelAnswerBtn.style.display = 'none';
-      refs.cancelAnswerBtn.setAttribute('aria-hidden', 'true');
-      refs.cancelAnswerBtn.tabIndex = -1;
-    }
-  }
+  let questionLayoutReady = false;
 
   function getQuestionTimerEl() {
     let el = document.getElementById('questionTimer');
@@ -55,25 +30,37 @@ export function createGameUI(context) {
     return el;
   }
 
-  function ensureQuestionLayoutWrap() {
-    if (questionBodyWrapEl) return questionBodyWrapEl;
+  function ensureQuestionLayoutStructure() {
+    if (questionLayoutReady) return;
 
     const modalCard = refs.questionModal?.querySelector('.modal-card');
-    if (!modalCard) return null;
+    if (!modalCard) return;
 
-    let bodyWrap = modalCard.querySelector('.question-body-wrap');
-    if (bodyWrap) {
-      questionBodyWrapEl = bodyWrap;
-      return bodyWrap;
+    if (modalCard.querySelector('.question-body-wrap')) {
+      questionLayoutReady = true;
+      return;
     }
 
-    bodyWrap = document.createElement('div');
+    const bodyWrap = document.createElement('div');
     bodyWrap.className = 'question-body-wrap';
 
+    const scrollArea = document.createElement('div');
+    scrollArea.className = 'question-scroll-area';
+
+    const answerBar = document.createElement('div');
+    answerBar.className = 'question-answer-bar';
+
     const title = modalCard.querySelector('h2');
-    const questionText = refs.questionTextEl;
-    const questionTimer = getQuestionTimerEl();
-    const answerInput = refs.answerInput;
+    const timerEl = getQuestionTimerEl();
+
+    if (refs.questionTextEl) scrollArea.appendChild(refs.questionTextEl);
+    if (timerEl) scrollArea.appendChild(timerEl);
+
+    if (refs.answerInput) answerBar.appendChild(refs.answerInput);
+    if (refs.submitAnswerBtn) answerBar.appendChild(refs.submitAnswerBtn);
+
+    bodyWrap.appendChild(scrollArea);
+    bodyWrap.appendChild(answerBar);
 
     if (title && title.nextSibling) {
       modalCard.insertBefore(bodyWrap, title.nextSibling);
@@ -81,12 +68,14 @@ export function createGameUI(context) {
       modalCard.appendChild(bodyWrap);
     }
 
-    if (questionText) bodyWrap.appendChild(questionText);
-    if (questionTimer) bodyWrap.appendChild(questionTimer);
-    if (answerInput) bodyWrap.appendChild(answerInput);
+    if (refs.cancelAnswerBtn) {
+      refs.cancelAnswerBtn.hidden = true;
+      refs.cancelAnswerBtn.style.display = 'none';
+      refs.cancelAnswerBtn.setAttribute('aria-hidden', 'true');
+      refs.cancelAnswerBtn.tabIndex = -1;
+    }
 
-    questionBodyWrapEl = bodyWrap;
-    return bodyWrap;
+    questionLayoutReady = true;
   }
 
   function clearQuestionTimerInterval() {
@@ -199,157 +188,88 @@ export function createGameUI(context) {
     return state.confirm.open;
   }
 
-  function triggerSubmit() {
-    refs.submitAnswerBtn?.click();
+  function applyQuestionViewportVars() {
+    if (!refs.questionModal) return;
+
+    const vv = window.visualViewport;
+    const height = vv ? vv.height : window.innerHeight;
+    const offsetTop = vv ? vv.offsetTop : 0;
+
+    refs.questionModal.style.setProperty('--question-visible-height', `${height}px`);
+    refs.questionModal.style.setProperty('--question-offset-top', `${offsetTop}px`);
   }
 
-  function applyKeyboardKey(key) {
-    if (key === 'BACK') {
-      refs.answerInput.value = refs.answerInput.value.slice(0, -1);
-      return;
-    }
+  function resetQuestionViewportVars() {
+    if (!refs.questionModal) return;
 
-    if (key === 'CLEAR') {
-      refs.answerInput.value = '';
-      return;
-    }
-
-    if (key === 'SPACE') {
-      refs.answerInput.value += ' ';
-      return;
-    }
-
-    if (key === 'SUBMIT') {
-      triggerSubmit();
-      return;
-    }
-
-    refs.answerInput.value += key;
-  }
-
-  function ensureQuestionKeyboard() {
-    if (questionKeyboardEl) return questionKeyboardEl;
-
-    ensureQuestionLayoutWrap();
-    hideFallbackSubmitButton();
-
-    const modalCard = refs.questionModal?.querySelector('.modal-card');
-    if (!modalCard) return null;
-
-    let keyboard = document.getElementById('questionKeyboard');
-    if (keyboard) {
-      questionKeyboardEl = keyboard;
-      return keyboard;
-    }
-
-    keyboard = document.createElement('div');
-    keyboard.id = 'questionKeyboard';
-    keyboard.className = 'question-keyboard';
-
-    QUESTION_KEY_ROWS.forEach((rowKeys, rowIndex) => {
-      const row = document.createElement('div');
-      row.className = 'question-keyboard-row';
-
-      if (rowIndex === QUESTION_KEY_ROWS.length - 1) {
-        row.classList.add('question-keyboard-row-bottom');
-        row.style.gridTemplateColumns = '2fr 1fr 1fr 1fr';
-      } else {
-        row.style.gridTemplateColumns = `repeat(${rowKeys.length}, minmax(0, 1fr))`;
-      }
-
-      rowKeys.forEach((key) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'question-key';
-        btn.dataset.key = key;
-        btn.textContent =
-          key === 'SPACE' ? 'Space' :
-          key === 'BACK' ? '⌫' :
-          key === 'CLEAR' ? 'Clear' :
-          key === 'SUBMIT' ? 'Submit' :
-          key;
-
-        if (key === 'SPACE') btn.classList.add('wide');
-        if (key === 'BACK' || key === 'CLEAR' || key === 'SUBMIT') btn.classList.add('action');
-        if (key === 'SUBMIT') btn.classList.add('submit');
-
-        row.appendChild(btn);
-      });
-
-      keyboard.appendChild(row);
-    });
-
-    const handleKeyPress = (e) => {
-      const button = e.target.closest('.question-key');
-      if (!button) return;
-
-      e.preventDefault();
-
-      const key = button.dataset.key;
-      if (!key) return;
-
-      applyKeyboardKey(key);
-    };
-
-    keyboard.addEventListener('pointerdown', handleKeyPress, { passive: false });
-
-    modalCard.appendChild(keyboard);
-
-    questionKeyboardEl = keyboard;
-    return keyboard;
-  }
-
-  function setQuestionKeyboardVisible(visible) {
-    const keyboard = ensureQuestionKeyboard();
-    if (!keyboard) return;
-
-    keyboard.classList.toggle('show', visible);
-    refs.questionModal.classList.toggle('with-built-in-keyboard', visible);
+    refs.questionModal.style.removeProperty('--question-visible-height');
+    refs.questionModal.style.removeProperty('--question-offset-top');
   }
 
   function configureQuestionInputMode() {
-    const builtIn = shouldUseBuiltInKeyboard();
+    ensureQuestionLayoutStructure();
 
-    ensureQuestionLayoutWrap();
-    hideFallbackSubmitButton();
+    const mobileLayout = shouldUseMobileQuestionLayout();
 
-    if (builtIn) {
-      refs.answerInput.readOnly = true;
-      refs.answerInput.setAttribute('readonly', 'readonly');
-      refs.answerInput.setAttribute('inputmode', 'none');
-      refs.answerInput.blur();
-      setQuestionKeyboardVisible(true);
-      return true;
-    }
+    refs.questionModal.classList.toggle('native-mobile-input', mobileLayout);
 
     refs.answerInput.readOnly = false;
     refs.answerInput.removeAttribute('readonly');
     refs.answerInput.setAttribute('inputmode', 'text');
-    setQuestionKeyboardVisible(false);
-    return false;
+    refs.answerInput.setAttribute('autocapitalize', 'off');
+    refs.answerInput.setAttribute('autocomplete', 'off');
+    refs.answerInput.spellcheck = false;
+
+    if (refs.submitAnswerBtn) {
+      refs.submitAnswerBtn.hidden = false;
+      refs.submitAnswerBtn.style.display = '';
+      refs.submitAnswerBtn.textContent = 'Submit';
+    }
+
+    if (mobileLayout) {
+      applyQuestionViewportVars();
+    } else {
+      resetQuestionViewportVars();
+    }
+
+    return mobileLayout;
   }
 
   function activateQuestionInput() {
-    const usingBuiltInKeyboard = configureQuestionInputMode();
+    const mobileLayout = configureQuestionInputMode();
 
-    if (!usingBuiltInKeyboard) {
+    const focusInput = () => {
+      try {
+        refs.answerInput.focus({ preventScroll: true });
+      } catch (_) {
+        refs.answerInput.focus();
+      }
+
       setTimeout(() => {
         try {
-          refs.answerInput.focus({ preventScroll: true });
-        } catch (_) {
-          refs.answerInput.focus();
-        }
-      }, 0);
+          refs.answerInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        } catch (_) {}
+      }, 80);
+    };
+
+    if (mobileLayout) {
+      setTimeout(focusInput, 40);
+      setTimeout(() => {
+        applyQuestionViewportVars();
+        focusInput();
+      }, 250);
+    } else {
+      setTimeout(focusInput, 0);
     }
   }
 
   function closeQuestionModal() {
     refs.questionModal.classList.add('hidden');
-    refs.questionModal.classList.remove('with-built-in-keyboard');
+    refs.questionModal.classList.remove('native-mobile-input');
     state.activeItem = null;
     stopQuestionTimer();
     refs.answerInput.blur();
-    setQuestionKeyboardVisible(false);
+    resetQuestionViewportVars();
   }
 
   function openConfirmPopup({ title, text, onConfirm, onCancel }) {
@@ -417,6 +337,20 @@ export function createGameUI(context) {
       }, 100);
     }
   });
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      if (!refs.questionModal.classList.contains('hidden')) {
+        applyQuestionViewportVars();
+      }
+    });
+
+    window.visualViewport.addEventListener('scroll', () => {
+      if (!refs.questionModal.classList.contains('hidden')) {
+        applyQuestionViewportVars();
+      }
+    });
+  }
 
   return {
     getQuestionTimerEl,
