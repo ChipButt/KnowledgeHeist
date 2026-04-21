@@ -3,7 +3,13 @@ import {
   HISTORY_KEY,
   clearAllProgress,
   loadSave,
-  readHistory
+  readHistory,
+  listProfiles,
+  hasActiveProfile,
+  createProfile,
+  loginToProfile,
+  logoutActiveProfile,
+  getActiveProfileName
 } from './storage.js';
 import { getUnifiedLeaderboardRows } from './leaderboard.js';
 import {
@@ -157,6 +163,7 @@ function getHubRefs() {
   return {
     hubScreen: document.getElementById('hubScreen'),
     gameScreen: document.getElementById('gameScreen'),
+    activeProfileBadge: document.getElementById('activeProfileBadge'),
 
     instructionsBtn: document.getElementById('instructionsBtn'),
     instructionsOverlay: document.getElementById('instructionsOverlay'),
@@ -174,6 +181,14 @@ function getHubRefs() {
     difficultySelect: document.getElementById('difficultySelect'),
     saveSettingsBtn: document.getElementById('saveSettingsBtn'),
     closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+    logoutProfileBtn: document.getElementById('logoutProfileBtn'),
+
+    profileOverlay: document.getElementById('profileOverlay'),
+    profileNameInput: document.getElementById('profileNameInput'),
+    createProfileBtn: document.getElementById('createProfileBtn'),
+    profileErrorText: document.getElementById('profileErrorText'),
+    profileList: document.getElementById('profileList'),
+    profileLoadingText: document.getElementById('profileLoadingText'),
 
     resetBtn: document.getElementById('resetProgressBtn'),
     resetConfirmOverlay: document.getElementById('resetConfirmOverlay'),
@@ -242,6 +257,10 @@ function renderHubStats(refs) {
   refs.bestHeistEl.textContent = formatMoney(save.bestHeist);
   refs.heistsPlayedEl.textContent = String(save.heistsPlayed || 0);
   refs.paintingsStolenEl.textContent = String(save.paintingsStolen || 0);
+  if (refs.activeProfileBadge) {
+    const profileName = getActiveProfileName();
+    refs.activeProfileBadge.textContent = profileName ? `Profile: ${profileName}` : 'Not logged in';
+  }
 }
 
 function renderHistory(refs) {
@@ -267,6 +286,7 @@ function refreshHub(refs) {
 function renderSettingsForm(refs) {
   const settings = getSettings();
   refs.playerNameInput.value = settings.playerName;
+  refs.playerNameInput.disabled = true;
   refs.hubVolumeInput.value = String(settings.hubVolume);
   refs.hubVolumeValue.textContent = `${settings.hubVolume}%`;
   refs.gameMusicVolumeInput.value = String(settings.gameMusicVolume);
@@ -378,6 +398,7 @@ export function initUI(options = {}) {
   let musicUnlocked = false;
   let hubMusicSuppressed = false;
   let startHeistPending = false;
+  let creatingProfile = false;
 
   ensureUnifiedLeaderboardStyles();
   updateAppHeightVar();
@@ -396,28 +417,17 @@ export function initUI(options = {}) {
       stopAudio(hubMusic);
       return;
     }
-
     pauseAudio(hubMusic);
   }
 
   function syncHubMusic() {
     const hubActive = refs.hubScreen?.classList.contains('active');
+    const gameActive = refs.gameScreen?.classList.contains('active');
 
-    if (!hubActive) {
-      pauseHubMusic();
+    if (!musicUnlocked || !hubActive || gameActive || hubMusicSuppressed || startHeistPending) {
+      pauseHubMusic(true);
       return;
     }
-
-    if (hubMusicSuppressed) {
-      if (startHeistPending) {
-        pauseHubMusic();
-        return;
-      }
-
-      hubMusicSuppressed = false;
-    }
-
-    if (!musicUnlocked) return;
 
     applyHubVolume();
     unlockAudioContext();
@@ -427,21 +437,18 @@ export function initUI(options = {}) {
     }
   }
 
-  function unlockHubMusic() {
-    if (hubMusicSuppressed) return;
+  function unlockOnly() {
     musicUnlocked = true;
-    syncHubMusic();
+    unlockAudioContext();
   }
 
   function applyReportQueryButtonAsset() {
     if (!refs.reportQueryBtnImage) return;
 
     refs.reportQueryBtnImage.src = `./${REPORT_QUERY_BUTTON_IMAGE}`;
-
     refs.reportQueryBtnImage.onerror = () => {
       refs.reportQueryBtnImage.style.display = 'none';
     };
-
     refs.reportQueryBtnImage.onload = () => {
       refs.reportQueryBtnImage.style.display = 'block';
     };
@@ -470,25 +477,107 @@ export function initUI(options = {}) {
     }, reportQueryClickSound ? 120 : 0);
   }
 
-  document.addEventListener('pointerdown', unlockHubMusic, { once: true });
-  document.addEventListener('keydown', unlockHubMusic, { once: true });
+  function setProfileError(message = '') {
+    if (refs.profileErrorText) refs.profileErrorText.textContent = message;
+  }
+
+  function renderProfileList() {
+    if (!refs.profileList) return;
+    const profiles = listProfiles();
+    refs.profileList.innerHTML = '';
+
+    if (!profiles.length) {
+      refs.profileList.innerHTML = '<div class="profile-empty">No saved profiles on this device yet.</div>';
+      return;
+    }
+
+    profiles.forEach((profile) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'profile-select-btn';
+      btn.innerHTML = `
+        <span class="profile-name">${profile.name}</span>
+        <span class="profile-meta">${formatMoney(profile.totalBanked)} banked · ${profile.heistsPlayed} heists</span>
+      `;
+      btn.addEventListener('click', () => {
+        loginToProfile(profile.name);
+        renderSettingsForm(refs);
+        refreshHub(refs);
+        hide(refs.profileOverlay);
+        setProfileError('');
+        syncHubMusic();
+      });
+      refs.profileList.appendChild(btn);
+    });
+  }
+
+  async function createProfileFromInput() {
+    if (creatingProfile) return;
+    creatingProfile = true;
+    setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Checking username...';
+
+    const cleanedName = sanitizePlayerName(refs.profileNameInput.value);
+    if (!cleanedName) {
+      setProfileError('Enter a valid username.');
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
+
+    if (typeof window.nanaHeistReserveUsername !== 'function') {
+      setProfileError('Username service is not ready. Reload and try again.');
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
+
+    const reservation = await window.nanaHeistReserveUsername(cleanedName);
+    if (!reservation?.ok) {
+      setProfileError(reservation?.reason === 'username_taken' ? 'That username is already taken.' : 'Could not create that profile right now.');
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
+
+    const created = createProfile(reservation.displayName);
+    if (!created.ok) {
+      setProfileError(created.reason === 'name_taken_local' ? 'That profile already exists on this device.' : 'Could not create that profile.');
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
+
+    refs.profileNameInput.value = '';
+    renderProfileList();
+    renderSettingsForm(refs);
+    refreshHub(refs);
+    hide(refs.profileOverlay);
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+    creatingProfile = false;
+    syncHubMusic();
+  }
+
+  function ensureProfileBeforePlay() {
+    if (hasActiveProfile()) return true;
+    renderProfileList();
+    show(refs.profileOverlay);
+    setProfileError('Log in or create a profile before starting a heist.');
+    return false;
+  }
+
+  document.addEventListener('pointerdown', unlockOnly, { once: true });
+  document.addEventListener('keydown', unlockOnly, { once: true });
 
   const screenObserver = new MutationObserver(() => {
     syncHubMusic();
   });
 
   if (refs.hubScreen) {
-    screenObserver.observe(refs.hubScreen, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
+    screenObserver.observe(refs.hubScreen, { attributes: true, attributeFilter: ['class'] });
   }
-
   if (refs.gameScreen) {
-    screenObserver.observe(refs.gameScreen, {
-      attributes: true,
-      attributeFilter: ['class']
-    });
+    screenObserver.observe(refs.gameScreen, { attributes: true, attributeFilter: ['class'] });
   }
 
   refs.instructionsBtn.addEventListener('click', () => show(refs.instructionsOverlay));
@@ -498,12 +587,12 @@ export function initUI(options = {}) {
   });
 
   refs.settingsBtn.addEventListener('click', () => {
+    if (!ensureProfileBeforePlay()) return;
     renderSettingsForm(refs);
     show(refs.settingsOverlay);
   });
 
   refs.closeSettingsBtn.addEventListener('click', () => hide(refs.settingsOverlay));
-
   refs.settingsOverlay.addEventListener('click', (e) => {
     if (e.target === refs.settingsOverlay) hide(refs.settingsOverlay);
   });
@@ -512,20 +601,21 @@ export function initUI(options = {}) {
     refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
     setAudioVolume(hubMusic, getVolumeScale(refs.hubVolumeInput.value));
   });
-
   refs.gameMusicVolumeInput.addEventListener('input', () => {
     refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
   });
-
   refs.voiceVolumeInput.addEventListener('input', () => {
     refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
   });
 
   refs.saveSettingsBtn.addEventListener('click', () => {
-    const cleanedName = sanitizePlayerName(refs.playerNameInput.value);
+    if (!hasActiveProfile()) {
+      hide(refs.settingsOverlay);
+      ensureProfileBeforePlay();
+      return;
+    }
 
     saveGameSettings({
-      playerName: cleanedName,
       hubVolume: refs.hubVolumeInput.value,
       gameMusicVolume: refs.gameMusicVolumeInput.value,
       voiceVolume: refs.voiceVolumeInput.value,
@@ -537,42 +627,51 @@ export function initUI(options = {}) {
     hide(refs.settingsOverlay);
   });
 
-  refs.resetBtn.addEventListener(
-    'click',
-    (e) => {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      show(refs.resetConfirmOverlay);
-    },
-    true
-  );
+  if (refs.logoutProfileBtn) {
+    refs.logoutProfileBtn.addEventListener('click', () => {
+      hide(refs.settingsOverlay);
+      pauseHubMusic(true);
+      logoutActiveProfile();
+      renderProfileList();
+      show(refs.profileOverlay);
+      setProfileError('Choose a profile to continue.');
+    });
+  }
+
+  if (refs.createProfileBtn) refs.createProfileBtn.addEventListener('click', createProfileFromInput);
+  if (refs.profileNameInput) {
+    refs.profileNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        createProfileFromInput();
+      }
+    });
+  }
+
+  refs.resetBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    show(refs.resetConfirmOverlay);
+  }, true);
 
   refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
-
   refs.confirmResetBtn.addEventListener('click', () => {
     pauseHubMusic(true);
     clearAllProgress();
     location.reload();
   });
-
   refs.resetConfirmOverlay.addEventListener('click', (e) => {
     if (e.target === refs.resetConfirmOverlay) hide(refs.resetConfirmOverlay);
   });
 
-  refs.leaderboardBtn.addEventListener('click', () => {
-    showUnifiedLeaderboard(refs);
-  });
+  refs.leaderboardBtn.addEventListener('click', () => showUnifiedLeaderboard(refs));
 
   if (refs.reportQueryBtn) {
     refs.reportQueryBtn.addEventListener('click', openReportQueryConfirm);
-    refs.reportQueryBtn.addEventListener(
-      'touchend',
-      (e) => {
-        e.preventDefault();
-        openReportQueryConfirm();
-      },
-      { passive: false }
-    );
+    refs.reportQueryBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      openReportQueryConfirm();
+    }, { passive: false });
   }
 
   if (refs.reportQueryConfirmYesBtn) {
@@ -581,27 +680,15 @@ export function initUI(options = {}) {
       continueToContact();
     });
   }
-
-  if (refs.reportQueryConfirmNoBtn) {
-    refs.reportQueryConfirmNoBtn.addEventListener('click', closeReportQueryConfirm);
-  }
-
+  if (refs.reportQueryConfirmNoBtn) refs.reportQueryConfirmNoBtn.addEventListener('click', closeReportQueryConfirm);
   if (refs.reportQueryConfirmOverlay) {
     refs.reportQueryConfirmOverlay.addEventListener('click', (e) => {
-      if (e.target === refs.reportQueryConfirmOverlay) {
-        closeReportQueryConfirm();
-      }
+      if (e.target === refs.reportQueryConfirmOverlay) closeReportQueryConfirm();
     });
   }
 
-  refs.closeLeaderboardBtn.addEventListener('click', () => {
-    hide(refs.leaderboardOverlay);
-  });
-
-  refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => {
-    hide(refs.leaderboardOverlay);
-  });
-
+  refs.closeLeaderboardBtn.addEventListener('click', () => hide(refs.leaderboardOverlay));
+  refs.closeLeaderboardFromBoardBtn.addEventListener('click', () => hide(refs.leaderboardOverlay));
   refs.leaderboardOverlay.addEventListener('click', (e) => {
     if (e.target === refs.leaderboardOverlay) hide(refs.leaderboardOverlay);
   });
@@ -609,6 +696,8 @@ export function initUI(options = {}) {
   if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
       if (startHeistPending) return;
+      if (!ensureProfileBeforePlay()) return;
+
       startHeistPending = true;
       hubMusicSuppressed = true;
       pauseHubMusic(true);
@@ -618,33 +707,25 @@ export function initUI(options = {}) {
       } finally {
         setTimeout(() => {
           startHeistPending = false;
+          syncHubMusic();
         }, 300);
       }
     };
 
     refs.startHeistBtn.addEventListener('click', handleStartHeist);
-
-    refs.startHeistBtn.addEventListener(
-      'touchend',
-      (e) => {
-        e.preventDefault();
-        handleStartHeist();
-      },
-      { passive: false }
-    );
+    refs.startHeistBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      handleStartHeist();
+    }, { passive: false });
   }
 
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
-
   window.addEventListener('nanaheist:settings-updated', () => {
     renderSettingsForm(refs);
     applyHubVolume();
   });
-
   window.addEventListener('storage', (e) => {
-    if (e.key === SAVE_KEY || e.key === HISTORY_KEY) {
-      refreshHub(refs);
-    }
+    if (e.key === SAVE_KEY || e.key === HISTORY_KEY) refreshHub(refs);
   });
 
   window.addEventListener('focus', () => {
@@ -652,22 +733,25 @@ export function initUI(options = {}) {
     refreshHub(refs);
     syncHubMusic();
   });
-
   window.addEventListener('resize', () => {
     updateAppHeightVar();
     positionHubCells();
   });
-
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
       updateAppHeightVar();
       positionHubCells();
     }, 100);
   });
-
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', updateAppHeightVar);
     window.visualViewport.addEventListener('scroll', updateAppHeightVar);
+  }
+
+  renderProfileList();
+  if (!hasActiveProfile()) {
+    show(refs.profileOverlay);
+    setProfileError('Create a unique username or choose a saved profile.');
   }
 
   applyHubVolume();
