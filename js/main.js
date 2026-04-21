@@ -1,33 +1,1034 @@
-import { initUI } from './ui.js';
-import { initGame } from './game.js';
-import { initFirebaseLeaderboardBridge } from './firebaseLeaderboard.js';
-
-let gameInstance = null;
-
-try {
-  initFirebaseLeaderboardBridge();
-} catch (err) {
-  console.error('Firebase leaderboard init failed:', err);
+:root {
+  --bg: #0f1217;
+  --gold: #d8b15a;
+  --text: #f3efe5;
+  --hub-font: Georgia, "Times New Roman", Garamond, serif;
+  --ui-font: Arial, Helvetica, sans-serif;
+  --title-brown-light: #b59662;
+  --title-brown-mid: #9a7a4b;
+  --title-brown-dark: #4f311a;
+  --app-height: 100vh;
 }
 
-try {
-  initUI({
-    onStartHeist: () => {
-      if (gameInstance && typeof gameInstance.startHeist === 'function') {
-        gameInstance.startHeist();
-        return;
-      }
-
-      console.error('Game is not available yet.');
-      alert('The game failed to load. Open the browser console to see the error.');
-    }
-  });
-} catch (err) {
-  console.error('UI init failed:', err);
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
-try {
-  gameInstance = initGame();
-} catch (err) {
-  console.error('Game boot failed:', err);
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--ui-font);
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+body.orientation-blocked {
+  overflow: hidden;
+  touch-action: none;
+}
+
+body.game-active {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.screen {
+  display: none;
+  width: 100%;
+  min-height: var(--app-height);
+}
+
+.screen.active {
+  display: flex;
+}
+
+.rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 10, 14, 0.96);
+  text-align: center;
+}
+
+.rotate-overlay.hidden {
+  display: none;
+}
+
+.rotate-card {
+  width: min(420px, 92vw);
+  padding: 28px 24px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #1b212b 0%, #131821 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+}
+
+.rotate-icon {
+  font-size: 48px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.rotate-card h2 {
+  margin: 0 0 10px;
+  font-size: clamp(24px, 5vw, 32px);
+}
+
+.rotate-card p {
+  margin: 0;
+  font-size: clamp(15px, 3.5vw, 18px);
+  line-height: 1.45;
+  color: #d9dfeb;
+}
+
+/* HUB */
+
+#hubScreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: var(--app-height);
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: #0e1116;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+#hubScreen.active {
+  display: flex;
+}
+
+.hub-wrap {
+  width: min(100vw, calc(var(--app-height) * 1024 / 559));
+  height: min(var(--app-height), calc(100vw * 559 / 1024));
+  aspect-ratio: 1024 / 559;
+  position: relative;
+  background-image: url("../Menu Screen.png");
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 0;
+  overflow: hidden;
+  box-shadow: none;
+  user-select: none;
+  font-family: var(--hub-font);
+}
+
+.hub-wrap::before,
+.hub-wrap::after {
+  pointer-events: none;
+}
+
+.hub-value,
+.hub-label,
+.hub-hotspot,
+.hub-log-cell,
+.hub-ui-button {
+  position: absolute;
+}
+
+.hub-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #f5f2df;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.95),
+    0 0 4px rgba(0, 0, 0, 0.25);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: none;
+  letter-spacing: 0.2px;
+}
+
+.hub-money {
+  font-size: clamp(17px, 1.7vw, 24px);
+}
+
+.hub-number {
+  font-size: clamp(18px, 1.75vw, 25px);
+}
+
+.hub-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #2c1c0f;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.22);
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1;
+  pointer-events: none;
+  font-size: clamp(8px, 0.8vw, 12px);
+  letter-spacing: 0.15px;
+}
+
+#totalBanked {
+  left: 7.13%;
+  top: 27.91%;
+  width: 13.09%;
+  height: 4.29%;
+  font-size: clamp(14px, 1.2vw, 18px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#bestHeist {
+  left: 8.98%;
+  top: 62.25%;
+  width: 9.77%;
+  height: 3.22%;
+  font-size: clamp(13px, 1.15vw, 17px);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#heistsPlayedLabel {
+  left: 79.2%;
+  top: 53.85%;
+  width: 10.84%;
+  height: 2.68%;
+}
+
+#heistsPlayed {
+  left: 82.03%;
+  top: 61.9%;
+  width: 5.86%;
+  height: 4%;
+  overflow: visible;
+  line-height: 1.1;
+  padding-bottom: 2px;
+}
+
+#paintingsStolenLabel {
+  left: 79.39%;
+  top: 72.27%;
+  width: 10.45%;
+  height: 2.86%;
+}
+
+#paintingsStolen {
+  left: 81.84%;
+  top: 80.36%;
+  width: 5.86%;
+  height: 3.58%;
+}
+
+.image-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  display: block;
+  cursor: pointer;
+  z-index: 100;
+  overflow: hidden;
+  box-shadow: none;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.image-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  object-position: center;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  pointer-events: none;
+}
+
+.image-button:hover img {
+  filter: brightness(1.05);
+}
+
+.image-button:active img {
+  transform: translateY(1px);
+}
+
+.image-button:focus-visible {
+  outline: 2px solid #fff6b3;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+#startHeistBtn {
+  left: 27.05%;
+  top: 68.69%;
+  width: 8.79%;
+  height: 13.77%;
+  transform: none;
+}
+
+#instructionsBtn {
+  left: 49.53%;
+  top: 56.35%;
+  width: 4.59%;
+  height: 7.51%;
+  transform: none;
+}
+
+#leaderboardBtn {
+  left: 52.54%;
+  top: 67.62%;
+  width: 6.84%;
+  height: 6.62%;
+  transform: none;
+}
+
+#settingsBtn {
+  left: 44.82%;
+  top: 94.45%;
+  width: 10.25%;
+  height: 4.47%;
+  transform: none;
+}
+
+#resetProgressBtn {
+  left: 64.45%;
+  top: 85.51%;
+  width: 7.23%;
+  height: 6.8%;
+  border: none;
+  background: transparent;
+  opacity: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  z-index: 101;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+#resetProgressBtn:focus-visible,
+.image-button:focus-visible {
+  outline: 2px solid #fff6b3;
+  outline-offset: 2px;
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hub-log-cell {
+  transform: translate(-50%, -50%);
+  color: #3a2c1f;
+  font-size: clamp(8px, 0.8vw, 12px);
+  line-height: 1;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+  font-family: var(--hub-font);
+}
+
+.hub-log-cell.result.success {
+  color: #3f7e3a;
+  font-weight: 700;
+}
+
+.hub-log-cell.result.fail {
+  color: #9a3f3f;
+  font-weight: 700;
+}
+
+/* POPUPS */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.56);
+  z-index: 10000;
+}
+
+.overlay.show {
+  display: flex;
+}
+
+.popup-panel {
+  width: min(760px, 94vw);
+  max-height: 84vh;
+  overflow: auto;
+  border-radius: 18px;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.45);
+}
+
+.instructions-panel {
+  background: linear-gradient(180deg, #efe6d2 0%, #e1d2b0 100%);
+  color: #2f2519;
+  border: 12px solid #6d5539;
+  padding: 22px 24px 20px;
+  text-align: center;
+  font-family: var(--hub-font);
+}
+
+.instructions-panel h2,
+.confirm-panel h2,
+.settings-panel h2 {
+  margin: 0 0 10px;
+  font-size: clamp(22px, 2.5vw, 34px);
+}
+
+.instructions-panel .instructions-copy {
+  font-size: clamp(15px, 1.5vw, 20px);
+  line-height: 1.55;
+  white-space: pre-line;
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.popup-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.popup-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #2c394c;
+  color: #f2ede1;
+  font-family: var(--ui-font);
+}
+
+.popup-actions .danger {
+  background: #9f3939;
+}
+
+.confirm-panel,
+.settings-panel {
+  background: linear-gradient(180deg, #ece2cd 0%, #ddceb1 100%);
+  color: #2f2519;
+  border: 12px solid #6d5539;
+  padding: 22px 24px 20px;
+  text-align: center;
+  font-family: var(--hub-font);
+}
+
+.confirm-panel p {
+  margin: 0;
+  font-size: clamp(15px, 1.5vw, 20px);
+  line-height: 1.5;
+}
+
+.settings-grid {
+  display: grid;
+  gap: 14px;
+  margin-top: 10px;
+  text-align: left;
+}
+
+.settings-field {
+  display: grid;
+  gap: 8px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+}
+
+.settings-field input[type="text"],
+.settings-field select,
+.settings-field input[type="range"] {
+  width: 100%;
+}
+
+.settings-field input[type="text"],
+.settings-field select {
+  border-radius: 10px;
+  border: 2px solid #b8ab94;
+  background: #fffdf7;
+  padding: 10px 12px;
+  font-size: 15px;
+}
+
+/* GAME */
+
+#gameScreen {
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  background: #090c12;
+  font-family: var(--ui-font);
+  overflow: hidden;
+  width: 100vw;
+  height: var(--app-height);
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.game-topbar {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.game-topbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 150px);
+}
+
+.game-chip,
+.game-topbar button {
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 9px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.game-chip {
+  background: rgba(42, 49, 64, 0.92);
+  color: #f4efe3;
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.26);
+}
+
+.game-topbar button {
+  pointer-events: auto;
+}
+
+#backToHubBtn {
+  background: linear-gradient(180deg, #e1bf6d 0%, #c7922f 100%);
+  color: #1c150a;
+  border: 1px solid rgba(80, 54, 13, 0.45);
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18),
+    0 6px 14px rgba(0, 0, 0, 0.28);
+}
+
+.game-shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  border: none;
+  background: #101722;
+  box-shadow: none;
+  touch-action: none;
+}
+
+#gameCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #111;
+  touch-action: none;
+}
+
+.game-controls {
+  display: none;
+}
+
+#gameBanner {
+  position: fixed;
+  top: max(18px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 22, 29, 0.92);
+  color: #f8f1db;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  z-index: 9000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  font-family: var(--ui-font);
+}
+
+#gameBanner.show {
+  opacity: 1;
+}
+
+#questionModal,
+#summaryOverlay,
+#confirmChoiceOverlay,
+#homeworkOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0, 0, 0, 0.58);
+  font-family: var(--ui-font);
+}
+
+#questionModal.hidden,
+#summaryOverlay.hidden,
+#confirmChoiceOverlay.hidden,
+#homeworkOverlay.hidden {
+  display: none;
+}
+
+.modal-card,
+#confirmChoiceCard,
+#homeworkBoard {
+  width: min(620px, 94vw);
+  background: #f0e6d0;
+  color: #241c14;
+  border-radius: 16px;
+  border: 8px solid #77593c;
+  padding: 18px;
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.42);
+}
+
+#homeworkBoard {
+  background: linear-gradient(180deg, #1f3b2b 0%, #14261c 100%);
+  color: #f2f5ef;
+  border: 12px solid #6f5437;
+  max-height: min(82vh, 700px);
+  overflow: auto;
+}
+
+.modal-card h2,
+#confirmChoiceTitle,
+#homeworkTitle {
+  margin: 0 0 12px;
+  font-size: 24px;
+  text-align: center;
+}
+
+#questionText,
+#summaryTitle,
+#summarySubtitle,
+#confirmChoiceText {
+  text-align: center;
+  line-height: 1.45;
+}
+
+#questionTimer {
+  display: none;
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 700;
+  color: #6a231c;
+}
+
+#questionTimer.show {
+  display: block;
+}
+
+#answerInput {
+  width: 100%;
+  margin-top: 14px;
+  border-radius: 12px;
+  border: 2px solid #b8ab94;
+  background: #fffdf7;
+  padding: 12px 14px;
+  font-size: 16px;
+}
+
+#leaderboardStatusText {
+  margin-top: 10px;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+#leaderboardTableWrap {
+  margin-top: 12px;
+  max-height: 44vh;
+  overflow: auto;
+  border: 1px solid rgba(60, 45, 28, 0.18);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.34);
+}
+
+#leaderboardTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: #241c14;
+}
+
+#leaderboardTable thead th {
+  position: sticky;
+  top: 0;
+  background: #ddceb1;
+  z-index: 1;
+}
+
+#leaderboardTable th,
+#leaderboardTable td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(60, 45, 28, 0.14);
+  text-align: left;
+  vertical-align: top;
+}
+
+#leaderboardTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+#leaderboardTable .leaderboard-value {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+#leaderboardTable .leaderboard-rank {
+  font-weight: 700;
+  width: 52px;
+  white-space: nowrap;
+}
+
+#leaderboardTable .leaderboard-empty {
+  text-align: center;
+  font-style: italic;
+  color: #4d4337;
+}
+
+#homeworkBoard .chalk-sub {
+  text-align: center;
+  margin-bottom: 18px;
+  font-size: 17px;
+  color: #d9e8dd;
+}
+
+#homeworkList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+}
+
+.homework-item {
+  border-top: 1px dashed rgba(240, 255, 240, 0.26);
+  padding-top: 12px;
+  text-align: center;
+}
+
+.homework-question {
+  font-size: 17px;
+  line-height: 1.35;
+  color: #ffffff;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.homework-answer {
+  font-size: 16px;
+  line-height: 1.3;
+  color: #d6f2d2;
+  text-align: center;
+}
+
+.homework-close {
+  display: block;
+  margin: 18px auto 0;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #283545;
+  color: #f3ede2;
+}
+
+.modal-actions,
+#confirmChoiceActions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.modal-actions button,
+#confirmChoiceActions button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #283545;
+  color: #f3ede2;
+}
+
+@media (max-width: 900px) {
+  #totalBanked {
+    font-size: clamp(11px, 1.8vw, 15px);
+  }
+
+  #bestHeist {
+    font-size: clamp(10px, 1.7vw, 14px);
+  }
+
+  #heistsPlayedLabel,
+  #paintingsStolenLabel {
+    font-size: clamp(7px, 1vw, 10px);
+  }
+
+  #heistsPlayed,
+  #paintingsStolen {
+    font-size: clamp(14px, 2vw, 20px);
+    line-height: 1;
+    padding-bottom: 0;
+  }
+
+  .hub-log-cell {
+    font-size: clamp(6px, 0.8vw, 9px);
+  }
+
+  .game-topbar {
+    top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left));
+    right: max(8px, env(safe-area-inset-right));
+    gap: 8px;
+  }
+
+  .game-topbar-left {
+    gap: 6px;
+    max-width: calc(100% - 128px);
+  }
+
+  .game-chip,
+  .game-topbar button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  #backToHubBtn {
+    min-width: 116px;
+  }
+}
+
+@media (max-width: 600px) {
+  #totalBanked {
+    font-size: clamp(8px, 1.5vw, 11px);
+  }
+
+  #bestHeist {
+    font-size: clamp(7px, 1.35vw, 10px);
+  }
+
+  #heistsPlayedLabel,
+  #paintingsStolenLabel {
+    font-size: clamp(5px, 0.7vw, 7px);
+  }
+
+  #heistsPlayed,
+  #paintingsStolen {
+    font-size: clamp(10px, 1.5vw, 14px);
+  }
+
+  .hub-log-cell {
+    font-size: clamp(4px, 0.6vw, 6px);
+  }
+
+  .game-topbar {
+    top: max(6px, env(safe-area-inset-top));
+    left: max(6px, env(safe-area-inset-left));
+    right: max(6px, env(safe-area-inset-right));
+    gap: 6px;
+  }
+
+  .game-topbar-left {
+    gap: 5px;
+    max-width: calc(100% - 110px);
+  }
+
+  .game-chip,
+  .game-topbar button {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  #backToHubBtn {
+    min-width: 102px;
+  }
+}
+
+/* QUESTION MODAL / BUILT-IN KEYBOARD */
+
+#submitAnswerBtn,
+#cancelAnswerBtn {
+  display: none !important;
+}
+
+#questionModal {
+  align-items: flex-start;
+  overflow: hidden;
+  padding: 0;
+}
+
+#questionModal .modal-card {
+  margin: auto;
+  max-height: min(92vh, 760px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.question-body-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+#questionModal.with-built-in-keyboard .modal-card {
+  width: 100vw;
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100dvh;
+  border-radius: 0;
+  border-width: 0;
+  padding: max(8px, env(safe-area-inset-top)) 10px max(8px, env(safe-area-inset-bottom));
+}
+
+#questionModal.with-built-in-keyboard h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  flex: 0 0 auto;
+}
+
+#questionModal.with-built-in-keyboard .question-body-wrap {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+}
+
+#questionModal.with-built-in-keyboard #questionText {
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+#questionModal.with-built-in-keyboard #answerInput {
+  margin-top: 6px;
+  font-size: 18px;
+  padding: 12px 14px;
+  letter-spacing: 0.03em;
+  flex: 0 0 auto;
+}
+
+#questionKeyboard {
+  display: none;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  flex: 0 0 auto;
+}
+
+#questionKeyboard.show {
+  display: flex;
+}
+
+.question-keyboard-row {
+  display: grid;
+  gap: 6px;
+}
+
+.question-keyboard-row-bottom {
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+}
+
+.question-key {
+  border: none;
+  border-radius: 10px;
+  min-height: 36px;
+  padding: 6px 4px;
+  background: #283545;
+  color: #f3ede2;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.question-key.action {
+  background: #4a2f1b;
+}
+
+.question-key.submit {
+  background: #2f5d35;
+}
+
+.question-key.wide {
+  font-size: 13px;
+}
+
+.question-key:active {
+  transform: translateY(1px);
+}
+
+@media (pointer: coarse) {
+  #questionModal.with-built-in-keyboard .modal-card {
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+  }
+
+  #questionModal.with-built-in-keyboard #answerInput {
+    font-size: 18px;
+    padding: 12px 14px;
+  }
+
+  .question-key {
+    min-height: 34px;
+    font-size: 12px;
+  }
 }
