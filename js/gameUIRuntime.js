@@ -234,6 +234,44 @@ export function createGameUI(context) {
     }, 60);
   }
 
+  function activateQuestionInput() {
+    if (refs.questionModal.classList.contains('hidden')) return;
+
+    ensureQuestionLayoutStructure();
+    syncQuestionModalLayout();
+
+    const focusInput = () => {
+      try {
+        refs.answerInput.focus({ preventScroll: true });
+      } catch (_) {
+        refs.answerInput.focus();
+      }
+
+      nudgeQuestionInputIntoView();
+    };
+
+    focusInput();
+    requestAnimationFrame(() => {
+      syncQuestionModalLayout();
+      focusInput();
+
+      requestAnimationFrame(() => {
+        syncQuestionModalLayout();
+        nudgeQuestionInputIntoView();
+      });
+    });
+
+    setTimeout(() => {
+      syncQuestionModalLayout();
+      nudgeQuestionInputIntoView();
+    }, 250);
+
+    setTimeout(() => {
+      syncQuestionModalLayout();
+      nudgeQuestionInputIntoView();
+    }, 500);
+  }
+
   function closeQuestionModal() {
     refs.questionModal.classList.add('hidden');
     refs.questionModal.classList.remove('native-mobile-input');
@@ -351,6 +389,7 @@ export function createGameUI(context) {
     updateRunStats,
     updateHubSave,
     isConfirmPopupOpen,
+    activateQuestionInput,
     closeQuestionModal,
     openConfirmPopup,
     closeConfirmPopup,
