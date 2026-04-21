@@ -22,8 +22,8 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
     type: 'poly',
     points: [
       { x: 240, y: 1100 },
-      { x: 450, y: 1100 },
-      { x: 552, y: 926 },
+      { x: 395, y: 1100 },
+      { x: 529, y: 926 },
       { x: 395, y: 908 }
     ]
   },
