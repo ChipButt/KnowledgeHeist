@@ -240,7 +240,7 @@ export function createGameUI(context) {
     }, 60);
   }
 
-  function activateQuestionInput() {
+    function activateQuestionInput() {
     if (refs.questionModal.classList.contains('hidden')) return;
 
     ensureQuestionLayoutStructure();
@@ -260,10 +260,20 @@ export function createGameUI(context) {
       syncQuestionModalLayout();
       focusInput();
 
+      requestAnimationFrame(() => {
+        syncQuestionModalLayout();
+        nudgeQuestionInputIntoView();
+      });
+
       setTimeout(() => {
         syncQuestionModalLayout();
         focusInput();
       }, 220);
+
+      setTimeout(() => {
+        syncQuestionModalLayout();
+        focusInput();
+      }, 450);
     });
   }
 
@@ -336,10 +346,11 @@ export function createGameUI(context) {
   refs.answerInput.setAttribute('spellcheck', 'false');
   refs.answerInput.setAttribute('enterkeyhint', 'done');
 
-  refs.answerInput.addEventListener('focus', () => {
+    refs.answerInput.addEventListener('focus', () => {
     syncQuestionModalLayout();
     nudgeQuestionInputIntoView();
     setTimeout(nudgeQuestionInputIntoView, 250);
+    setTimeout(nudgeQuestionInputIntoView, 500);
   });
 
   refs.answerInput.addEventListener('click', () => {
