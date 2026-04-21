@@ -12,9 +12,20 @@ import {
   getVolumeScale,
   sanitizePlayerName
 } from './settings.js';
-import { createAudio, setAudioVolume, stopAudio, unlockAudioContext } from './audio.js';
+import {
+  createAudio,
+  safePlayAudio,
+  safeRestartAudio,
+  setAudioVolume,
+  stopAudio,
+  unlockAudioContext
+} from './audio.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
+const REPORT_QUERY_BUTTON_IMAGE = 'Complaints Button.png';
+const REPORT_QUERY_CLICK_SOUND_FILE = 'SHOTGUN Cock.wav';
+const REPORT_QUERY_EMAIL = 'jameschipbutt@hotmail.com';
+const REPORT_QUERY_WHATSAPP_URL = 'https://wa.me/447919248524';
 
 const hubCellPositions = {
   date1: { x: 80.18, y: 23.43 },
@@ -36,7 +47,8 @@ const hubCellPositions = {
   result5: { x: 91.8, y: 35.96 },
 
   instructionsBtn: { x: 59.08203125, y: 44.3649373881932, w: 7.12890625, h: 9.66010733452594 },
-  leaderboardBtn: { x: 74.4140625, y: 58.318425760286225, w: 20.41015625, h: 10.01788908765653 }
+  leaderboardBtn: { x: 74.4140625, y: 58.318425760286225, w: 20.41015625, h: 10.01788908765653 },
+  reportQueryBtn: { x: 78.125, y: 78.71198568872988, w: 12.98828125, h: 8.050089445438283 }
 };
 
 function formatMoney(pence) {
@@ -123,7 +135,16 @@ function positionHubCells() {
 }
 
 function updateAppHeightVar() {
-  const appHeight = window.innerHeight;
+  const appHeight = Math.max(
+    1,
+    Math.round(
+      window.visualViewport?.height ||
+      window.innerHeight ||
+      document.documentElement.clientHeight ||
+      0
+    )
+  );
+
   document.documentElement.style.setProperty('--app-height', `${appHeight}px`);
 }
 
@@ -159,6 +180,9 @@ function getHubRefs() {
     cancelResetBtn: document.getElementById('cancelResetBtn'),
 
     leaderboardBtn: document.getElementById('leaderboardBtn'),
+    reportQueryBtn: document.getElementById('reportQueryBtn'),
+    reportQueryBtnImage: document.getElementById('reportQueryBtnImage'),
+    reportQueryBtnFallback: document.getElementById('reportQueryBtnFallback'),
     leaderboardOverlay: document.getElementById('leaderboardOverlay'),
     closeLeaderboardBtn: document.getElementById('closeLeaderboardBtn'),
     closeLeaderboardFromBoardBtn: document.getElementById('closeLeaderboardFromBoardBtn'),
@@ -342,6 +366,9 @@ export function initUI(options = {}) {
   const { onStartHeist } = options;
   const refs = getHubRefs();
   const hubMusic = createHubMusic();
+  const reportQueryClickSound = REPORT_QUERY_CLICK_SOUND_FILE
+    ? createAudio(REPORT_QUERY_CLICK_SOUND_FILE, getVolumeScale(getSettings().voiceVolume), false)
+    : null;
 
   let musicUnlocked = false;
   let hubMusicSuppressed = false;
@@ -352,6 +379,7 @@ export function initUI(options = {}) {
   positionHubCells();
   refreshHub(refs);
   renderSettingsForm(refs);
+  applyReportQueryButtonAsset();
 
   function applyHubVolume() {
     const settings = getSettings();
@@ -370,25 +398,63 @@ export function initUI(options = {}) {
       return;
     }
 
-    hubMusicSuppressed = false;
+    if (hubMusicSuppressed) {
+      if (startHeistPending) {
+        pauseHubMusic();
+        return;
+      }
+
+      hubMusicSuppressed = false;
+    }
 
     if (!musicUnlocked) return;
 
     applyHubVolume();
     unlockAudioContext();
-
-    try {
-      const playPromise = hubMusic.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {});
-      }
-    } catch (_) {}
+    safePlayAudio(hubMusic);
   }
 
   function unlockHubMusic() {
     if (hubMusicSuppressed) return;
     musicUnlocked = true;
     syncHubMusic();
+  }
+
+  function applyReportQueryButtonAsset() {
+    if (!refs.reportQueryBtnImage) return;
+
+    if (!REPORT_QUERY_BUTTON_IMAGE) {
+      refs.reportQueryBtnImage.hidden = true;
+      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = false;
+      return;
+    }
+
+    refs.reportQueryBtnImage.onload = () => {
+      refs.reportQueryBtnImage.hidden = false;
+      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = true;
+    };
+
+    refs.reportQueryBtnImage.onerror = () => {
+      refs.reportQueryBtnImage.hidden = true;
+      if (refs.reportQueryBtnFallback) refs.reportQueryBtnFallback.hidden = false;
+    };
+
+    refs.reportQueryBtnImage.src = `./${REPORT_QUERY_BUTTON_IMAGE}`;
+  }
+
+  function handleReportQuery() {
+    if (reportQueryClickSound) {
+      setAudioVolume(reportQueryClickSound, getVolumeScale(getSettings().voiceVolume));
+      safeRestartAudio(reportQueryClickSound);
+    }
+
+    const destination = window.matchMedia('(pointer: coarse)').matches
+      ? REPORT_QUERY_WHATSAPP_URL
+      : `mailto:${REPORT_QUERY_EMAIL}`;
+
+    window.setTimeout(() => {
+      window.location.href = destination;
+    }, reportQueryClickSound ? 120 : 0);
   }
 
   document.addEventListener('pointerdown', unlockHubMusic, { once: true });
@@ -483,6 +549,18 @@ export function initUI(options = {}) {
   refs.leaderboardBtn.addEventListener('click', () => {
     showUnifiedLeaderboard(refs);
   });
+
+  if (refs.reportQueryBtn) {
+    refs.reportQueryBtn.addEventListener('click', handleReportQuery);
+    refs.reportQueryBtn.addEventListener(
+      'touchend',
+      (e) => {
+        e.preventDefault();
+        handleReportQuery();
+      },
+      { passive: false }
+    );
+  }
 
   refs.closeLeaderboardBtn.addEventListener('click', () => {
     hide(refs.leaderboardOverlay);
