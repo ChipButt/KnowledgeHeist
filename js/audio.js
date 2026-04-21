@@ -158,26 +158,52 @@ export function createAudio(src, volume = 0.5, loop = false) {
   return audio;
 }
 
+export function pauseAudio(audio) {
+  if (!audio) return;
+
+  try {
+    audio.pause();
+  } catch (_) {}
+}
+
 export function stopAudio(audio) {
   if (!audio) return;
+
   try {
     audio.pause();
     audio.currentTime = 0;
   } catch (_) {}
 }
 
-export function safeRestartAudio(audio, volume = 1) {
+export function safePlayAudio(audio, volume) {
+  if (!audio) return;
+
+  if (volume !== undefined && volume !== null) {
+    setAudioVolume(audio, volume);
+  }
+
+  Promise.resolve(unlockAudioContext()).finally(() => {
+    try {
+      const p = audio.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    } catch (_) {}
+  });
+}
+
+export function safeResumeAudio(audio, volume) {
+  if (!audio) return;
+  safePlayAudio(audio, volume);
+}
+
+export function safeRestartAudio(audio, volume) {
   if (!audio) return;
 
   try {
     audio.pause();
     audio.currentTime = 0;
-    setAudioVolume(audio, volume);
-    unlockAudioContext();
-
-    const p = audio.play();
-    if (p && typeof p.catch === 'function') p.catch(() => {});
   } catch (_) {}
+
+  safePlayAudio(audio, volume);
 }
 
 export function createBackgroundMusic() {
@@ -204,9 +230,9 @@ export function applyGameAudioSettings(assets) {
 
   if (assets.backgroundMusic) setAudioVolume(assets.backgroundMusic, gameMusicVolume);
   if (assets.sirenSound) setAudioVolume(assets.sirenSound, Math.min(1, voiceVolume * 0.62));
-  if (assets.withMeSound) setAudioVolume(assets.withMeSound, Math.min(1, voiceVolume * 1.0));
-  if (assets.heyStopSound) setAudioVolume(assets.heyStopSound, Math.min(1, voiceVolume * 1.0));
-  if (assets.chaChingSound) setAudioVolume(assets.chaChingSound, Math.min(1, voiceVolume * 1.0));
+  if (assets.withMeSound) setAudioVolume(assets.withMeSound, Math.min(1, voiceVolume));
+  if (assets.heyStopSound) setAudioVolume(assets.heyStopSound, Math.min(1, voiceVolume));
+  if (assets.chaChingSound) setAudioVolume(assets.chaChingSound, Math.min(1, voiceVolume));
 }
 
 export function createFailVoiceAudio(file) {
