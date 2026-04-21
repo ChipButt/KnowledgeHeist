@@ -2,6 +2,22 @@ import { clearLastHeistWrong, loadSettings } from './storage.js';
 import { formatMoney } from './gameFlow.js';
 import { REVIEW_TAGLINES } from './gameConfig.js';
 
+const QUESTION_KEY_ROWS = [
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '.', ':'],
+  ['SPACE', '%', 'BACK', 'CLEAR']
+];
+
+function shouldUseBuiltInKeyboard() {
+  return (
+    window.matchMedia('(pointer: coarse)').matches ||
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    window.innerWidth < 900
+  );
+}
+
 export function createGameUI(context) {
   const { state, refs, constants } = context;
 
@@ -9,6 +25,7 @@ export function createGameUI(context) {
   let questionDeadlineTs = 0;
   let questionRemainingMs = 0;
   let bannerTimer = null;
+  let questionKeyboardEl = null;
 
   function getQuestionTimerEl() {
     let el = document.getElementById('questionTimer');
@@ -131,11 +148,125 @@ export function createGameUI(context) {
     return state.confirm.open;
   }
 
+  function ensureQuestionKeyboard() {
+    if (questionKeyboardEl) return questionKeyboardEl;
+
+    const modalCard = refs.questionModal?.querySelector('.modal-card');
+    if (!modalCard) return null;
+
+    const keyboard = document.createElement('div');
+    keyboard.id = 'questionKeyboard';
+    keyboard.className = 'question-keyboard';
+
+    QUESTION_KEY_ROWS.forEach((rowKeys) => {
+      const row = document.createElement('div');
+      row.className = 'question-keyboard-row';
+      row.style.gridTemplateColumns = `repeat(${rowKeys.length}, minmax(0, 1fr))`;
+
+      rowKeys.forEach((key) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'question-key';
+        btn.dataset.key = key;
+        btn.textContent =
+          key === 'SPACE' ? 'Space' :
+          key === 'BACK' ? '⌫' :
+          key === 'CLEAR' ? 'Clear' :
+          key;
+
+        if (key === 'SPACE') btn.classList.add('wide');
+        if (key === 'BACK' || key === 'CLEAR') btn.classList.add('action');
+
+        row.appendChild(btn);
+      });
+
+      keyboard.appendChild(row);
+    });
+
+    keyboard.addEventListener('click', (e) => {
+      const button = e.target.closest('.question-key');
+      if (!button) return;
+
+      const key = button.dataset.key;
+      if (!key) return;
+
+      if (key === 'BACK') {
+        refs.answerInput.value = refs.answerInput.value.slice(0, -1);
+        return;
+      }
+
+      if (key === 'CLEAR') {
+        refs.answerInput.value = '';
+        return;
+      }
+
+      if (key === 'SPACE') {
+        refs.answerInput.value += ' ';
+        return;
+      }
+
+      refs.answerInput.value += key;
+    });
+
+    const actions = modalCard.querySelector('.modal-actions');
+    if (actions) {
+      modalCard.insertBefore(keyboard, actions);
+    } else {
+      modalCard.appendChild(keyboard);
+    }
+
+    questionKeyboardEl = keyboard;
+    return keyboard;
+  }
+
+  function setQuestionKeyboardVisible(visible) {
+    const keyboard = ensureQuestionKeyboard();
+    if (!keyboard) return;
+
+    keyboard.classList.toggle('show', visible);
+    refs.questionModal.classList.toggle('with-built-in-keyboard', visible);
+  }
+
+  function configureQuestionInputMode() {
+    const builtIn = shouldUseBuiltInKeyboard();
+
+    if (builtIn) {
+      refs.answerInput.readOnly = true;
+      refs.answerInput.setAttribute('readonly', 'readonly');
+      refs.answerInput.setAttribute('inputmode', 'none');
+      refs.answerInput.blur();
+      setQuestionKeyboardVisible(true);
+      return true;
+    }
+
+    refs.answerInput.readOnly = false;
+    refs.answerInput.removeAttribute('readonly');
+    refs.answerInput.setAttribute('inputmode', 'text');
+    setQuestionKeyboardVisible(false);
+    return false;
+  }
+
+  function activateQuestionInput() {
+    const usingBuiltInKeyboard = configureQuestionInputMode();
+
+    if (!usingBuiltInKeyboard) {
+      setTimeout(() => {
+        try {
+          refs.answerInput.focus({ preventScroll: true });
+        } catch (_) {
+          refs.answerInput.focus();
+        }
+      }, 0);
+    }
+  }
+
   function closeQuestionModal() {
     refs.questionModal.classList.add('hidden');
+    refs.questionModal.classList.remove('with-built-in-keyboard');
     state.activeItem = null;
     stopQuestionTimer();
     refs.answerInput.blur();
+    setQuestionKeyboardVisible(false);
   }
 
   function openConfirmPopup({ title, text, onConfirm, onCancel }) {
@@ -190,6 +321,20 @@ export function createGameUI(context) {
     clearLastHeistWrong();
   }
 
+  window.addEventListener('resize', () => {
+    if (!refs.questionModal.classList.contains('hidden')) {
+      configureQuestionInputMode();
+    }
+  });
+
+  window.addEventListener('orientationchange', () => {
+    if (!refs.questionModal.classList.contains('hidden')) {
+      setTimeout(() => {
+        configureQuestionInputMode();
+      }, 100);
+    }
+  });
+
   return {
     getQuestionTimerEl,
     stopQuestionTimer,
@@ -200,6 +345,7 @@ export function createGameUI(context) {
     updateRunStats,
     updateHubSave,
     isConfirmPopupOpen,
+    activateQuestionInput,
     closeQuestionModal,
     openConfirmPopup,
     closeConfirmPopup,
