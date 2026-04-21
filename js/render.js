@@ -74,10 +74,27 @@ function drawWallItem(ctx, item) {
   drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
 }
 
-function drawFloorItem(ctx, item) {
-  const drawX = item.anchorX - item.drawW / 2;
-  const drawY = item.anchorY - item.drawH;
+function getFloorItemDrawTopLeft(item) {
+  return {
+    drawX: item.anchorX - item.drawW / 2,
+    drawY: item.anchorY - item.drawH
+  };
+}
 
+function getFloorItemSplit(item) {
+  const { drawX, drawY } = getFloorItemDrawTopLeft(item);
+  const splitY = drawY + (item.drawH * 0.5);
+
+  return {
+    drawX,
+    drawY,
+    splitY,
+    topH: splitY - drawY,
+    bottomH: (drawY + item.drawH) - splitY
+  };
+}
+
+function drawFloorShadow(ctx, item) {
   ctx.save();
   ctx.fillStyle = 'rgba(0,0,0,0.16)';
   ctx.beginPath();
@@ -92,19 +109,86 @@ function drawFloorItem(ctx, item) {
   );
   ctx.fill();
   ctx.restore();
+}
 
+function drawFloorItemSlice(ctx, item, slice) {
   const img = resolveItemImage(item);
   if (!imageReady(img)) return;
+
+  const { drawX, drawY, topH, bottomH } = getFloorItemSplit(item);
+
+  const sourceTopH = img.naturalHeight * 0.5;
+  const sourceBottomH = img.naturalHeight - sourceTopH;
 
   if (item.status === 'failed') {
     ctx.save();
     ctx.filter = 'grayscale(100%) brightness(0.65)';
-    ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
+
+    if (slice === 'bottom') {
+      ctx.drawImage(
+        img,
+        0,
+        sourceTopH,
+        img.naturalWidth,
+        sourceBottomH,
+        drawX,
+        drawY + topH,
+        item.drawW,
+        bottomH
+      );
+    } else {
+      ctx.drawImage(
+        img,
+        0,
+        0,
+        img.naturalWidth,
+        sourceTopH,
+        drawX,
+        drawY,
+        item.drawW,
+        topH
+      );
+    }
+
     ctx.restore();
     return;
   }
 
-  ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
+  if (slice === 'bottom') {
+    ctx.drawImage(
+      img,
+      0,
+      sourceTopH,
+      img.naturalWidth,
+      sourceBottomH,
+      drawX,
+      drawY + topH,
+      item.drawW,
+      bottomH
+    );
+    return;
+  }
+
+  ctx.drawImage(
+    img,
+    0,
+    0,
+    img.naturalWidth,
+    sourceTopH,
+    drawX,
+    drawY,
+    item.drawW,
+    topH
+  );
+}
+
+function drawFloorItemBase(ctx, item) {
+  drawFloorShadow(ctx, item);
+  drawFloorItemSlice(ctx, item, 'bottom');
+}
+
+function drawFloorItemOverlay(ctx, item) {
+  drawFloorItemSlice(ctx, item, 'top');
 }
 
 function getCurrentPlayerImage(player, assets) {
@@ -248,11 +332,17 @@ export function drawRoom(runtime) {
     wallItems.forEach((item) => drawWallItem(ctx, item));
 
     const drawables = [];
+    const overlays = [];
 
     floorItems.forEach((item) => {
       drawables.push({
         y: item.anchorY,
-        draw: () => drawFloorItem(ctx, item)
+        draw: () => drawFloorItemBase(ctx, item)
+      });
+
+      overlays.push({
+        y: item.anchorY,
+        draw: () => drawFloorItemOverlay(ctx, item)
       });
     });
 
@@ -271,6 +361,7 @@ export function drawRoom(runtime) {
     }
 
     drawables.sort((a, b) => a.y - b.y).forEach((entry) => entry.draw());
+    overlays.sort((a, b) => a.y - b.y).forEach((entry) => entry.draw());
   }
 
   drawPrompt(ctx, runtime);
