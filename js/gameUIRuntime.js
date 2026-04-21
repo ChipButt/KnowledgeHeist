@@ -239,20 +239,30 @@ export function createGameUI(context) {
     syncQuestionModalLayout();
 
     requestAnimationFrame(() => {
+      refs.questionModal.classList.add('keyboard-hack-active');
+
       try {
         refs.answerInput.focus({ preventScroll: true });
       } catch (_) {
         refs.answerInput.focus();
       }
 
-      refreshQuestionInputView(100);
-      refreshQuestionInputView(300);
+      setTimeout(() => {
+        syncQuestionModalLayout();
+        refs.answerInput.scrollIntoView({ block: 'center', inline: 'nearest' });
+      }, 120);
+
+      setTimeout(() => {
+        syncQuestionModalLayout();
+        refs.answerInput.scrollIntoView({ block: 'center', inline: 'nearest' });
+      }, 350);
     });
   }
 
   function closeQuestionModal() {
     refs.questionModal.classList.add('hidden');
     refs.questionModal.classList.remove('native-mobile-input');
+    refs.questionModal.classList.remove('keyboard-hack-active');
     state.activeItem = null;
     stopQuestionTimer();
     refs.answerInput.blur();
@@ -322,6 +332,7 @@ export function createGameUI(context) {
   refs.answerInput.addEventListener('focus', () => {
     refreshQuestionInputView();
     refreshQuestionInputView(250);
+    refreshQuestionInputView(500);
   });
 
   window.addEventListener('orientationchange', () => {
@@ -330,6 +341,10 @@ export function createGameUI(context) {
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
+      refreshQuestionInputView();
+    });
+
+    window.visualViewport.addEventListener('scroll', () => {
       refreshQuestionInputView();
     });
   }
