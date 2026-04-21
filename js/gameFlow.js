@@ -52,6 +52,24 @@ export function recordWrongQuestion(state, questionObj) {
   });
 }
 
+function safePlayOneShot(audio, onFail = null) {
+  if (!audio) {
+    if (typeof onFail === 'function') onFail();
+    return;
+  }
+
+  try {
+    const p = audio.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        if (typeof onFail === 'function') onFail();
+      });
+    }
+  } catch (_) {
+    if (typeof onFail === 'function') onFail();
+  }
+}
+
 export function playRandomFailVoice(state, assets) {
   if (!state.run) return;
 
@@ -61,8 +79,7 @@ export function playRandomFailVoice(state, assets) {
 
   const file = state.run.failVoicePool.shift();
   const audio = createFailVoiceAudio(file);
-  const p = audio.play();
-  if (p && typeof p.catch === 'function') p.catch(() => {});
+  safePlayOneShot(audio);
 }
 
 export function stopAllGameAudio(assets) {
@@ -74,35 +91,15 @@ export function stopAllGameAudio(assets) {
 }
 
 export function playHeyStopThenSiren(state, assets) {
-  state.audio.sirenStarted = false;
-
-  const startSiren = () => {
-    if (state.audio.sirenStarted) return;
-    state.audio.sirenStarted = true;
-    safeRestartAudio(assets.sirenSound);
-  };
+  state.audio.sirenStarted = true;
 
   try {
     assets.heyStopSound.pause();
     assets.heyStopSound.currentTime = 0;
-    assets.heyStopSound.addEventListener('ended', startSiren, { once: true });
+  } catch (_) {}
 
-    const p = assets.heyStopSound.play();
-    if (p && typeof p.catch === 'function') {
-      p.catch(() => startSiren());
-    }
-  } catch (_) {
-    startSiren();
-  }
-
-  setTimeout(() => {
-    if (
-      state.run &&
-      ['chase', 'escort', 'escort_wait'].includes(state.run.mode)
-    ) {
-      startSiren();
-    }
-  }, 1200);
+  safePlayOneShot(assets.heyStopSound);
+  safeRestartAudio(assets.sirenSound);
 }
 
 export function playWithMe(state, assets) {
@@ -283,21 +280,22 @@ export function updatePullAnimation(
 }
 
 export function triggerGuardChase(state, assets, constants, showBanner) {
-  state.guard.active = true;
-  state.guard.visible = true;
+  state.guard.active = false;
+  state.guard.visible = false;
   state.guard.mode = 'run';
   state.guard.frameIndex = 0;
   state.guard.frameTimer = 0;
-  state.guard.moving = true;
+  state.guard.moving = false;
 
-  state.player.controlLocked = false;
-  state.run.mode = 'chase';
-  state.fx.guardFlashTimer = constants.GUARD_FLASH_MS;
+  state.player.controlLocked = true;
+  state.run.mode = 'guard_intro';
+  state.run.guardIntroRemainingMs = constants.GUARD_TRIGGER_DELAY_MS;
+  state.fx.guardFlashTimer = Math.max(constants.GUARD_FLASH_MS, constants.GUARD_TRIGGER_DELAY_MS + 1200);
   state.audio.withMePlayed = false;
-  state.audio.withMeFinished = false;
+  state.audio.withMeFinished = true;
 
   playHeyStopThenSiren(state, assets);
-  showBanner('Security is coming...');
+  showBanner('Security triggered!');
 }
 
 export function triggerHeistEndHomework(state) {
@@ -335,11 +333,13 @@ export function submitAnswer({
     recordWrongQuestion(state, q);
     updateRunStats();
     flashWrong(state, constants);
-    playRandomFailVoice(state, assets);
-    showBanner('Wrong answer. Security alert increased.');
 
     if (state.run.strikes >= 3) {
+      showBanner('Third strike!');
       triggerGuardChase(state, assets, constants, showBanner);
+    } else {
+      playRandomFailVoice(state, assets);
+      showBanner('Wrong answer. Security alert increased.');
     }
   }
 
@@ -366,14 +366,6 @@ export function askQuestionForItem({
   questionTextEl.textContent = `${q.question} (${formatMoney(Number(q.value || 0))})`;
   answerInput.value = '';
   questionModal.classList.remove('hidden');
-
-  setTimeout(() => {
-    try {
-      answerInput.focus({ preventScroll: true });
-    } catch (_) {
-      answerInput.focus();
-    }
-  }, 0);
 
   return true;
 }
