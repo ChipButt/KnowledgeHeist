@@ -23,8 +23,8 @@ export const ITEM_INTERACT_ZONES_SOURCE = {
     points: [
       { x: 308, y: 1022 },
       { x: 369, y: 1022 },
-      { x: 274, y: 1154 },
-      { x: 232, y: 1142 }
+      { x: 355, y: 1100 },
+      { x: 345, y: 977 }
     ]
   },
 
