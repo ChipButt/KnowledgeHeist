@@ -38,12 +38,13 @@ const FLOOR_RANDOM_AREA_SOURCE = [
 ];
 
 const FLOOR_ITEM_SOURCE_DEFAULTS = {
-  pedestal: { drawW: 192, drawH: 300, sourceSpriteW: 121, sourceSpriteH: 234 },
-  aboard: { drawW: 208, drawH: 316, sourceSpriteW: 361, sourceSpriteH: 547 }
+  pedestal: { drawW: 96, drawH: 150, sourceSpriteW: 121, sourceSpriteH: 234 },
+  aboard: { drawW: 104, drawH: 158, sourceSpriteW: 361, sourceSpriteH: 547 }
 };
 
 const FLOOR_ITEM_RULES = {
-  blockerTopRatio: 0.25,
+  blockerTopRatio: 0.5,
+  blockerSidePaddingPx: 50,
   grabPaddingWidthRatio: 0.5
 };
 
@@ -191,32 +192,32 @@ function applyScaledGeometry(item, sx, sy) {
   item.drawH = sy(item.sourceDrawH);
 }
 
-export function getFloorItemDrawTopLeft(item) {
+function getFloorItemDrawTopLeft(item) {
   return {
     drawX: item.anchorX - item.drawW / 2,
     drawY: item.anchorY - item.drawH
   };
 }
 
-export function getFloorItemSplitY(item) {
-  const { drawY } = getFloorItemDrawTopLeft(item);
-  return drawY + (item.drawH * FLOOR_ITEM_RULES.blockerTopRatio);
-}
-
 function getFloorBlockerRect(item) {
-  const { drawX } = getFloorItemDrawTopLeft(item);
-  const blockerTopY = getFloorItemSplitY(item);
+  if (!item || item.type !== 'floor') return null;
+
+  const { drawX, drawY } = getFloorItemDrawTopLeft(item);
+  const blockerTopY = drawY + (item.drawH * FLOOR_ITEM_RULES.blockerTopRatio);
+  const sidePadding = FLOOR_ITEM_RULES.blockerSidePaddingPx;
 
   return {
-    x1: drawX,
+    x1: drawX - sidePadding,
     y1: blockerTopY,
-    x2: drawX + item.drawW,
-    y2: blockerTopY + (item.drawH * (1 - FLOOR_ITEM_RULES.blockerTopRatio))
+    x2: drawX + item.drawW + sidePadding,
+    y2: drawY + item.drawH
   };
 }
 
 function getExpandedFloorGrabRect(item) {
   const blocker = getFloorBlockerRect(item);
+  if (!blocker) return null;
+
   const expand = item.drawW * FLOOR_ITEM_RULES.grabPaddingWidthRatio;
 
   return {
@@ -238,11 +239,9 @@ export function pointHitsFloorBlocker(items, px, py, options = {}) {
 
   for (const item of items) {
     if (ignoreIds.has(item.id)) continue;
-
     const blocker = getFloorItemBlocker(item);
     if (blocker && pointInRect(px, py, blocker)) return true;
   }
-
   return false;
 }
 
@@ -339,7 +338,7 @@ export function createHeistItems({ assets, sx, sy }) {
 
   const aboardPos = randomPointInSourcePoly(FLOOR_RANDOM_AREA_SOURCE, {
     avoid: [{ x: pedestalPos.x, y: pedestalPos.y }],
-    minDistance: 360
+    minDistance: 220
   });
 
   const aboard = {
