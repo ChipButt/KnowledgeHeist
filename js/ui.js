@@ -12,14 +12,7 @@ import {
   getVolumeScale,
   sanitizePlayerName
 } from './settings.js';
-import {
-  createAudio,
-  pauseAudio,
-  safePlayAudio,
-  setAudioVolume,
-  stopAudio,
-  unlockAudioContext
-} from './audio.js';
+import { createAudio, setAudioVolume, stopAudio, unlockAudioContext } from './audio.js';
 
 const HUB_MUSIC_FILE = 'Hub Music Track.mp3';
 
@@ -40,7 +33,10 @@ const hubCellPositions = {
   result2: { x: 91.8, y: 26.65 },
   result3: { x: 91.8, y: 29.87 },
   result4: { x: 91.8, y: 33.27 },
-  result5: { x: 91.8, y: 35.96 }
+  result5: { x: 91.8, y: 35.96 },
+
+  instructionsBtn: { x: 59.08203125, y: 44.3649373881932, w: 7.12890625, h: 9.66010733452594 },
+  leaderboardBtn: { x: 74.4140625, y: 58.318425760286225, w: 20.41015625, h: 10.01788908765653 }
 };
 
 function formatMoney(pence) {
@@ -112,6 +108,15 @@ function positionHubCells() {
   Object.entries(hubCellPositions).forEach(([id, pos]) => {
     const el = document.getElementById(id);
     if (!el) return;
+
+    if ('w' in pos && 'h' in pos) {
+      el.style.left = `${pos.x}%`;
+      el.style.top = `${pos.y}%`;
+      el.style.width = `${pos.w}%`;
+      el.style.height = `${pos.h}%`;
+      return;
+    }
+
     el.style.left = `${pos.x}%`;
     el.style.top = `${pos.y}%`;
   });
@@ -339,6 +344,8 @@ export function initUI(options = {}) {
   const hubMusic = createHubMusic();
 
   let musicUnlocked = false;
+  let hubMusicSuppressed = false;
+  let startHeistPending = false;
 
   ensureUnifiedLeaderboardStyles();
   updateAppHeightVar();
@@ -346,52 +353,46 @@ export function initUI(options = {}) {
   refreshHub(refs);
   renderSettingsForm(refs);
 
-  function isHubActive() {
-    return !!refs.hubScreen?.classList.contains('active');
-  }
-
   function applyHubVolume() {
-    setAudioVolume(hubMusic, getVolumeScale(getSettings().hubVolume));
-  }
-
-  function saveLiveAudioSettings() {
-    saveGameSettings({
-      hubVolume: refs.hubVolumeInput.value,
-      gameMusicVolume: refs.gameMusicVolumeInput.value,
-      voiceVolume: refs.voiceVolumeInput.value
-    });
+    const settings = getSettings();
+    setAudioVolume(hubMusic, getVolumeScale(settings.hubVolume));
   }
 
   function pauseHubMusic() {
-    pauseAudio(hubMusic);
-  }
-
-  function stopHubMusic() {
     stopAudio(hubMusic);
   }
 
   function syncHubMusic() {
-    if (!isHubActive()) {
+    const hubActive = refs.hubScreen?.classList.contains('active');
+
+    if (!hubActive) {
       pauseHubMusic();
       return;
     }
 
+    hubMusicSuppressed = false;
+
     if (!musicUnlocked) return;
-    if (document.hidden) return;
 
     applyHubVolume();
-    safePlayAudio(hubMusic);
+    unlockAudioContext();
+
+    try {
+      const playPromise = hubMusic.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {});
+      }
+    } catch (_) {}
   }
 
   function unlockHubMusic() {
+    if (hubMusicSuppressed) return;
     musicUnlocked = true;
-    unlockAudioContext();
     syncHubMusic();
   }
 
   document.addEventListener('pointerdown', unlockHubMusic, { once: true });
   document.addEventListener('keydown', unlockHubMusic, { once: true });
-  document.addEventListener('touchend', unlockHubMusic, { once: true, passive: true });
 
   const screenObserver = new MutationObserver(() => {
     syncHubMusic();
@@ -431,17 +432,14 @@ export function initUI(options = {}) {
   refs.hubVolumeInput.addEventListener('input', () => {
     refs.hubVolumeValue.textContent = `${refs.hubVolumeInput.value}%`;
     setAudioVolume(hubMusic, getVolumeScale(refs.hubVolumeInput.value));
-    saveLiveAudioSettings();
   });
 
   refs.gameMusicVolumeInput.addEventListener('input', () => {
     refs.gameMusicVolumeValue.textContent = `${refs.gameMusicVolumeInput.value}%`;
-    saveLiveAudioSettings();
   });
 
   refs.voiceVolumeInput.addEventListener('input', () => {
     refs.voiceVolumeValue.textContent = `${refs.voiceVolumeInput.value}%`;
-    saveLiveAudioSettings();
   });
 
   refs.saveSettingsBtn.addEventListener('click', () => {
@@ -473,7 +471,7 @@ export function initUI(options = {}) {
   refs.cancelResetBtn.addEventListener('click', () => hide(refs.resetConfirmOverlay));
 
   refs.confirmResetBtn.addEventListener('click', () => {
-    stopHubMusic();
+    pauseHubMusic();
     clearAllProgress();
     location.reload();
   });
@@ -500,8 +498,18 @@ export function initUI(options = {}) {
 
   if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
-      stopHubMusic();
-      onStartHeist();
+      if (startHeistPending) return;
+      startHeistPending = true;
+      hubMusicSuppressed = true;
+      pauseHubMusic();
+
+      try {
+        onStartHeist();
+      } finally {
+        setTimeout(() => {
+          startHeistPending = false;
+        }, 300);
+      }
     };
 
     refs.startHeistBtn.addEventListener('click', handleStartHeist);
@@ -519,38 +527,14 @@ export function initUI(options = {}) {
   window.addEventListener('nanaheist:data-updated', () => refreshHub(refs));
 
   window.addEventListener('nanaheist:settings-updated', () => {
-    if (!refs.settingsOverlay?.classList.contains('show')) {
-      renderSettingsForm(refs);
-    }
+    renderSettingsForm(refs);
     applyHubVolume();
-    syncHubMusic();
   });
 
   window.addEventListener('storage', (e) => {
     if (e.key === SAVE_KEY || e.key === HISTORY_KEY) {
       refreshHub(refs);
     }
-  });
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) {
-      pauseHubMusic();
-      return;
-    }
-
-    syncHubMusic();
-  });
-
-  window.addEventListener('pagehide', () => {
-    pauseHubMusic();
-  });
-
-  window.addEventListener('pageshow', () => {
-    syncHubMusic();
-  });
-
-  window.addEventListener('blur', () => {
-    pauseHubMusic();
   });
 
   window.addEventListener('focus', () => {
