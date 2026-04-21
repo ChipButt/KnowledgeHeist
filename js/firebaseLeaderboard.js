@@ -124,13 +124,16 @@ export async function reserveUsername(displayName) {
   try {
     await runTransaction(db, async (transaction) => {
       const usernameSnap = await transaction.get(usernameRef);
+      const profileSnap = await transaction.get(profileRef);
 
       if (usernameSnap.exists()) {
         const existing = usernameSnap.data();
         if (existing?.uid !== user.uid) {
           throw new Error('username_taken');
         }
-      } else {
+      }
+
+      if (!usernameSnap.exists()) {
         transaction.set(usernameRef, {
           uid: user.uid,
           displayName: cleanName,
@@ -140,7 +143,6 @@ export async function reserveUsername(displayName) {
         });
       }
 
-      const profileSnap = await transaction.get(profileRef);
       const prevProfile = profileSnap.exists() ? profileSnap.data() : {};
 
       transaction.set(
