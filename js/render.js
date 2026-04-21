@@ -3,7 +3,7 @@ function imageReady(img) {
 }
 
 function drawImageFit(ctx, img, x, y, w, h) {
-  if (!imageReady(img)) return;
+  if (!imageReady(img)) return null;
 
   const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
   const dw = img.naturalWidth * scale;
@@ -12,6 +12,8 @@ function drawImageFit(ctx, img, x, y, w, h) {
   const dy = y + (h - dh) / 2;
 
   ctx.drawImage(img, dx, dy, dw, dh);
+
+  return { dx, dy, dw, dh };
 }
 
 function drawFallbackRoom(ctx, canvas) {
@@ -68,8 +70,16 @@ function drawWallItem(ctx, item) {
   if (item.status === 'failed') {
     ctx.save();
     ctx.filter = 'grayscale(100%) brightness(0.65)';
-    drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
+    const drawn = drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
     ctx.restore();
+
+    if (drawn) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(32, 32, 32, 0.28)';
+      ctx.fillRect(drawn.dx, drawn.dy, drawn.dw, drawn.dh);
+      ctx.restore();
+    }
+
     return;
   }
 
@@ -103,6 +113,11 @@ function drawFloorItem(ctx, item) {
     ctx.filter = 'grayscale(100%) brightness(0.65)';
     ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
     ctx.restore();
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(32, 32, 32, 0.28)';
+    ctx.fillRect(drawX, drawY, item.drawW, item.drawH);
+    ctx.restore();
     return;
   }
 
@@ -130,13 +145,15 @@ function drawFallbackPlayer(ctx, player) {
   ctx.fillRect(drawX + 56, drawY + 28, 6, 6);
 }
 
-function drawPlayer(ctx, player, assets) {
+function drawPlayer(ctx, player, assets, runtime) {
   if (!player.visible) return;
 
-  const drawW = 100;
-  const drawH = 100;
+  const { constants, sx, sy } = runtime;
+  const drawW = sx(constants.PLAYER_DRAW_W_SOURCE);
+  const drawH = sy(constants.PLAYER_DRAW_H_SOURCE);
+  const drawYOffset = sy(constants.PLAYER_DRAW_Y_OFFSET_SOURCE);
   const drawX = player.x - drawW / 2;
-  const drawY = player.y - drawH - 10;
+  const drawY = player.y - drawH - drawYOffset;
   const img = getCurrentPlayerImage(player, assets);
 
   if (imageReady(img)) {
@@ -172,13 +189,15 @@ function drawFallbackGuard(ctx, guard) {
   ctx.fillRect(drawX + 32, drawY + 12, 34, 76);
 }
 
-function drawGuard(ctx, guard, assets) {
+function drawGuard(ctx, guard, assets, runtime) {
   if (!guard.active || !guard.visible) return;
 
-  const drawW = 100;
-  const drawH = 100;
+  const { constants, sx, sy } = runtime;
+  const drawW = sx(constants.GUARD_DRAW_W_SOURCE);
+  const drawH = sy(constants.GUARD_DRAW_H_SOURCE);
+  const drawYOffset = sy(constants.GUARD_DRAW_Y_OFFSET_SOURCE);
   const drawX = guard.x - drawW / 2;
-  const drawY = guard.y - drawH - 10;
+  const drawY = guard.y - drawH - drawYOffset;
   const img = getCurrentGuardImage(guard, assets);
 
   if (img) {
@@ -261,14 +280,14 @@ export function drawRoom(runtime) {
     if (state.player.visible) {
       drawables.push({
         y: state.player.y,
-        draw: () => drawPlayer(ctx, state.player, assets)
+        draw: () => drawPlayer(ctx, state.player, assets, runtime)
       });
     }
 
     if (state.guard.active && state.guard.visible) {
       drawables.push({
         y: state.guard.y,
-        draw: () => drawGuard(ctx, state.guard, assets)
+        draw: () => drawGuard(ctx, state.guard, assets, runtime)
       });
     }
 
