@@ -959,7 +959,7 @@ body.game-active {
   min-height: 0;
   overflow: auto;
   padding-bottom: 12px;
-  scroll-padding-bottom: 120px;
+  scroll-padding-bottom: 140px;
   overscroll-behavior: contain;
 }
 
