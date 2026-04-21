@@ -7,7 +7,7 @@
   --title-brown-light: #b59662;
   --title-brown-mid: #9a7a4b;
   --title-brown-dark: #4f311a;
-  --app-height: 100vh;
+  --app-height: 100dvh;
 }
 
 * {
@@ -20,8 +20,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%;
-  min-height: 100%;
+  height: var(--app-height);
+  min-height: var(--app-height);
   background: var(--bg);
   color: var(--text);
   font-family: var(--ui-font);
@@ -41,7 +41,7 @@ body.game-active {
   position: fixed;
   inset: 0;
   width: 100%;
-  height: 100%;
+  height: var(--app-height);
   overflow: hidden;
   touch-action: none;
   overscroll-behavior: none;
@@ -231,13 +231,14 @@ body.game-active {
 }
 
 #paintingsStolenLabel {
-  left: 79.39%;
+  left: 77.15%;
   top: 72.27%;
-  width: 10.45%;
+  width: 15.1%;
   height: 2.86%;
 }
 
 #paintingsStolen {
+  display: none;
   left: 81.84%;
   top: 80.36%;
   width: 5.86%;
@@ -313,6 +314,41 @@ body.game-active {
   width: 10.25%;
   height: 4.47%;
   transform: none;
+}
+
+#reportQueryBtn {
+  left: 78.125%;
+  top: 78.71198568872988%;
+  width: 12.98828125%;
+  height: 8.050089445438283%;
+  transform: none;
+}
+
+.report-query-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.report-query-button img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+.report-query-btn-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 10px;
+  background: rgba(54, 41, 25, 0.78);
+  color: #f4e7c8;
+  font-family: var(--ui-font);
+  font-size: clamp(10px, 1vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 #resetProgressBtn {
@@ -489,6 +525,7 @@ body.game-active {
   font-family: var(--ui-font);
   overflow: hidden;
   width: 100vw;
+  min-height: var(--app-height);
   height: var(--app-height);
   touch-action: none;
   overscroll-behavior: none;
@@ -590,6 +627,7 @@ body.game-active {
   inset: 0;
   width: 100%;
   height: 100%;
+  min-height: var(--app-height);
   border-radius: 0;
   overflow: hidden;
   border: none;
@@ -602,6 +640,7 @@ body.game-active {
   display: block;
   width: 100%;
   height: 100%;
+  min-height: var(--app-height);
   background: #111;
   touch-action: none;
 }
