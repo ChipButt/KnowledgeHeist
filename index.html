@@ -51,6 +51,8 @@
         <img src="./Leaderboard Button.png" alt="" />
       </button>
 
+      <div id="activeProfileBadge" class="active-profile-badge">Not logged in</div>
+
       <button class="hub-ui-button image-button" id="settingsBtn" type="button" aria-label="Settings" title="Settings">
         <img src="./Settings Button.png" alt="" />
       </button>
@@ -248,6 +250,7 @@ Tap the floating GRAB prompt when it appears near an item
 
       <div class="popup-actions">
         <button id="saveSettingsBtn" type="button">Save Settings</button>
+        <button id="logoutProfileBtn" type="button">Log Out</button>
         <button id="closeSettingsBtn" type="button">Close</button>
       </div>
     </div>
@@ -293,6 +296,30 @@ Tap the floating GRAB prompt when it appears near an item
       </div>
     </div>
   </div>
+
+  <div id="profileOverlay" class="overlay">
+    <div class="popup-panel settings-panel profile-panel">
+      <h2>Player Login</h2>
+      <p class="profile-copy">You must log in before starting a heist. Create a unique username once, then tap your saved profile next time.</p>
+      <div id="profileLoadingText" class="profile-loading"></div>
+      <div id="profileErrorText" class="profile-error" aria-live="polite"></div>
+
+      <div class="settings-grid">
+        <label class="settings-field">
+          <span>Create Unique Username</span>
+          <input id="profileNameInput" type="text" maxlength="24" placeholder="Choose username" />
+        </label>
+      </div>
+
+      <div class="popup-actions">
+        <button id="createProfileBtn" type="button">Create Profile</button>
+      </div>
+
+      <h3 class="profile-list-title">Saved Profiles On This Device</h3>
+      <div id="profileList" class="profile-list"></div>
+    </div>
+  </div>
+
 <div id="reportQueryConfirmOverlay" class="overlay">
   <div class="popup-panel confirm-panel">
     <h2>Are you sure?</h2>
