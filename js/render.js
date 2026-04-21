@@ -178,7 +178,7 @@ function getCurrentGuardImage(guard, assets) {
   }
 
   const runSet = assets.guardRunAnimations[guard.direction] || assets.guardRunAnimations.south;
-  const runFrame = runSet[guard.frameIndex % runSet.length];
+  const runFrame = runSet[guard.frameIndex % set.length];
   return imageReady(runFrame) ? runFrame : null;
 }
 
