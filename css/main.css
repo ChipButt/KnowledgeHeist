@@ -971,9 +971,7 @@ body.game-active {
 #questionModal.native-mobile-input .question-answer-bar {
   position: sticky;
   bottom: 0;
-  z-index: 2;
   padding-bottom: max(6px, env(safe-area-inset-bottom));
-  box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.08);
   background: #f0e6d0;
 }
 
@@ -1099,4 +1097,76 @@ body.game-active {
     min-width: 102px;
     padding: 7px 10px;
   }
+}
+
+
+.active-profile-badge {
+  position: absolute;
+  left: 3%;
+  top: 3%;
+  z-index: 4;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(8, 14, 24, 0.75);
+  color: #f4e7bf;
+  border: 1px solid rgba(244, 231, 191, 0.28);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.profile-panel {
+  max-width: 560px;
+}
+
+.profile-copy {
+  margin: 0 0 12px;
+}
+
+.profile-loading {
+  min-height: 20px;
+  color: #654e21;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.profile-error {
+  min-height: 22px;
+  color: #8b1e1e;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.profile-list-title {
+  margin: 12px 0 8px;
+  font-size: 18px;
+}
+
+.profile-list {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.profile-select-btn {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(79, 58, 27, 0.2);
+  background: rgba(255,255,255,0.45);
+  color: #3b2c14;
+}
+
+.profile-name {
+  display: block;
+  font-weight: 800;
+  margin-bottom: 3px;
+}
+
+.profile-meta, .profile-empty {
+  display: block;
+  font-size: 13px;
+  opacity: 0.86;
 }
