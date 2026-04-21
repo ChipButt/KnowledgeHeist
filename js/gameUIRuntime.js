@@ -208,6 +208,8 @@ export function createGameUI(context) {
   }
 
   function syncQuestionModalLayout() {
+    if (!refs.questionModal) return;
+
     ensureQuestionLayoutStructure();
 
     const mobileLayout =
@@ -225,11 +227,15 @@ export function createGameUI(context) {
 
   function nudgeQuestionInputIntoView() {
     if (refs.questionModal.classList.contains('hidden')) return;
+
     syncQuestionModalLayout();
 
     setTimeout(() => {
       try {
-        refs.answerInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        refs.answerInput.scrollIntoView({
+          block: 'nearest',
+          inline: 'nearest'
+        });
       } catch (_) {}
     }, 60);
   }
@@ -250,26 +256,15 @@ export function createGameUI(context) {
       nudgeQuestionInputIntoView();
     };
 
-    focusInput();
     requestAnimationFrame(() => {
       syncQuestionModalLayout();
       focusInput();
 
-      requestAnimationFrame(() => {
+      setTimeout(() => {
         syncQuestionModalLayout();
-        nudgeQuestionInputIntoView();
-      });
+        focusInput();
+      }, 220);
     });
-
-    setTimeout(() => {
-      syncQuestionModalLayout();
-      nudgeQuestionInputIntoView();
-    }, 250);
-
-    setTimeout(() => {
-      syncQuestionModalLayout();
-      nudgeQuestionInputIntoView();
-    }, 500);
   }
 
   function closeQuestionModal() {
@@ -345,7 +340,6 @@ export function createGameUI(context) {
     syncQuestionModalLayout();
     nudgeQuestionInputIntoView();
     setTimeout(nudgeQuestionInputIntoView, 250);
-    setTimeout(nudgeQuestionInputIntoView, 500);
   });
 
   refs.answerInput.addEventListener('click', () => {
