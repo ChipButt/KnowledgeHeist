@@ -286,6 +286,11 @@ export function registerGameEvents(context, deps) {
     ui.resumeQuestionTimer(runtime.submitAnswer);
   });
 
+  window.addEventListener('blur', () => {
+    session.pauseRuntimeAudio();
+    ui.pauseQuestionTimer();
+  });
+
   window.addEventListener('focus', () => {
     session.resumeRuntimeAudio();
     ui.resumeQuestionTimer(runtime.submitAnswer);
