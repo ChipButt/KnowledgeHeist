@@ -190,6 +190,7 @@ export function createGameUI(context) {
 
   function applyQuestionViewportVars() {
     if (!refs.questionModal) return;
+    ensureQuestionLayoutStructure();
 
     const vv = window.visualViewport;
     const height = vv ? vv.height : window.innerHeight;
@@ -206,61 +207,31 @@ export function createGameUI(context) {
     refs.questionModal.style.removeProperty('--question-offset-top');
   }
 
-  function configureQuestionInputMode() {
+  function syncQuestionModalLayout() {
     ensureQuestionLayoutStructure();
 
-    const mobileLayout = shouldUseMobileQuestionLayout();
+    const mobileLayout =
+      !refs.questionModal.classList.contains('hidden') &&
+      shouldUseMobileQuestionLayout();
 
     refs.questionModal.classList.toggle('native-mobile-input', mobileLayout);
-
-    refs.answerInput.readOnly = false;
-    refs.answerInput.removeAttribute('readonly');
-    refs.answerInput.setAttribute('inputmode', 'text');
-    refs.answerInput.setAttribute('autocapitalize', 'off');
-    refs.answerInput.setAttribute('autocomplete', 'off');
-    refs.answerInput.spellcheck = false;
-
-    if (refs.submitAnswerBtn) {
-      refs.submitAnswerBtn.hidden = false;
-      refs.submitAnswerBtn.style.display = '';
-      refs.submitAnswerBtn.textContent = 'Submit';
-    }
 
     if (mobileLayout) {
       applyQuestionViewportVars();
     } else {
       resetQuestionViewportVars();
     }
-
-    return mobileLayout;
   }
 
-  function activateQuestionInput() {
-    const mobileLayout = configureQuestionInputMode();
+  function nudgeQuestionInputIntoView() {
+    if (refs.questionModal.classList.contains('hidden')) return;
+    syncQuestionModalLayout();
 
-    const focusInput = () => {
+    setTimeout(() => {
       try {
-        refs.answerInput.focus({ preventScroll: true });
-      } catch (_) {
-        refs.answerInput.focus();
-      }
-
-      setTimeout(() => {
-        try {
-          refs.answerInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-        } catch (_) {}
-      }, 80);
-    };
-
-    if (mobileLayout) {
-      setTimeout(focusInput, 40);
-      setTimeout(() => {
-        applyQuestionViewportVars();
-        focusInput();
-      }, 250);
-    } else {
-      setTimeout(focusInput, 0);
-    }
+        refs.answerInput.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      } catch (_) {}
+    }, 60);
   }
 
   function closeQuestionModal() {
@@ -324,30 +295,48 @@ export function createGameUI(context) {
     clearLastHeistWrong();
   }
 
+  ensureQuestionLayoutStructure();
+
+  refs.answerInput.setAttribute('autocomplete', 'off');
+  refs.answerInput.setAttribute('autocapitalize', 'off');
+  refs.answerInput.setAttribute('autocorrect', 'off');
+  refs.answerInput.setAttribute('spellcheck', 'false');
+  refs.answerInput.setAttribute('enterkeyhint', 'done');
+
+  refs.answerInput.addEventListener('focus', () => {
+    syncQuestionModalLayout();
+    nudgeQuestionInputIntoView();
+    setTimeout(nudgeQuestionInputIntoView, 250);
+    setTimeout(nudgeQuestionInputIntoView, 500);
+  });
+
+  refs.answerInput.addEventListener('click', () => {
+    syncQuestionModalLayout();
+    setTimeout(nudgeQuestionInputIntoView, 50);
+  });
+
   window.addEventListener('resize', () => {
     if (!refs.questionModal.classList.contains('hidden')) {
-      configureQuestionInputMode();
+      syncQuestionModalLayout();
     }
   });
 
   window.addEventListener('orientationchange', () => {
     if (!refs.questionModal.classList.contains('hidden')) {
-      setTimeout(() => {
-        configureQuestionInputMode();
-      }, 100);
+      setTimeout(syncQuestionModalLayout, 120);
     }
   });
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', () => {
       if (!refs.questionModal.classList.contains('hidden')) {
-        applyQuestionViewportVars();
+        syncQuestionModalLayout();
       }
     });
 
     window.visualViewport.addEventListener('scroll', () => {
       if (!refs.questionModal.classList.contains('hidden')) {
-        applyQuestionViewportVars();
+        syncQuestionModalLayout();
       }
     });
   }
@@ -362,7 +351,6 @@ export function createGameUI(context) {
     updateRunStats,
     updateHubSave,
     isConfirmPopupOpen,
-    activateQuestionInput,
     closeQuestionModal,
     openConfirmPopup,
     closeConfirmPopup,
