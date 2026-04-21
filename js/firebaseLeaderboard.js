@@ -9,14 +9,16 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   limit,
   orderBy,
   query,
   runTransaction,
-  serverTimestamp
+  serverTimestamp,
+  setDoc
 } from 'https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js';
 
-import { loadSave, loadSettings } from './storage.js';
+import { loadSave, getActiveProfileName } from './storage.js';
 import { sanitizePlayerName } from './settings.js';
 
 const firebaseConfig = {
@@ -37,9 +39,7 @@ let currentUid = null;
 let anonAuthPromise = null;
 
 onAuthStateChanged(auth, (user) => {
-  if (user?.uid) {
-    currentUid = user.uid;
-  }
+  if (user?.uid) currentUid = user.uid;
 });
 
 async function ensureAnonymousAuth() {
@@ -73,14 +73,55 @@ function buildNameKey(displayName) {
 
 function normaliseRow(data, docId = '') {
   return {
-    uid: String(data.uid || docId || ''),
-    name: sanitizePlayerName(data.displayName || 'Player') || 'Player',
+    uid: String(data.uid || ''),
+    name: sanitizePlayerName(data.displayName || docId || 'Player') || 'Player',
     totalBanked: Number(data.totalBanked || 0),
     bestHeist: Number(data.bestHeist || 0),
     heistsPlayed: Number(data.heistsPlayed || 0),
     paintingsStolen: Number(data.paintingsStolen || 0),
     updatedAtMs: Number(data.updatedAtMs || 0)
   };
+}
+
+export async function isUsernameAvailable(displayName) {
+  const cleanName = sanitizePlayerName(displayName);
+  if (!cleanName) return false;
+
+  await ensureAnonymousAuth();
+  const key = buildNameKey(cleanName);
+  const usernameRef = doc(db, 'usernames', key);
+  const snap = await getDoc(usernameRef);
+  return !snap.exists();
+}
+
+export async function reserveUsername(displayName) {
+  const cleanName = sanitizePlayerName(displayName);
+  if (!cleanName) return { ok: false, reason: 'invalid_name' };
+
+  const user = await ensureAnonymousAuth();
+  if (!user?.uid) return { ok: false, reason: 'auth_failed' };
+
+  const key = buildNameKey(cleanName);
+  const usernameRef = doc(db, 'usernames', key);
+
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(usernameRef);
+      if (snap.exists()) throw new Error('username_taken');
+      transaction.set(usernameRef, {
+        uid: user.uid,
+        displayName: cleanName,
+        nameKey: key,
+        createdAt: serverTimestamp(),
+        updatedAtMs: Date.now()
+      });
+    });
+    return { ok: true, nameKey: key, displayName: cleanName };
+  } catch (err) {
+    if (err?.message === 'username_taken') return { ok: false, reason: 'username_taken' };
+    console.error('Username reservation failed:', err);
+    return { ok: false, reason: 'reservation_failed' };
+  }
 }
 
 export async function fetchUnifiedLeaderboardRows() {
@@ -99,10 +140,7 @@ export async function fetchUnifiedLeaderboardRows() {
     return a.name.localeCompare(b.name);
   });
 
-  return rows.map((row, index) => ({
-    rank: index + 1,
-    ...row
-  }));
+  return rows.map((row, index) => ({ rank: index + 1, ...row }));
 }
 
 export async function submitCurrentPlayerLeaderboard() {
@@ -110,9 +148,7 @@ export async function submitCurrentPlayerLeaderboard() {
   if (!user?.uid) return;
 
   const save = loadSave();
-  const settings = loadSettings();
-
-  const displayName = sanitizePlayerName(settings.playerName);
+  const displayName = sanitizePlayerName(getActiveProfileName());
   if (!displayName) return;
 
   if (
@@ -124,7 +160,17 @@ export async function submitCurrentPlayerLeaderboard() {
     return;
   }
 
-  const playerRef = doc(db, 'leaderboard', user.uid);
+  const nameKey = buildNameKey(displayName);
+  const playerRef = doc(db, 'leaderboard', nameKey);
+  const usernameRef = doc(db, 'usernames', nameKey);
+
+  await setDoc(usernameRef, {
+    uid: user.uid,
+    displayName,
+    nameKey,
+    updatedAt: serverTimestamp(),
+    updatedAtMs: Date.now()
+  }, { merge: true });
 
   await runTransaction(db, async (transaction) => {
     const snap = await transaction.get(playerRef);
@@ -134,7 +180,7 @@ export async function submitCurrentPlayerLeaderboard() {
       playerRef,
       {
         uid: user.uid,
-        nameKey: buildNameKey(displayName),
+        nameKey,
         displayName,
         totalBanked: Math.max(Number(prev.totalBanked || 0), Number(save.totalBanked || 0)),
         bestHeist: Math.max(Number(prev.bestHeist || 0), Number(save.bestHeist || 0)),
@@ -150,6 +196,8 @@ export async function submitCurrentPlayerLeaderboard() {
 
 export function initFirebaseLeaderboardBridge() {
   window.nanaHeistUnifiedLeaderboardProvider = fetchUnifiedLeaderboardRows;
+  window.nanaHeistReserveUsername = reserveUsername;
+  window.nanaHeistIsUsernameAvailable = isUsernameAvailable;
 
   let submitTimer = null;
 
