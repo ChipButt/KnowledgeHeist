@@ -1,5 +1,5 @@
 export const DEBUG = {
-  interaction: false,
+  interaction: true,
   layoutOverlay: false
 };
 
