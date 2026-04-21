@@ -10,6 +10,10 @@ const backgroundMusicTracks = [
   'Gallery Time Machine.mp3'
 ];
 
+const MAX_MANAGED_GAIN = 2.2;
+const VOICE_BOOST = 1.9;
+const SIREN_BOOST = 1.15;
+
 let lastBackgroundMusicTrack = '';
 let sharedAudioContext = null;
 let autoUnlockBound = false;
@@ -21,7 +25,11 @@ const nativeVolumeDescriptor =
     ? Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'volume')
     : null;
 
-function clamp01(value) {
+function clampManagedVolume(value) {
+  return Math.max(0, Math.min(MAX_MANAGED_GAIN, Number(value) || 0));
+}
+
+function clampMediaVolume(value) {
   return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
@@ -29,7 +37,7 @@ function setNativeVolume(audio, value) {
   if (!nativeVolumeDescriptor?.set) return;
 
   try {
-    nativeVolumeDescriptor.set.call(audio, clamp01(value));
+    nativeVolumeDescriptor.set.call(audio, clampMediaVolume(value));
   } catch (_) {}
 }
 
@@ -84,7 +92,7 @@ function ensureManagedAudio(audio, initialVolume = 1) {
 
   const entry = {
     audio,
-    volume: clamp01(initialVolume),
+    volume: clampManagedVolume(initialVolume),
     ctx: null,
     source: null,
     gain: null,
@@ -118,7 +126,7 @@ function ensureManagedAudio(audio, initialVolume = 1) {
 
 function applyManagedVolume(audio, value) {
   const entry = ensureManagedAudio(audio, value);
-  entry.volume = clamp01(value);
+  entry.volume = clampManagedVolume(value);
 
   if (entry.useGain && entry.gain && entry.ctx) {
     try {
@@ -223,19 +231,23 @@ export function createBackgroundMusic() {
   return audio;
 }
 
+export function getBoostedVoiceVolumeScale() {
+  return getVolumeScale(loadSettings().voiceVolume) * VOICE_BOOST;
+}
+
 export function applyGameAudioSettings(assets) {
   const settings = loadSettings();
   const gameMusicVolume = getVolumeScale(settings.gameMusicVolume);
-  const voiceVolume = getVolumeScale(settings.voiceVolume);
+  const voiceVolume = getVolumeScale(settings.voiceVolume) * VOICE_BOOST;
+  const sirenVolume = getVolumeScale(settings.voiceVolume) * SIREN_BOOST;
 
   if (assets.backgroundMusic) setAudioVolume(assets.backgroundMusic, gameMusicVolume);
-  if (assets.sirenSound) setAudioVolume(assets.sirenSound, Math.min(1, voiceVolume * 0.62));
-  if (assets.withMeSound) setAudioVolume(assets.withMeSound, Math.min(1, voiceVolume));
-  if (assets.heyStopSound) setAudioVolume(assets.heyStopSound, Math.min(1, voiceVolume));
-  if (assets.chaChingSound) setAudioVolume(assets.chaChingSound, Math.min(1, voiceVolume));
+  if (assets.sirenSound) setAudioVolume(assets.sirenSound, sirenVolume);
+  if (assets.withMeSound) setAudioVolume(assets.withMeSound, voiceVolume);
+  if (assets.heyStopSound) setAudioVolume(assets.heyStopSound, voiceVolume);
+  if (assets.chaChingSound) setAudioVolume(assets.chaChingSound, voiceVolume);
 }
 
 export function createFailVoiceAudio(file) {
-  const settings = loadSettings();
-  return createAudio(file, getVolumeScale(settings.voiceVolume), false);
+  return createAudio(file, getBoostedVoiceVolumeScale(), false);
 }
