@@ -971,7 +971,9 @@ body.game-active {
 #questionModal.native-mobile-input .question-answer-bar {
   position: sticky;
   bottom: 0;
+  z-index: 2;
   padding-bottom: max(6px, env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 18px rgba(0, 0, 0, 0.08);
   background: #f0e6d0;
 }
 
