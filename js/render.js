@@ -2,7 +2,7 @@ function imageReady(img) {
   return !!img && img.complete && img.naturalWidth > 0;
 }
 
-function drawImageFit(ctx, img, x, y, w, h) {
+function getFitRect(img, x, y, w, h) {
   if (!imageReady(img)) return null;
 
   const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
@@ -11,8 +11,56 @@ function drawImageFit(ctx, img, x, y, w, h) {
   const dx = x + (w - dw) / 2;
   const dy = y + (h - dh) / 2;
 
-  ctx.drawImage(img, dx, dy, dw, dh);
   return { dx, dy, dw, dh };
+}
+
+function drawImageFit(ctx, img, x, y, w, h) {
+  const rect = getFitRect(img, x, y, w, h);
+  if (!rect) return null;
+
+  ctx.drawImage(img, rect.dx, rect.dy, rect.dw, rect.dh);
+  return rect;
+}
+
+function drawFailedImageMasked(ctx, img, dx, dy, dw, dh) {
+  if (!imageReady(img)) return;
+
+  const off = document.createElement('canvas');
+  off.width = Math.max(1, Math.round(dw));
+  off.height = Math.max(1, Math.round(dh));
+  const offCtx = off.getContext('2d', { willReadFrequently: true });
+  if (!offCtx) {
+    ctx.save();
+    ctx.filter = 'grayscale(100%) brightness(0.6)';
+    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.restore();
+    return;
+  }
+
+  offCtx.clearRect(0, 0, off.width, off.height);
+  offCtx.drawImage(img, 0, 0, off.width, off.height);
+
+  const imageData = offCtx.getImageData(0, 0, off.width, off.height);
+  const data = imageData.data;
+
+  for (let i = 0; i < data.length; i += 4) {
+    const alpha = data[i + 3];
+    if (alpha === 0) continue;
+
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+
+    const gray = Math.round((0.2126 * r) + (0.7152 * g) + (0.0722 * b));
+    const dark = Math.max(0, Math.round(gray * 0.58));
+
+    data[i] = dark;
+    data[i + 1] = dark;
+    data[i + 2] = dark;
+  }
+
+  offCtx.putImageData(imageData, 0, 0);
+  ctx.drawImage(off, dx, dy, dw, dh);
 }
 
 function drawFallbackRoom(ctx, canvas) {
@@ -67,17 +115,9 @@ function drawWallItem(ctx, item) {
   if (!img) return;
 
   if (item.status === 'failed') {
-    ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.6)';
-    const drawn = drawImageFit(ctx, img, item.x, item.y, item.w, item.h);
-    ctx.restore();
-
-    if (drawn) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(24,24,24,0.32)';
-      ctx.fillRect(drawn.dx, drawn.dy, drawn.dw, drawn.dh);
-      ctx.restore();
-    }
+    const rect = getFitRect(img, item.x, item.y, item.w, item.h);
+    if (!rect) return;
+    drawFailedImageMasked(ctx, img, rect.dx, rect.dy, rect.dw, rect.dh);
     return;
   }
 
@@ -107,15 +147,7 @@ function drawFloorItem(ctx, item) {
   if (!imageReady(img)) return;
 
   if (item.status === 'failed') {
-    ctx.save();
-    ctx.filter = 'grayscale(100%) brightness(0.6)';
-    ctx.drawImage(img, drawX, drawY, item.drawW, item.drawH);
-    ctx.restore();
-
-    ctx.save();
-    ctx.fillStyle = 'rgba(24,24,24,0.32)';
-    ctx.fillRect(drawX, drawY, item.drawW, item.drawH);
-    ctx.restore();
+    drawFailedImageMasked(ctx, img, drawX, drawY, item.drawW, item.drawH);
     return;
   }
 
