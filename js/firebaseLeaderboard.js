@@ -273,25 +273,33 @@ export async function submitCurrentPlayerLeaderboard() {
   const nameKey = buildNameKey(displayName);
   const profilePayload = buildCloudProfilePayload();
 
-  await setDoc(doc(db, 'profiles', currentUser.uid), {
-    uid: currentUser.uid,
-    displayName,
-    nameKey,
-    lastPlayedAt: serverTimestamp(),
-    ...profilePayload
-  }, { merge: true });
+  await setDoc(
+    doc(db, 'profiles', currentUser.uid),
+    {
+      uid: currentUser.uid,
+      displayName,
+      nameKey,
+      lastPlayedAt: serverTimestamp(),
+      ...profilePayload
+    },
+    { merge: true }
+  );
 
-  await setDoc(doc(db, 'leaderboard', currentUser.uid), {
-    uid: currentUser.uid,
-    displayName,
-    nameKey,
-    totalBanked: Number(save.totalBanked || 0),
-    bestHeist: Number(save.bestHeist || 0),
-    heistsPlayed: Number(save.heistsPlayed || 0),
-    paintingsStolen: Number(save.paintingsStolen || 0),
-    updatedAt: serverTimestamp(),
-    updatedAtMs: Date.now()
-  }, { merge: true });
+  await setDoc(
+    doc(db, 'leaderboard', currentUser.uid),
+    {
+      uid: currentUser.uid,
+      displayName,
+      nameKey,
+      totalBanked: Number(save.totalBanked || 0),
+      bestHeist: Number(save.bestHeist || 0),
+      heistsPlayed: Number(save.heistsPlayed || 0),
+      paintingsStolen: Number(save.paintingsStolen || 0),
+      updatedAt: serverTimestamp(),
+      updatedAtMs: Date.now()
+    },
+    { merge: true }
+  );
 }
 
 function queueCloudWrite() {
