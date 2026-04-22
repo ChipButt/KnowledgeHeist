@@ -48,6 +48,7 @@ const db = getFirestore(app);
 let currentUser = null;
 let authReady = false;
 let cloudWriteTimer = null;
+let provisioningUid = null;
 
 function buildNameKey(displayName) {
   return sanitizePlayerName(displayName)
@@ -73,36 +74,60 @@ function normaliseRow(data) {
   };
 }
 
-async function loadProfileForUser(user) {
-  const profileRef = doc(db, 'profiles', user.uid);
-  const snap = await getDoc(profileRef);
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
-  if (!snap.exists()) {
-    clearCloudProfile();
-    dispatchAuthState({
-      ready: true,
-      loggedIn: false,
-      profileName: '',
-      error: 'No profile found for this account.'
-    });
-    await signOut(auth);
-    return;
+async function loadProfileForUser(user, options = {}) {
+  const {
+    retries = 0,
+    retryDelayMs = 250,
+    suppressSignOutOnMissing = false
+  } = options;
+
+  const profileRef = doc(db, 'profiles', user.uid);
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    const snap = await getDoc(profileRef);
+
+    if (snap.exists()) {
+      const data = snap.data();
+
+      hydrateCloudProfile({
+        displayName: data.displayName || '',
+        save: data.save || {},
+        settings: data.settings || {},
+        history: data.history || [],
+        lastHeistWrong: data.lastHeistWrong || []
+      });
+
+      dispatchAuthState({
+        ready: true,
+        loggedIn: true,
+        profileName: String(data.displayName || '')
+      });
+
+      return true;
+    }
+
+    if (attempt < retries) {
+      await sleep(retryDelayMs);
+    }
   }
 
-  const data = snap.data();
-  hydrateCloudProfile({
-    displayName: data.displayName || '',
-    save: data.save || {},
-    settings: data.settings || {},
-    history: data.history || [],
-    lastHeistWrong: data.lastHeistWrong || []
-  });
-
+  clearCloudProfile();
   dispatchAuthState({
     ready: true,
-    loggedIn: true,
-    profileName: String(data.displayName || '')
+    loggedIn: false,
+    profileName: '',
+    error: 'No profile found for this account.'
   });
+
+  if (!suppressSignOutOnMissing) {
+    await signOut(auth);
+  }
+
+  return false;
 }
 
 export async function createAccountWithEmail({ displayName, email, password }) {
@@ -118,6 +143,7 @@ export async function createAccountWithEmail({ displayName, email, password }) {
   try {
     const cred = await createUserWithEmailAndPassword(auth, cleanEmail, cleanPassword);
     user = cred.user;
+    provisioningUid = user.uid;
   } catch (err) {
     console.error('Auth signup failed:', err);
 
@@ -193,9 +219,23 @@ export async function createAccountWithEmail({ displayName, email, password }) {
       });
     });
 
-    await loadProfileForUser(user);
+    const loaded = await loadProfileForUser(user, {
+      retries: 8,
+      retryDelayMs: 250,
+      suppressSignOutOnMissing: true
+    });
+
+    provisioningUid = null;
+
+    if (!loaded) {
+      await signOut(auth);
+      return { ok: false, reason: 'profile_create_failed' };
+    }
+
     return { ok: true };
   } catch (err) {
+    provisioningUid = null;
+
     if (err?.message === 'username_taken') {
       await signOut(auth);
       return { ok: false, reason: 'username_taken' };
@@ -217,7 +257,15 @@ export async function loginWithEmail({ email, password }) {
 
   try {
     const cred = await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
-    await loadProfileForUser(cred.user);
+    const loaded = await loadProfileForUser(cred.user, {
+      retries: 4,
+      retryDelayMs: 200
+    });
+
+    if (!loaded) {
+      return { ok: false, reason: 'profile_missing' };
+    }
+
     return { ok: true };
   } catch (err) {
     console.error('Login failed:', err);
@@ -241,6 +289,7 @@ export async function loginWithEmail({ email, password }) {
 }
 
 export async function logoutUser() {
+  provisioningUid = null;
   await signOut(auth);
 }
 
@@ -338,8 +387,15 @@ export async function initCloudAuthBridge() {
       return;
     }
 
+    if (provisioningUid && user.uid === provisioningUid) {
+      return;
+    }
+
     try {
-      await loadProfileForUser(user);
+      await loadProfileForUser(user, {
+        retries: 4,
+        retryDelayMs: 200
+      });
     } catch (err) {
       console.error('Profile load failed:', err);
       clearCloudProfile();
