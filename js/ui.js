@@ -506,31 +506,49 @@ export function initUI(options = {}) {
   }
 
   async function createProfileFromInput() {
-    if (creatingProfile) return;
-    creatingProfile = true;
-    setProfileError('');
-    if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Creating account...';
+  if (creatingProfile) return;
+  creatingProfile = true;
+  setProfileError('');
+  if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Creating account...';
 
-    const displayName = sanitizePlayerName(refs.profileNameInput.value);
-    const email = String(refs.signupEmailInput?.value || '').trim();
-    const password = String(refs.signupPasswordInput?.value || '');
+  const displayName = sanitizePlayerName(refs.profileNameInput.value);
+  const email = String(refs.signupEmailInput?.value || '').trim();
+  const password = String(refs.signupPasswordInput?.value || '');
 
-    const result = await createAccountWithEmail({ displayName, email, password });
+  const result = await createAccountWithEmail({ displayName, email, password });
 
-    if (!result?.ok) {
-      setProfileError(
-        result?.reason === 'username_taken'
-          ? 'That username is already taken.'
-          : result?.reason === 'missing_credentials'
-            ? 'Enter email and password.'
-            : result?.reason === 'invalid_name'
-              ? 'Enter a valid username.'
-              : 'Could not create that account right now.'
-      );
-      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-      creatingProfile = false;
-      return;
-    }
+  if (!result?.ok) {
+    setProfileError(
+      result?.reason === 'username_taken'
+        ? 'That username is already taken.'
+        : result?.reason === 'missing_credentials'
+          ? 'Enter username, email and password.'
+          : result?.reason === 'invalid_name'
+            ? 'Enter a valid username.'
+            : result?.reason === 'invalid_email'
+              ? 'Enter a valid email address.'
+              : result?.reason === 'weak_password'
+                ? 'Password must be at least 6 characters.'
+                : result?.reason === 'email_in_use'
+                  ? 'That email address is already in use.'
+                  : result?.reason === 'email_password_disabled'
+                    ? 'Email/password sign-in is not enabled in Firebase.'
+                    : result?.reason === 'profile_create_failed'
+                      ? 'Account created, but profile setup failed.'
+                      : 'Could not create that account right now.'
+    );
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+    creatingProfile = false;
+    return;
+  }
+
+  refs.profileNameInput.value = '';
+  refs.signupEmailInput.value = '';
+  refs.signupPasswordInput.value = '';
+  if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+  setProfileError('');
+  creatingProfile = false;
+}
 
     refs.profileNameInput.value = '';
     refs.signupEmailInput.value = '';
