@@ -190,6 +190,10 @@ function getHubRefs() {
     ],
 
     profileOverlay: document.getElementById('profileOverlay'),
+    loginView: document.getElementById('loginView'),
+    createAccountView: document.getElementById('createAccountView'),
+    showCreateAccountBtn: document.getElementById('showCreateAccountBtn'),
+    showLoginViewBtn: document.getElementById('showLoginViewBtn'),
     profileNameInput: document.getElementById('profileNameInput'),
     signupEmailInput: document.getElementById('signupEmailInput'),
     signupPasswordInput: document.getElementById('signupPasswordInput'),
@@ -428,6 +432,20 @@ export function initUI(options = {}) {
     refs.profileErrorText.style.display = message ? 'block' : 'none';
   }
 
+  function showLoginView() {
+    if (refs.loginView) refs.loginView.style.display = 'block';
+    if (refs.createAccountView) refs.createAccountView.style.display = 'none';
+    setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+  }
+
+  function showCreateAccountView() {
+    if (refs.loginView) refs.loginView.style.display = 'none';
+    if (refs.createAccountView) refs.createAccountView.style.display = 'block';
+    setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+  }
+
   function applyHubVolume() {
     const settings = loadSettings();
     setAudioVolume(hubMusic, getVolumeScale(settings.hubVolume));
@@ -501,59 +519,53 @@ export function initUI(options = {}) {
   function ensureProfileBeforePlay() {
     if (authLoggedIn && hasActiveProfile()) return true;
     show(refs.profileOverlay);
+    showLoginView();
     setProfileError('Log in before starting a heist.');
     return false;
   }
 
   async function createProfileFromInput() {
-  if (creatingProfile) return;
-  creatingProfile = true;
-  setProfileError('');
-  if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Creating account...';
+    if (creatingProfile) return;
+    creatingProfile = true;
+    setProfileError('');
+    if (refs.profileLoadingText) refs.profileLoadingText.textContent = 'Creating account...';
 
-  const displayName = sanitizePlayerName(refs.profileNameInput.value);
-  const email = String(refs.signupEmailInput?.value || '').trim();
-  const password = String(refs.signupPasswordInput?.value || '');
+    const displayName = sanitizePlayerName(refs.profileNameInput.value);
+    const email = String(refs.signupEmailInput?.value || '').trim();
+    const password = String(refs.signupPasswordInput?.value || '');
 
-  const result = await createAccountWithEmail({ displayName, email, password });
+    const result = await createAccountWithEmail({ displayName, email, password });
 
-  if (!result?.ok) {
-    setProfileError(
-      result?.reason === 'username_taken'
-        ? 'That username is already taken.'
-        : result?.reason === 'missing_credentials'
-          ? 'Enter username, email and password.'
-          : result?.reason === 'invalid_name'
-            ? 'Enter a valid username.'
-            : result?.reason === 'invalid_email'
-              ? 'Enter a valid email address.'
-              : result?.reason === 'weak_password'
-                ? 'Password must be at least 6 characters.'
-                : result?.reason === 'email_in_use'
-                  ? 'That email address is already in use.'
-                  : result?.reason === 'email_password_disabled'
-                    ? 'Email/password sign-in is not enabled in Firebase.'
-                    : result?.reason === 'profile_create_failed'
-                      ? 'Account created, but profile setup failed.'
-                      : 'Could not create that account right now.'
-    );
-    if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-    creatingProfile = false;
-    return;
-  }
-
-  refs.profileNameInput.value = '';
-  refs.signupEmailInput.value = '';
-  refs.signupPasswordInput.value = '';
-  if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
-  setProfileError('');
-  creatingProfile = false;
-}
+    if (!result?.ok) {
+      setProfileError(
+        result?.reason === 'username_taken'
+          ? 'That username is already taken.'
+          : result?.reason === 'missing_credentials'
+            ? 'Enter username, email and password.'
+            : result?.reason === 'invalid_name'
+              ? 'Enter a valid username.'
+              : result?.reason === 'invalid_email'
+                ? 'Enter a valid email address.'
+                : result?.reason === 'weak_password'
+                  ? 'Password must be at least 6 characters.'
+                  : result?.reason === 'email_in_use'
+                    ? 'That email address is already in use.'
+                    : result?.reason === 'email_password_disabled'
+                      ? 'Email/password sign-in is not enabled in Firebase.'
+                      : result?.reason === 'profile_create_failed'
+                        ? 'Account created, but profile setup failed.'
+                        : 'Could not create that account right now.'
+      );
+      if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+      creatingProfile = false;
+      return;
+    }
 
     refs.profileNameInput.value = '';
     refs.signupEmailInput.value = '';
     refs.signupPasswordInput.value = '';
     if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+    setProfileError('');
     creatingProfile = false;
   }
 
@@ -569,7 +581,19 @@ export function initUI(options = {}) {
     const result = await loginWithEmail({ email, password });
 
     if (!result?.ok) {
-      setProfileError('Could not log in with those details.');
+      setProfileError(
+        result?.reason === 'missing_credentials'
+          ? 'Enter email and password.'
+          : result?.reason === 'invalid_email'
+            ? 'Enter a valid email address.'
+            : result?.reason === 'invalid_login'
+              ? 'Email or password is incorrect.'
+              : result?.reason === 'email_password_disabled'
+                ? 'Email/password sign-in is not enabled in Firebase.'
+                : result?.reason === 'profile_missing'
+                  ? 'No profile was found for that account.'
+                  : 'Could not log in right now.'
+      );
       if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
       creatingProfile = false;
       return;
@@ -578,6 +602,7 @@ export function initUI(options = {}) {
     refs.loginEmailInput.value = '';
     refs.loginPasswordInput.value = '';
     if (refs.profileLoadingText) refs.profileLoadingText.textContent = '';
+    setProfileError('');
     creatingProfile = false;
   }
 
@@ -665,6 +690,7 @@ export function initUI(options = {}) {
       pauseHubMusic(true);
       await logoutUser();
       show(refs.profileOverlay);
+      showLoginView();
       setProfileError('Logged out.');
     });
   }
@@ -746,6 +772,14 @@ export function initUI(options = {}) {
     refs.loginProfileBtn.addEventListener('click', loginFromInput);
   }
 
+  if (refs.showCreateAccountBtn) {
+    refs.showCreateAccountBtn.addEventListener('click', showCreateAccountView);
+  }
+
+  if (refs.showLoginViewBtn) {
+    refs.showLoginViewBtn.addEventListener('click', showLoginView);
+  }
+
   if (typeof onStartHeist === 'function') {
     const handleStartHeist = () => {
       if (!ensureProfileBeforePlay()) return;
@@ -807,6 +841,7 @@ export function initUI(options = {}) {
       syncHubMusic();
     } else {
       show(refs.profileOverlay);
+      showLoginView();
       renderSettingsForm(refs);
       refreshHub(refs);
     }
@@ -841,7 +876,8 @@ export function initUI(options = {}) {
 
   if (!hasActiveProfile()) {
     show(refs.profileOverlay);
-    setProfileError('Log in or create an account to continue.');
+    showLoginView();
+    setProfileError('');
   }
 
   return {
