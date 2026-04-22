@@ -96,7 +96,6 @@
           Current Haul: <span id="haulValue">£0.00</span>
         </div>
 
-        <!-- kept in DOM so existing JS refs still work, but hidden by CSS -->
         <div class="game-chip" id="paintingsLeftChip" aria-hidden="true">
           Paintings left: <span id="paintingsLeftValue">0</span>
         </div>
@@ -298,80 +297,82 @@ Tap the floating GRAB prompt when it appears near an item
   </div>
 
   <div id="profileOverlay" class="overlay">
-  <div class="popup-panel settings-panel profile-panel">
-    <h2>Player Login</h2>
-    <p class="profile-copy">
-      You must sign in before starting a heist.
-      Your username is public. Your email and password are used to log in.
-    </p>
+    <div class="popup-panel settings-panel profile-panel">
+      <div id="loginView" class="profile-view">
+        <h2>Player Login</h2>
+        <p class="profile-dedication">For Nana, may you continue your pursuit of knowledge, and have fun doing it - Chip</p>
 
-    <div id="profileLoadingText" class="profile-loading"></div>
-    <div id="profileErrorText" class="profile-error" aria-live="polite"></div>
+        <div id="profileLoadingText" class="profile-loading"></div>
+        <div id="profileErrorText" class="profile-error" aria-live="polite"></div>
 
-    <div class="profile-section">
-      <h3>Create Account</h3>
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Email</span>
+            <input id="loginEmailInput" type="email" maxlength="80" placeholder="you@example.com" />
+          </label>
 
-      <div class="settings-grid">
-        <label class="settings-field">
-          <span>Choose Username</span>
-          <input id="profileNameInput" type="text" maxlength="24" placeholder="Choose unique username" />
-        </label>
+          <label class="settings-field">
+            <span>Password</span>
+            <input id="loginPasswordInput" type="password" maxlength="80" placeholder="Enter password" />
+          </label>
+        </div>
 
-        <label class="settings-field">
-          <span>Email</span>
-          <input id="signupEmailInput" type="email" maxlength="80" placeholder="you@example.com" />
-        </label>
+        <div class="popup-actions">
+          <button id="loginProfileBtn" type="button">Log In</button>
+        </div>
 
-        <label class="settings-field">
-          <span>Password</span>
-          <input id="signupPasswordInput" type="password" maxlength="80" placeholder="Create password" />
-        </label>
+        <div class="profile-switch-row">
+          <button id="showCreateAccountBtn" class="profile-link-btn" type="button">
+            First time playing? Create account
+          </button>
+        </div>
       </div>
 
+      <div id="createAccountView" class="profile-view" style="display:none;">
+        <h2>Create Account</h2>
+        <p class="profile-copy">Create a unique username, then link it to your email and password.</p>
+
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span>Choose Username</span>
+            <input id="profileNameInput" type="text" maxlength="24" placeholder="Choose unique username" />
+          </label>
+
+          <label class="settings-field">
+            <span>Email</span>
+            <input id="signupEmailInput" type="email" maxlength="80" placeholder="you@example.com" />
+          </label>
+
+          <label class="settings-field">
+            <span>Password</span>
+            <input id="signupPasswordInput" type="password" maxlength="80" placeholder="Create password" />
+          </label>
+        </div>
+
+        <div class="popup-actions">
+          <button id="createProfileBtn" type="button">Create Account</button>
+        </div>
+
+        <div class="profile-switch-row">
+          <button id="showLoginViewBtn" class="profile-link-btn" type="button">
+            Back to login
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportQueryConfirmOverlay" class="overlay">
+    <div class="popup-panel confirm-panel">
+      <h2>Are you sure?</h2>
+      <p>Do you REALLY think I've got something wrong?</p>
       <div class="popup-actions">
-        <button id="createProfileBtn" type="button">Create Account</button>
-      </div>
-    </div>
-
-    <hr />
-
-    <div class="profile-section">
-      <h3>Log In</h3>
-
-      <div class="settings-grid">
-        <label class="settings-field">
-          <span>Email</span>
-          <input id="loginEmailInput" type="email" maxlength="80" placeholder="you@example.com" />
-        </label>
-
-        <label class="settings-field">
-          <span>Password</span>
-          <input id="loginPasswordInput" type="password" maxlength="80" placeholder="Enter password" />
-        </label>
-      </div>
-
-      <div class="popup-actions">
-        <button id="loginProfileBtn" type="button">Log In</button>
+        <button id="reportQueryConfirmYesBtn" type="button">Yes, continue to contact</button>
+        <button id="reportQueryConfirmNoBtn" type="button">No</button>
       </div>
     </div>
   </div>
-</div>
 
-      <h3 class="profile-list-title">Saved Profiles On This Device</h3>
-      <div id="profileList" class="profile-list"></div>
-    </div>
-  </div>
-
-<div id="reportQueryConfirmOverlay" class="overlay">
-  <div class="popup-panel confirm-panel">
-    <h2>Are you sure?</h2>
-    <p>Do you REALLY think I've got something wrong?</p>
-    <div class="popup-actions">
-      <button id="reportQueryConfirmYesBtn" type="button">Yes, continue to contact</button>
-      <button id="reportQueryConfirmNoBtn" type="button">No</button>
-    </div>
-  </div>
-</div>
   <script type="module" src="./js/main.js"></script>
 </body>
 </html>
