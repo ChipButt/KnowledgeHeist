@@ -554,7 +554,6 @@ body.game-active {
   pointer-events: none;
 }
 
-/* hide redundant chips but keep DOM for JS refs */
 #paintingsLeftChip,
 #strikesLeftChip {
   display: none !important;
@@ -1161,6 +1160,18 @@ body.game-active {
   margin-bottom: 8px;
 }
 
+.profile-view {
+  width: 100%;
+}
+
+.profile-dedication {
+  margin: 0 0 14px;
+  text-align: center;
+  font-style: italic;
+  line-height: 1.45;
+  color: #4f3a1b;
+}
+
 .profile-section {
   text-align: left;
 }
@@ -1170,6 +1181,27 @@ body.game-active {
   font-size: 18px;
   text-align: center;
   color: #2f2519;
+}
+
+.profile-switch-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.profile-link-btn {
+  border: none;
+  background: transparent;
+  color: #2f2519;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+}
+
+.profile-link-btn:hover {
+  opacity: 0.8;
 }
 
 .profile-panel hr {
